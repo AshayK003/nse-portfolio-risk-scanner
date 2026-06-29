@@ -1,11 +1,13 @@
 """
 Report export — CSV download and PDF report generation.
+Uses Lucide SVG icons instead of emojis.
 """
 from __future__ import annotations
 import io
 import streamlit as st
 import pandas as pd
 from engine import Portfolio, RiskMetrics
+from ui.icons import DOWNLOAD, FILE_TEXT, icon_text
 
 
 def render_export_section(
@@ -14,7 +16,10 @@ def render_export_section(
     sector_data: dict | None = None,
 ) -> None:
     """Display export buttons for the analysis results."""
-    st.subheader("Export Report")
+    st.markdown(
+        f'<div class="section-header">{icon_text(DOWNLOAD, "Export Report")}</div>',
+        unsafe_allow_html=True,
+    )
 
     # Build data rows
     rows = []
@@ -37,7 +42,7 @@ def render_export_section(
     # ── CSV Download ──
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Download CSV Report",
+        label=f"{icon_text(DOWNLOAD, 'Download CSV Report')}",
         data=csv,
         file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.csv",
         mime="text/csv",
@@ -48,7 +53,7 @@ def render_export_section(
     try:
         pdf_bytes = _generate_pdf_report(portfolio, risk, sector_data, df)
         st.download_button(
-            label="📄 Download PDF Report",
+            label=f"{icon_text(FILE_TEXT, 'Download PDF Report')}",
             data=pdf_bytes,
             file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -131,7 +136,6 @@ def _generate_pdf_report(
     pdf.set_font("Helvetica", "B", 13)
     pdf.cell(0, 8, "Holdings Breakdown", new_x="LMARGIN", new_y="NEXT")
 
-    # Table header
     cols = ["Ticker", "Qty", "Avg Price", "Current", "P&L %"]
     col_widths = [30, 20, 35, 35, 30]
     pdf.set_font("Helvetica", "B", 9)
@@ -140,7 +144,6 @@ def _generate_pdf_report(
         pdf.cell(w, 7, col_name, border=1, fill=True)
     pdf.ln()
 
-    # Table rows
     pdf.set_font("Helvetica", "", 8)
     for _, row in df.head(30).iterrows():
         pdf.cell(col_widths[0], 6, str(row.get("Ticker", "")), border=1)
@@ -160,7 +163,6 @@ def _generate_pdf_report(
         pdf.set_font("Helvetica", "I", 9)
         pdf.cell(0, 6, f"... and {len(df) - 30} more holdings (see CSV for full data)", new_x="LMARGIN", new_y="NEXT")
 
-    # Footer
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 8)
     pdf.set_text_color(128, 128, 128)

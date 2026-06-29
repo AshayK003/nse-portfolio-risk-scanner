@@ -1,16 +1,23 @@
 """
-CSV upload, portfolio data editor, and saved-portfolio management.
+CSV upload, manual stock entry, portfolio data editor, and saved-portfolio management.
 Thin Streamlit presentation — no business logic.
+Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander labels).
 """
 from __future__ import annotations
 import streamlit as st
 from engine import Holding, Portfolio
 from engine.portfolio import parse_portfolio_csv
+from ui.icons import (
+    FOLDER_OPEN, CHECK_CIRCLE, X_CIRCLE, UPLOAD, PLUS, icon_html,
+)
 
 
 def render_sidebar():
     """Render the sidebar with saved portfolio management."""
-    st.sidebar.header("📂 Saved Portfolios")
+    st.sidebar.markdown(
+        f'<div class="section-header">{icon_html(FOLDER_OPEN)} Saved Portfolios</div>',
+        unsafe_allow_html=True,
+    )
 
     try:
         from storage.db import list_saved_portfolios, delete_portfolio
@@ -27,7 +34,10 @@ def render_sidebar():
                 p_id = options[selected]
                 sp = [p for p in saved if p.id == p_id][0]
                 loaded = saved_to_portfolio(sp)
-                st.sidebar.success(f"Loaded: {sp.name}")
+                st.sidebar.markdown(
+                    f"{icon_html(CHECK_CIRCLE)} **Loaded:** {sp.name}",
+                    unsafe_allow_html=True,
+                )
                 st.session_state.portfolio = loaded
                 st.session_state.selected_portfolio_id = sp.id
                 st.rerun()
@@ -38,10 +48,15 @@ def render_sidebar():
                 options=["— Select —"] + list(options.keys()),
                 key="delete_portfolio",
             )
-            if delete_name != "— Select —" and st.sidebar.button("🗑 Delete", use_container_width=True):
+            if delete_name != "— Select —" and st.sidebar.button(
+                "Delete", use_container_width=True
+            ):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
-                st.sidebar.success("Deleted")
+                st.sidebar.markdown(
+                    f"{icon_html(CHECK_CIRCLE)} Deleted",
+                    unsafe_allow_html=True,
+                )
                 st.rerun()
         else:
             st.sidebar.info("No saved portfolios yet.")
@@ -51,8 +66,84 @@ def render_sidebar():
         st.sidebar.caption(f"DB error: {e}")
 
 
+def render_manual_entry() -> list[Holding]:
+    """Render manual stock entry form. Returns list of holdings entered so far."""
+    st.markdown(
+        f'<div class="section-header">{icon_html(PLUS)} Add Stocks Manually</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Initialize manual holdings in session state
+    if "manual_holdings" not in st.session_state:
+        st.session_state.manual_holdings = []
+
+    # Form
+    with st.form("manual_entry_form", clear_on_submit=True):
+        cols = st.columns([2, 1, 1, 1])
+        with cols[0]:
+            ticker = st.text_input(
+                "Ticker",
+                placeholder="e.g. RELIANCE",
+                label_visibility="collapsed",
+            ).strip().upper()
+        with cols[1]:
+            qty = st.number_input("Qty", min_value=1, step=1, label_visibility="collapsed")
+        with cols[2]:
+            price = st.number_input(
+                "Avg Price (₹)", min_value=0.01, step=1.0, format="%.2f",
+                label_visibility="collapsed",
+            )
+        with cols[3]:
+            st.write("")
+            submitted = st.form_submit_button("Add Stock", use_container_width=True)
+
+        if submitted:
+            if not ticker:
+                st.warning("Enter a ticker symbol")
+            else:
+                clean_ticker = ticker.replace(".NS", "")
+                if not clean_ticker.endswith(".NS"):
+                    clean_ticker = f"{clean_ticker}.NS"
+                new_holding = Holding(
+                    ticker=clean_ticker,
+                    name=ticker.replace(".NS", ""),
+                    quantity=int(qty),
+                    avg_price=round(price, 2),
+                )
+                st.session_state.manual_holdings.append(new_holding)
+
+    # Show entered stocks with remove button
+    manual = st.session_state.manual_holdings
+    if manual:
+        st.markdown(
+            f'<div style="margin: 0.5rem 0 0.3rem; color: #94a3b8; font-size: 0.85rem;">'
+            f'{len(manual)} stock(s) added</div>',
+            unsafe_allow_html=True,
+        )
+        for i, h in enumerate(manual):
+            col_a, col_b, col_c, col_d = st.columns([2, 1, 1, 1])
+            with col_a:
+                st.markdown(f"**{h.ticker.replace('.NS', '')}**")
+            with col_b:
+                st.text(f"{h.quantity} shares")
+            with col_c:
+                st.text(f"₹{h.avg_price:,.2f}")
+            with col_d:
+                if st.button("✕", key=f"remove_manual_{i}"):
+                    st.session_state.manual_holdings.pop(i)
+                    st.rerun()
+
+    return manual
+
+
 def render_upload_tab() -> Portfolio | None:
-    """Render the CSV upload section. Returns a Portfolio if loaded, None otherwise."""
+    """Render the CSV upload + manual entry section. Returns a Portfolio if loaded."""
+    # ── CSV Upload Section ──
+    st.markdown(
+        f'<div class="section-header">{icon_html(UPLOAD)} Upload Portfolio CSV</div>',
+        unsafe_allow_html=True,
+    )
+
     uploaded = st.file_uploader(
         "Upload portfolio CSV",
         type="csv",
@@ -60,32 +151,59 @@ def render_upload_tab() -> Portfolio | None:
              "Expected columns: ticker/symbol, quantity/qty, avg_price/price.",
     )
 
-    if uploaded is None:
-        # Check if we have a portfolio in session
+    csv_portfolio = None
+    if uploaded is not None:
+        try:
+            csv_bytes = uploaded.getvalue()
+            csv_portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
+            st.markdown(
+                f"{icon_html(CHECK_CIRCLE)} **Loaded** {csv_portfolio.holding_count} "
+                f"holdings from {uploaded.name}",
+                unsafe_allow_html=True,
+            )
+        except ValueError as e:
+            st.markdown(
+                f"{icon_html(X_CIRCLE)} **Could not parse CSV:** {e}",
+                unsafe_allow_html=True,
+            )
+
+    # ── Manual Entry Section ──
+    st.markdown("<hr style='border-color: #2a2d3e; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+    manual_holdings = render_manual_entry()
+
+    # ── Combine sources ──
+    all_holdings = []
+    if csv_portfolio:
+        all_holdings.extend(csv_portfolio.holdings)
+    if manual_holdings:
+        all_holdings.extend(manual_holdings)
+
+    if not all_holdings:
         if st.session_state.get("portfolio") is not None:
             return st.session_state.portfolio
 
-        st.info("""
-        **Upload a CSV** to analyze your portfolio risk metrics.
-
-        Your CSV should have columns for: ticker/symbol, quantity, avg price.
-        Supports Zerodha, Groww, and Upstox export formats.
-        """)
+        st.markdown(
+            f"{icon_html(UPLOAD)} **Upload a CSV** or **add stocks manually** "
+            f"above to analyze your portfolio.",
+            unsafe_allow_html=True,
+        )
         return None
 
-    try:
-        csv_bytes = uploaded.getvalue()
-        portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
-        st.success(f"✅ Loaded {portfolio.holding_count} holdings from {uploaded.name}")
-        return portfolio
-    except ValueError as e:
-        st.error(f"❌ Could not parse CSV: {e}")
-        return None
+    portfolio = csv_portfolio or Portfolio(name="My Portfolio")
+    if csv_portfolio and manual_holdings:
+        seen = {h.ticker for h in csv_portfolio.holdings}
+        for h in manual_holdings:
+            if h.ticker not in seen:
+                portfolio.holdings.append(h)
+                seen.add(h.ticker)
+        portfolio.name = f"{csv_portfolio.name} + Manual"
+
+    return portfolio
 
 
 def render_data_editor(portfolio: Portfolio) -> Portfolio:
     """Show an editable data editor for the portfolio holdings."""
-    with st.expander("✏️ Edit Holdings", expanded=False):
+    with st.expander("✎ Edit Holdings", expanded=False):
         data = []
         for h in portfolio.holdings:
             data.append({
@@ -108,7 +226,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if st.button("🔄 Update from Editor", use_container_width=True):
+        if st.button("Update from Editor", use_container_width=True):
             new_holdings = []
             for _, row in df.iterrows():
                 new_holdings.append(Holding(
@@ -118,7 +236,12 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
                     avg_price=float(row["Avg Price"]),
                 ))
             portfolio.holdings = new_holdings
-            st.success(f"Updated to {len(new_holdings)} holdings")
+            if "manual_holdings" in st.session_state:
+                st.session_state.manual_holdings = []
+            st.markdown(
+                f"{icon_html(CHECK_CIRCLE)} Updated to {len(new_holdings)} holdings",
+                unsafe_allow_html=True,
+            )
             st.session_state.portfolio = portfolio
             st.rerun()
 
@@ -135,7 +258,10 @@ def render_save_button(portfolio: Portfolio):
                 from storage.models import portfolio_to_saved
                 saved = portfolio_to_saved(portfolio, name=save_name)
                 p_id = save_portfolio(saved)
-                st.success(f"Saved as '{save_name}' (ID: {p_id})")
+                st.markdown(
+                    f"{icon_html(CHECK_CIRCLE)} Saved as **{save_name}** (ID: {p_id})",
+                    unsafe_allow_html=True,
+                )
             except ImportError:
                 st.error("Storage module not available")
             except Exception as e:

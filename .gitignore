@@ -34,3 +34,5 @@ data/*.sqlite
 # Internal
 AGENTS.md
 engineering_memory.md
+*.db-shm
+*.db-wal

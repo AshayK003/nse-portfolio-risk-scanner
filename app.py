@@ -29,17 +29,31 @@ from ui.charts import (
     correlation_heatmap, volatility_gauge,
 )
 from ui.export import render_export_section
+from ui.icons import BAR_CHART_3, GITHUB, HEART, icon_html
+from ui.styles import inject_css
 
 # Page config
 st.set_page_config(
     page_title="NSE Portfolio Risk Scanner",
-    page_icon="📊",
+    page_icon=None,  # Lucide SVG used in title instead
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("📊 NSE Portfolio Risk Scanner")
-st.caption("Upload your portfolio CSV to analyze risk metrics, sector concentration, and benchmark comparison.")
+# Inject premium dark theme CSS
+inject_css()
+
+# Title with Lucide icon
+st.markdown(
+    f"<h1 style='display: flex; align-items: center; gap: 0.5rem;'>"
+    f"{icon_html(BAR_CHART_3, size=28)} NSE Portfolio Risk Scanner"
+    f"</h1>",
+    unsafe_allow_html=True,
+)
+st.caption(
+    "Upload a CSV or add stocks manually to analyze risk metrics, "
+    "sector concentration, and benchmark comparison."
+)
 
 # ── Sidebar ──
 render_sidebar()
@@ -134,7 +148,6 @@ with tabs[0]:
     with col1:
         st.plotly_chart(volatility_gauge(report.risk.volatility_annual), use_container_width=True)
     with col2:
-        # Rolling volatility chart
         rv = rolling_volatility(portfolio_returns)
         if len(rv) > 0:
             st.subheader("Rolling 21-day Volatility")
@@ -186,11 +199,11 @@ except Exception:
     pass  # non-critical — silently skip on DB error
 
 # ── Footer ──
-st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #666; font-size: 0.8rem;'>"
-    "Built by <a href='https://github.com/AshayK003'>AshayK003</a> · "
-    "<a href='https://chai4.me/ashaykushwaha003'>Support on Chai4Me</a>"
-    "</div>",
+    f'<div class="app-footer">'
+    f'{icon_html(GITHUB)} Built by <a href="https://github.com/AshayK003">AshayK003</a> · '
+    f'{icon_html(HEART)} '
+    f'<a href="https://chai4.me/ashaykushwaha003">Support on Chai4Me</a>'
+    f'</div>',
     unsafe_allow_html=True,
 )
