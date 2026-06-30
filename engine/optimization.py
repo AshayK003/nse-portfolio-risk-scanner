@@ -26,6 +26,36 @@ class OptimizationResult:
     sharpe: float = 0.0
 
 
+# Minimum annualized volatility to be considered "investable" by the optimizer.
+# Excludes cash-like instruments (e.g. LIQUIDBEES, money market funds) that
+# have near-zero volatility — they'd otherwise dominate risk-parity allocation.
+_MIN_ANNUAL_VOL = 0.02
+
+
+def _cap_max_weight(weights: list[float], max_single: float = 0.35) -> list[float]:
+    """Cap individual weights at max_single and redistribute excess proportionally."""
+    n = len(weights)
+    if n == 0:
+        return weights
+    total_surplus = 0.0
+    result = list(weights)
+    for i in range(n):
+        if result[i] > max_single:
+            total_surplus += result[i] - max_single
+            result[i] = max_single
+    if total_surplus > 1e-12:
+        uncapped = [i for i in range(n) if result[i] < max_single]
+        if uncapped:
+            base = sum(result[i] for i in uncapped)
+            if base > 1e-12:
+                for i in uncapped:
+                    result[i] += total_surplus * (result[i] / base)
+            else:
+                for i in uncapped:
+                    result[i] += total_surplus / len(uncapped)
+    return result
+
+
 def _ledoit_wolf_cov(values: np.ndarray) -> np.ndarray:
     """
     Ledoit-Wolf shrinkage covariance estimator (constant-correlation target).
@@ -100,7 +130,17 @@ def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
         _weights = {good_cols[0]: 1.0} if len(good_cols) == 1 else {}
         return OptimizationResult(method="hrp", weights=_weights)
 
-    returns = returns[good_cols]
+    # Exclude cash-like instruments (annualized vol < 2%) that would
+    # dominate risk-parity allocation and produce misleading results
+    annual_vol = std[good_cols] * np.sqrt(252)
+    investable = good_cols[annual_vol >= _MIN_ANNUAL_VOL]
+    if len(investable) == 0:
+        # All holdings are cash-like; can't optimize meaningfully
+        return OptimizationResult(method="hrp", weights={})
+    if len(investable) == 1:
+        _weights = {investable[0]: 1.0}
+        return OptimizationResult(method="hrp", weights=_weights)
+    returns = returns[investable]
 
     # 1. Correlation -> distance matrix
     corr = returns.corr().values
@@ -118,6 +158,7 @@ def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
     ordered = returns.values[:, _order]
     cov = _ledoit_wolf_cov(ordered)
     weights = _recursive_bisection(cov)
+    weights = _cap_max_weight(weights)
 
     result = dict(zip(ordered_tickers, weights, strict=False))
     return OptimizationResult(method="hrp", weights=result)
@@ -183,7 +224,8 @@ def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065
     result = minimize(portfolio_vol, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
-    w = w / w.sum()
+    w = _cap_max_weight(w.tolist())
+    w = np.array(w) / sum(w)
     port_ret = w @ (returns.mean().values * 252)
     port_vol = portfolio_vol(w)
     sharpe = (port_ret - risk_free_rate) / port_vol if port_vol > 0 else 0.0
@@ -220,7 +262,8 @@ def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065) ->
     result = minimize(neg_sharpe, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
-    w = w / w.sum()
+    w = _cap_max_weight(w.tolist())
+    w = np.array(w) / sum(w)
     port_ret = w @ mu
     port_vol = np.sqrt(w @ cov @ w)
     sharpe = (port_ret - rf) / port_vol if port_vol > 0 else 0.0

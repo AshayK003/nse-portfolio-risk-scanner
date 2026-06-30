@@ -637,6 +637,10 @@ with tabs[6]:
 
         if recommendations.risk_reduction_potential > 0:
             st.metric("Total Risk Reduction Potential", f"{recommendations.risk_reduction_potential:.1f}%")
+            st.caption(
+                "Risk reduction is a directional estimate based on heuristic rules, "
+                "not a backtested or simulated forecast."
+            )
 
         st.divider()
         st.subheader("All Recommendations")

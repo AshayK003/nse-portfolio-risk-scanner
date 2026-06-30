@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.7.2 (2026-06-30)
+
+### Fixed
+
+- **All ETFs lumped as "ETF" sector causing false concentration alarms** — ETFs are now classified by their underlying asset class (e.g. NIFTYBEES → "Equity: Broad Market", GOLDBEES → "Gold", LIQUIDBEES → "Liquid / Money Market", BANKBEES → "Equity: Banking"). This prevents the false "Reduce ETF" recommendation when holdings are actually diversified across equity, gold, and liquid funds (`engine/sector.py:141-155`, `tests/test_sector.py:16-22`).
+- **Risk-parity optimizer overweighting cash-like instruments** — `optimize_hrp()` now excludes assets with annualized volatility below 2% (e.g. LIQUIDBEES) and caps any single holding at 35% with proportional redistribution. Same cap applied to `optimize_min_volatility()` and `optimize_max_sharpe()`. Prevents misleading "100% in Liquidbees" output (`engine/optimization.py:14-42,107-115,136,198-200,234-237`).
+
+### Changed
+
+- **Risk-reduction disclaimer** — the "Total Risk Reduction Potential" metric now includes a caption: *"Risk reduction is a directional estimate based on heuristic rules, not a backtested or simulated forecast."* (`app.py:641-643`).
+- **Optimization concentration warning** — when the optimizer allocates >25% to any single holding, the UI shows a warning that risk-parity may not suit return-seeking investors (`ui/dashboard.py:233-238`).
+
 ## v0.7.1 (2026-06-30)
 
 ### Changed

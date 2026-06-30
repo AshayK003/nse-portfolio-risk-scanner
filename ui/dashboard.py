@@ -227,6 +227,15 @@ def render_optimization_section(opt: OptimizationResult | None, portfolio: Portf
                 "Change (Rs)": f"{diff:+,.0f}",
             })
         st.dataframe(comparison, use_container_width=True, hide_index=True)
+
+        # Warn if optimization concentrates >25% in any single holding
+        max_opt_w = max(opt.weights.values())
+        if max_opt_w > 0.25:
+            st.caption(
+                ":warning: Risk-parity optimization is purely risk-based and may "
+                "overweight low-volatility holdings. This may not be appropriate "
+                "for return-seeking investors."
+            )
     else:
         rows = []
         for ticker, weight in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):

@@ -10,10 +10,21 @@ class TestClassifyHoldings:
         result = classify_holdings(holdings)
         assert result[0].sector == "Oil & Gas"
 
-    def test_etf_classification(self):
-        holdings = [Holding(ticker="NIFTYBEES.NS", name="Nifty Bees", quantity=100, avg_price=250)]
-        result = classify_holdings(holdings)
-        assert result[0].sector == "ETF"
+    def test_etf_classification_by_type(self):
+        """ETFs are classified by underlying asset, not all lumped as 'ETF'."""
+        cases = [
+            ("NIFTYBEES.NS", "Equity: Broad Market"),
+            ("GOLDBEES.NS", "Gold"),
+            ("LIQUIDBEES.NS", "Liquid / Money Market"),
+            ("BANKBEES.NS", "Equity: Banking"),
+            ("MIDCAPETF.NS", "Equity: Mid Cap"),
+            ("MON100.NS", "Equity: International"),
+            ("HDFCSML250.NS", "Equity: Small Cap"),
+        ]
+        for ticker, expected_sector in cases:
+            holdings = [Holding(ticker=ticker, name=f"{ticker} fund", quantity=100, avg_price=100)]
+            result = classify_holdings(holdings)
+            assert result[0].sector == expected_sector, f"{ticker} → expected {expected_sector}, got {result[0].sector}"
 
     def test_sector_map_loaded(self):
         sector_map = load_sector_map()
