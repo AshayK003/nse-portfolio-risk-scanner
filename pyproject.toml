@@ -30,4 +30,4 @@ pdf = [
 package = false
 
 [tool.setuptools.packages.find]
-include = ["engine*", "data*", "ui*", "storage*"]
+include = ["engine*", "data*", "ui*", "storage*", "nse_risk_scanner*"]
