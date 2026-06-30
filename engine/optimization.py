@@ -26,16 +26,81 @@ class OptimizationResult:
     sharpe: float = 0.0
 
 
+def _ledoit_wolf_cov(values: np.ndarray) -> np.ndarray:
+    """
+    Ledoit-Wolf shrinkage covariance estimator (constant-correlation target).
+
+    Shrinks the sample covariance matrix toward a constant-correlation target
+    to reduce estimation error — especially important when the number of
+    observations is close to the number of assets.
+
+    Args:
+        values: (n_obs, n_assets) return array
+
+    Returns:
+        Shrunk covariance matrix (n_assets x n_assets)
+    """
+    n, p = values.shape
+    if n < 2 or p < 2:
+        return np.cov(values, rowvar=False) if p < 2 else np.atleast_2d(np.var(values, ddof=1))
+
+    sample = np.cov(values, rowvar=False)
+    mean = np.mean(values, axis=0)
+    centered = values - mean
+
+    # Constant-correlation target: F_ij = r_bar * s_i * s_j,  F_ii = s_ii
+    var = np.diag(sample)
+    std = np.sqrt(var)
+    if (std == 0).any():
+        return sample
+    corr = sample / np.outer(std, std)
+    avg_r = (corr.sum() - p) / max(p * (p - 1), 1)
+    avg_r = np.clip(avg_r, -1.0, 1.0)
+    target = avg_r * np.outer(std, std)
+    np.fill_diagonal(target, var)
+
+    # π̂ = (1/n) * Σ_i ||(x_i - x̄)(x_i - x̄)' - S||²_F
+    pi_mat = np.zeros((p, p))
+    for i in range(n):
+        yy = np.outer(centered[i], centered[i])
+        diff = yy - sample
+        pi_mat += diff * diff
+    pi_hat = pi_mat.sum() / n
+
+    # γ̂ = ||S - F||²_F
+    gamma_hat = ((sample - target) ** 2).sum()
+
+    # δ = max(0, min(1, (π̂ - ĉ) / (n * γ̂)))
+    c_hat = np.trace(pi_mat) / p
+    delta = (pi_hat - c_hat) / (n * gamma_hat) if gamma_hat > 1e-10 else 0.0
+    delta = np.clip(delta, 0.0, 1.0)
+
+    return delta * target + (1.0 - delta) * sample
+
+
 def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
     """
     Hierarchical Risk Parity (Lopez de Prado 2016).
 
     No covariance matrix inversion — numerically stable even with
     highly correlated assets. Uses scipy hierarchical clustering.
+
+    Uses Ledoit-Wolf shrinkage covariance for the allocation step
+    to reduce noise in the covariance estimate. Drops any columns
+    with zero variance (stale/halted tickers).
     """
     if returns.empty or returns.shape[1] < 2:
         _weights = {returns.columns[0]: 1.0} if returns.shape[1] == 1 else {}
         return OptimizationResult(method="hrp", weights=_weights)
+
+    # Drop zero-variance columns (stale/halted tickers)
+    std = returns.std()
+    good_cols = std[std > 1e-12].index
+    if len(good_cols) < 2:
+        _weights = {good_cols[0]: 1.0} if len(good_cols) == 1 else {}
+        return OptimizationResult(method="hrp", weights=_weights)
+
+    returns = returns[good_cols]
 
     # 1. Correlation -> distance matrix
     corr = returns.corr().values
@@ -49,8 +114,9 @@ def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
     ordered_tickers = [returns.columns[i] for i in _order]
 
     # 4. Recursive bisection: inverse-variance allocation
+    #    Use shrinkage covariance for numerical stability
     ordered = returns.values[:, _order]
-    cov = np.cov(ordered, rowvar=False)
+    cov = _ledoit_wolf_cov(ordered)
     weights = _recursive_bisection(cov)
 
     result = dict(zip(ordered_tickers, weights, strict=False))

@@ -169,7 +169,26 @@ def render_optimization_section(opt: OptimizationResult | None, portfolio: Portf
             st.metric("Sharpe Ratio", f"{opt.sharpe:.2f}")
 
     method_labels = {"hrp": "Hierarchical Risk Parity", "min_volatility": "Minimum Volatility", "max_sharpe": "Maximum Sharpe"}
-    st.caption(f"Method: {method_labels.get(opt.method, opt.method)}")
+    method_name = method_labels.get(opt.method, opt.method)
+    st.caption(f"Method: {method_name}")
+
+    if opt.method == "hrp":
+        with st.expander("How HRP works"):
+            st.markdown(
+                "**Hierarchical Risk Parity** (López de Prado, 2016) builds a diversified "
+                "portfolio in three steps:\n\n"
+                "1. **Cluster** — assets are grouped by correlation similarity "
+                "using hierarchical clustering (Ward linkage), producing a tree structure.\n"
+                "2. **Quasi-diagonalize** — the tree is flattened into an ordering that "
+                "keeps similar assets adjacent.\n"
+                "3. **Recursive bisection** — the ordered list is repeatedly split in half, "
+                "allocating inverse-variance weights within each sub-cluster. "
+                "This ensures risk is spread evenly across clusters.\n\n"
+                "**Why it's reliable:** No covariance matrix inversion (stable with "
+                "highly correlated assets). Purely risk-based — no return forecasts needed. "
+                "Covariance is estimated using **Ledoit-Wolf shrinkage**, which reduces "
+                "noise by shrinking extreme correlations toward the average."
+            )
 
     # Current vs Optimized comparison
     if portfolio and portfolio.total_current > 0:
