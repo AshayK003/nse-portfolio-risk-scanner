@@ -11,14 +11,6 @@ import numpy as np
 
 from . import Holding, SectorExposure
 
-# Attempt to import nselib for sector data fallback (optional dep)
-try:
-    from nselib import capital_market
-
-    _NSELIB_AVAILABLE = True
-except ImportError:
-    _NSELIB_AVAILABLE = False
-
 # Default mapping for common NSE stocks
 _DEFAULT_SECTORS: dict[str, str] = {
     # Nifty 50
@@ -175,7 +167,7 @@ def classify_holdings(
 ) -> list[Holding]:
     """
     Assign sector to each holding using the provided mapping.
-    Falls back to nselib or yfinance for unknown tickers.
+    Unknown tickers are labeled "Unknown" — no external API calls.
     """
     if sector_map is None:
         sector_map = load_sector_map()
@@ -183,26 +175,8 @@ def classify_holdings(
     result = []
     for h in holdings:
         clean_ticker = h.ticker.replace(".NS", "")
-        sector = sector_map.get(clean_ticker, "")
-
-        if not sector and _NSELIB_AVAILABLE:
-            try:
-                raw = capital_market.price_volume_data(symbol=clean_ticker, period="1d")
-                if raw is not None and not raw.empty and "SECTOR" in raw.columns:
-                    sector = str(raw.iloc[0].get("SECTOR", ""))
-            except Exception:
-                pass
-
-        if not sector:
-            try:
-                import yfinance as yf
-
-                info = yf.Ticker(h.ticker).info
-                sector = info.get("sector", "")
-            except Exception:
-                sector = "Unknown"
-
-        h.sector = sector or "Unknown"
+        sector = sector_map.get(clean_ticker, "Unknown")
+        h.sector = sector
         result.append(h)
 
     return result

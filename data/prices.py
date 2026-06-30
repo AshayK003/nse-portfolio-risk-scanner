@@ -176,7 +176,7 @@ def fetch_prices(
     errors: list[str] = []
     completed = 0
 
-    max_workers = min(len(tickers), 6)
+    max_workers = min(len(tickers), 3)
 
     if progress_callback:
         progress_callback(f"Fetching prices for {len(tickers)} stocks...")

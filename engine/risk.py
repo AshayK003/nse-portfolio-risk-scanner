@@ -52,6 +52,7 @@ def compute_risk_metrics(
     weights: list[float],
     risk_free_rate: float = 0.065,
     benchmark_returns: pd.Series | None = None,
+    portfolio_returns: pd.Series | None = None,
 ) -> RiskMetrics:
     """
     Compute all risk metrics for a portfolio.
@@ -66,19 +67,20 @@ def compute_risk_metrics(
         RiskMetrics dataclass with all computed values
     """
     if prices.empty or len(weights) == 0:
-        return _empty_risk_metrics()
+            return _empty_risk_metrics()
 
-    # Daily returns
-    returns = prices.pct_change().dropna()
-    if returns.empty:
-        return _empty_risk_metrics()
-
-    # Portfolio weighted returns
-    weights_arr = np.array(weights)
-    if abs(weights_arr.sum() - 1.0) > 0.01:
-        weights_arr = weights_arr / weights_arr.sum()  # normalize
-
-    portfolio_returns = returns.dot(weights_arr)
+    # Daily returns — use pre-computed portfolio_returns if provided
+    if portfolio_returns is not None:
+        if portfolio_returns.empty:
+            return _empty_risk_metrics()
+    else:
+        returns = prices.pct_change().dropna()
+        if returns.empty:
+            return _empty_risk_metrics()
+        weights_arr = np.array(weights)
+        if abs(weights_arr.sum() - 1.0) > 0.01:
+            weights_arr = weights_arr / weights_arr.sum()
+        portfolio_returns = returns.dot(weights_arr)
 
     # --- Volatility ---
     daily_vol = portfolio_returns.std()
@@ -203,21 +205,29 @@ def monte_carlo_simulation(
     n_simulations: int = 10000,
     horizon_days: int = 252,
     seed: int = 42,
-) -> MonteCarloResult:
+    return_paths: bool = False,
+    n_paths: int = 200,
+) -> MonteCarloResult | tuple[MonteCarloResult, np.ndarray]:
     """
     Forward-looking Monte Carlo simulation using Geometric Brownian Motion.
 
+    When return_paths=True, returns (MonteCarloResult, paths_array) where
+    paths_array has shape (horizon_days, min(n_paths, n_simulations)) with
+    values scaled to start at 100 (suitable for charting).
+
     Args:
         returns: Historical portfolio daily returns
-        n_simulations: Number of simulated paths
+        n_simulations: Number of simulated paths (for statistics)
         horizon_days: Trading days to project forward
         seed: Random seed for reproducibility
+        return_paths: If True, also return chart-ready path data
+        n_paths: Number of paths to return (thinned from full simulation)
 
     Returns:
-        MonteCarloResult with distribution statistics
+        MonteCarloResult, or (MonteCarloResult, np.ndarray) if return_paths=True
     """
     if returns.empty:
-        return MonteCarloResult(
+        empty_result = MonteCarloResult(
             n_simulations=n_simulations,
             horizon_days=horizon_days,
             expected_return=0.0,
@@ -229,6 +239,9 @@ def monte_carlo_simulation(
             ci_lower=0.0,
             ci_upper=0.0,
         )
+        if return_paths:
+            return empty_result, np.zeros((horizon_days, 0))
+        return empty_result
 
     mu = returns.mean()
     sigma = returns.std()
@@ -254,7 +267,7 @@ def monte_carlo_simulation(
     ci_lower = float(np.percentile(final, 5)) * 100
     ci_upper = float(np.percentile(final, 95)) * 100
 
-    return MonteCarloResult(
+    result = MonteCarloResult(
         n_simulations=n_simulations,
         horizon_days=horizon_days,
         expected_return=round(expected, 2),
@@ -267,20 +280,13 @@ def monte_carlo_simulation(
         ci_upper=round(ci_upper, 2),
     )
 
+    if return_paths:
+        n_out = min(n_paths, n_simulations)
+        step = max(1, n_simulations // n_out)
+        paths = cum_returns[:, ::step][:, :n_out] * 100
+        return result, paths
 
-def monte_carlo_paths(
-    returns: pd.Series,
-    n_simulations: int = 1000,
-    horizon_days: int = 252,
-    seed: int = 42,
-) -> np.ndarray:
-    """Return raw simulation paths for charting (shape: horizon_days x n_simulations)."""
-    mu = returns.mean()
-    sigma = returns.std()
-    rng = np.random.default_rng(seed)
-    drift = (mu - 0.5 * sigma**2)
-    shocks = sigma * rng.normal(0, 1, (horizon_days, n_simulations))
-    return np.exp(np.cumsum(drift + shocks, axis=0)) * 100
+    return result
 
 
 # ── Correlation Denoising (Marchenko-Pastur) ──

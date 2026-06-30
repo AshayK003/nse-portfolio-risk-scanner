@@ -34,8 +34,9 @@ class TestNormalizeTicker:
     def test_sensex_alias(self):
         assert normalize_ticker("SENSEX") == "^BSESN"
 
-    def test_bse_alias(self):
-        assert normalize_ticker("BSE") == "^BSESN"
+    def test_bse_stock_preserved(self):
+        """BSE Ltd is a stock, not an alias for SENSEX index."""
+        assert normalize_ticker("BSE") == "BSE.NS"
 
     def test_strips_eq_suffix(self):
         assert normalize_ticker("RELIANCE.EQ") == "RELIANCE.NS"

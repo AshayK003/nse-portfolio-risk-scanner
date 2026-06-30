@@ -1,7 +1,5 @@
 """Tests for sector classification module."""
 
-from unittest.mock import patch
-
 from engine import Holding
 from engine.sector import classify_holdings, compute_sector_exposure, load_sector_map
 
@@ -23,20 +21,11 @@ class TestClassifyHoldings:
         assert "TCS" in sector_map
         assert len(sector_map) > 50
 
-    def test_unknown_ticker_falls_back_to_yfinance(self):
+    def test_unknown_ticker_gets_unknown(self):
+        """Unknown tickers get 'Unknown' sector (no external API calls)."""
         holdings = [Holding(ticker="FAKECORP.NS", name="Fake", quantity=10, avg_price=100)]
-        with patch("yfinance.Ticker") as mock_ticker_cls:
-            mock_ticker_cls.return_value.info = {"sector": "Mystery Sector"}
-            result = classify_holdings(holdings)
-            assert result[0].sector == "Mystery Sector"
-
-    def test_unknown_ticker_yfinance_fails(self):
-        """When yfinance throws, sector becomes 'Unknown'."""
-        holdings = [Holding(ticker="FAKECORP.NS", name="Fake", quantity=10, avg_price=100)]
-        with patch("yfinance.Ticker") as mock_ticker_cls:
-            mock_ticker_cls.side_effect = Exception("network error")
-            result = classify_holdings(holdings)
-            assert result[0].sector == "Unknown"
+        result = classify_holdings(holdings)
+        assert result[0].sector == "Unknown"
 
     def test_custom_sector_map(self):
         custom = {"RELIANCE": "Custom Sector"}

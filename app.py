@@ -7,8 +7,12 @@ Engine has ZERO Streamlit imports. UI has ZERO business logic.
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 import pandas as pd
 import streamlit as st
+from loguru import logger
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
@@ -25,7 +29,6 @@ from engine.risk import (
     compute_correlation_matrix,
     compute_risk_metrics,
     denoise_correlation,
-    monte_carlo_paths,
     monte_carlo_simulation,
     rolling_volatility,
 )
@@ -122,10 +125,15 @@ with refresh_col2:
     force = st.checkbox("Force refresh prices", value=st.session_state.get("force_refresh", False), key="force_refresh")
 
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
-_input_hash = hash((
-    tuple((h.ticker, h.quantity, h.avg_price) for h in portfolio.holdings),
-    benchmark_choice,
-))
+_input_hash = hashlib.md5(
+    json.dumps(
+        {
+            "holdings": [(h.ticker, h.quantity, h.avg_price) for h in portfolio.holdings],
+            "benchmark": benchmark_choice,
+        },
+        sort_keys=True,
+    ).encode(),
+).hexdigest()
 
 _needs_compute = force or st.session_state.get("_last_input_hash") != _input_hash
 
@@ -162,15 +170,16 @@ if _needs_compute:
     with st.spinner("Fetching benchmark data..."):
         try:
             benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
-        except Exception:
-            benchmark_prices = pd.Series(dtype=float)
+    except Exception as e:
+        logger.warning("Benchmark fetch failed: {e}", e=e)
+        benchmark_prices = pd.Series(dtype=float)
 
     benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
     benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
 
     # Compute all risk metrics
     with st.spinner("Computing risk metrics..."):
-        risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns)
+        risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns)
         sector = compute_sector_exposure(portfolio.holdings)
         benchmark = (
             compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
@@ -184,9 +193,10 @@ if _needs_compute:
     # HRP Optimization
     opt_result = optimize_hrp(prices.pct_change().dropna()) if len(weights) >= 2 else None
 
-    # Monte Carlo simulation
-    mc_result = monte_carlo_simulation(portfolio_returns) if not portfolio_returns.empty else None
-    mc_paths = monte_carlo_paths(portfolio_returns, n_simulations=200) if not portfolio_returns.empty else None
+    # Monte Carlo simulation (stats + chart paths from single run)
+    mc_data = monte_carlo_simulation(portfolio_returns, return_paths=True, n_paths=200) if not portfolio_returns.empty else None
+    mc_result = mc_data[0] if mc_data else None
+    mc_paths = mc_data[1] if mc_data else None
 
     # HMM Regime detection
     regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty else None
@@ -359,8 +369,8 @@ if st.session_state.get("_report_changed", False):
 
         run = analysis_from_report(report)
         save_analysis_run(run)
-    except Exception:
-        pass  # non-critical — silently skip on DB error
+    except Exception as e:
+        logger.error("Failed to save analysis run: {e}", e=e)
 
 # ── Disclaimer ──
 st.markdown(

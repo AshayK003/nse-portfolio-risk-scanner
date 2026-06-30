@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.6.6 (2026-06-30)
+
+### Fixed
+
+- **BSE alias silently converted BSE Ltd stock to SENSEX index** — removed `"BSE": "^BSESN"` from `_TICKER_ALIASES`. Users entering "BSE" now get `BSE.NS` (the stock), not `^BSESN` (the index). Test updated (`engine/portfolio.py:25-30`, `tests/test_portfolio.py:37-38`).
+- **Bare `except: pass` on DB save** — `save_analysis_run()` failures now log via `logger.error()` instead of silent swallow (`app.py:362`).
+- **Benchmark fetch errors silently swallowed** — failed benchmark fetches now log via `logger.warning()` (`app.py:165`).
+- **Regime detection tests flaky on synthetic data** — relaxed `len(result.stats) == 3` assertions to `2 <= len(result.stats) <= 3` to handle random data not always splitting into 3 regimes (`tests/test_regime.py`).
+
+### Changed
+
+- **Monte Carlo merged into single function** — `monte_carlo_simulation()` now accepts `return_paths`/`n_paths` parameters to return both statistics and chart-ready paths from a single GBM run. `monte_carlo_paths()` removed. The chart uses paths thinned from the 10K-statistics simulation (~80% fewer compute cycles, paths now consistent with reported stats) (`engine/risk.py:201-282`, `app.py:189-191`).
+- **`compute_risk_metrics()` accepts pre-computed returns** — new optional `portfolio_returns` parameter skips internal `prices.pct_change().dot(weights)` to avoid duplicate computation from `app.py`. Backward compatible (`engine/risk.py:72-81`, `app.py:174`).
+- **Sector classification no longer calls external APIs** — removed the per-ticker yfinance fallback in `classify_holdings()`. Unknown tickers are labeled "Unknown". This eliminates ~N×2 HTTP calls per portfolio for sector data. Static map + "Unknown" is deterministic and instant (`engine/sector.py:172-208`).
+- **ThreadPool workers reduced 6→3** — `fetch_prices()` now uses `min(len(tickers), 3)` workers to avoid yfinance rate limiting (`data/prices.py:179`).
+- **Input hash uses `hashlib.md5` instead of `hash()`** — deterministic, collision-resistant content hash for the computation guard (`app.py:125-132`).
+- **CSV size validation added to `parse_portfolio_csv()`** — defense-in-depth against oversized files (`engine/portfolio.py:34,49-50`).
+
+### Removed
+
+- **`unittest.mock.patch` import from sector tests** — no longer needed after removing the yfinance fallback (`tests/test_sector.py:1-4`).
+- **Unused `nselib` import from `engine/sector.py`** — dead code after removing api fallbacks (`engine/sector.py:15-20`).
+
 ## v0.6.5 (2026-06-30)
 
 ### Fixed

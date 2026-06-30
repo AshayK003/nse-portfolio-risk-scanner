@@ -26,8 +26,10 @@ _TICKER_ALIASES = {
     "NIFTY": "^NSEI",
     "NIFTY50": "^NSEI",
     "SENSEX": "^BSESN",
-    "BSE": "^BSESN",
 }
+
+
+_MAX_CSV_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def parse_portfolio_csv(
@@ -44,6 +46,8 @@ def parse_portfolio_csv(
 
     Returns a validated Portfolio or raises ValueError.
     """
+    if len(csv_bytes) > _MAX_CSV_BYTES:
+        raise ValueError(f"CSV file exceeds maximum size of {_MAX_CSV_BYTES // (1024*1024)}MB")
     content = csv_bytes.decode("utf-8-sig")  # handle BOM
     reader = csv.DictReader(io.StringIO(content))
 
