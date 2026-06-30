@@ -93,3 +93,22 @@ class TestSuggestRebalance:
         holdings = [Holding(ticker="A.NS", name="A", quantity=100, avg_price=10, current_price=10)]
         result = suggest_rebalance(holdings, target_method="equal_weight")
         assert len(result.trades) >= 0
+
+    def test_action_buy_when_drift_exceeds_0_5pct(self):
+        holdings = [
+            Holding(ticker="A.NS", name="A", quantity=100, avg_price=10, current_price=10),
+            Holding(ticker="B.NS", name="B", quantity=100, avg_price=20, current_price=20),
+        ]
+        result = suggest_rebalance(holdings, target_method="equal_weight")
+        actions = {t["ticker"]: t["action"] for t in result.trades}
+        # A at 33.3% should be a buy toward 50%, B at 66.7% a sell toward 50%
+        assert actions == {"A": "buy", "B": "sell"}
+
+    def test_action_hold_when_drift_below_0_5pct(self):
+        holdings = [
+            Holding(ticker="A.NS", name="A", quantity=50, avg_price=10, current_price=10),
+            Holding(ticker="B.NS", name="B", quantity=50, avg_price=10, current_price=10),
+        ]
+        result = suggest_rebalance(holdings, target_method="equal_weight")
+        for t in result.trades:
+            assert t["action"] == "hold"

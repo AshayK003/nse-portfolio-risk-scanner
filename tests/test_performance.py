@@ -78,6 +78,12 @@ class TestComputeMaxDrawdown:
         assert "start" in result
         assert "end" in result
 
+    def test_max_drawdown_first_element_peak(self):
+        """Max drawdown peak at first element should not raise IndexError."""
+        prices = pd.Series([100, 95, 90, 85, 80], index=pd.date_range("2024-01-01", periods=5))
+        result = compute_max_drawdown(prices)
+        assert result["max_drawdown"] < 0
+
     def test_always_rising(self):
         """A monotonically increasing series should have 0 drawdown."""
         dates = pd.date_range(end="2024-01-01", periods=100, freq="B")

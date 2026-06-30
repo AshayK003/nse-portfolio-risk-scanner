@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.5 (2026-06-30)
+
+### Fixed
+
+- **Rebalance action threshold at 0.5% instead of 50%** — `suggest_rebalance()` compared raw decimal drift against `0.5` (meaning 50 percentage points). A 5% drift towards the target always showed "hold" instead of "buy"/"sell". Changed threshold to `0.005` (0.5 pp). The action column now correctly shows buy/sell for trades with >0.5% drift (`engine/optimization.py:217`).
+- **`compute_max_drawdown` potential IndexError** — when the peak preceding the maximum drawdown is at the first element, `cum[:end][...].index[0]` could fail. Added a guard that checks `peak.empty` before accessing `.index[0]` (`engine/performance.py:72`).
+- **Manual entry ignored `normalize_ticker`** — `render_manual_entry()` used a custom `.replace(".NS", "")` + re-add pattern instead of calling `normalize_ticker()`. Index aliases like "NIFTY" → `^NSEI` were not handled, and "LTD"/"EQ" suffixes were not stripped. Now imports and delegates to `normalize_ticker()` (`ui/upload.py:103`).
+
+### Changed
+
+- `ui/upload.py` — removed intermediate `all_holdings` list; emptiness check uses `csv_portfolio is None and not manual_holdings` directly.
+
+### Tests
+
+- Added `test_action_buy_when_drift_exceeds_0_5pct` — verifies buy/sell actions are assigned for >0.5% drift.
+- Added `test_action_hold_when_drift_below_0_5pct` — verifies "hold" when drift <0.5%.
+- Added `test_max_drawdown_first_element_peak` — verifies no IndexError when drawdown peak is at position 0.
+
 ## v0.6.4 (2026-06-30)
 
 ### Security

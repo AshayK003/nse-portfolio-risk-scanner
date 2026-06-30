@@ -97,12 +97,12 @@ def render_manual_entry() -> list[Holding]:
             if not ticker:
                 st.warning("Enter a ticker symbol.")
             else:
-                clean_ticker = ticker.replace(".NS", "")
-                if not clean_ticker.endswith(".NS"):
-                    clean_ticker = f"{clean_ticker}.NS"
+                from engine.portfolio import normalize_ticker
+
+                normalized = normalize_ticker(ticker)
                 new_holding = Holding(
-                    ticker=clean_ticker,
-                    name=ticker.replace(".NS", ""),
+                    ticker=normalized,
+                    name=ticker.strip().upper().replace(".NS", ""),
                     quantity=int(qty),
                     avg_price=round(price, 2),
                 )
@@ -158,14 +158,8 @@ def render_upload_tab() -> Portfolio | None:
     st.divider()
     manual_holdings = render_manual_entry()
 
-    # ── Combine sources ──
-    all_holdings = []
-    if csv_portfolio:
-        all_holdings.extend(csv_portfolio.holdings)
-    if manual_holdings:
-        all_holdings.extend(manual_holdings)
-
-    if not all_holdings:
+    # ── Check for any data before proceeding ──
+    if csv_portfolio is None and not manual_holdings:
         if st.session_state.get("portfolio") is not None:
             return st.session_state.portfolio
 
