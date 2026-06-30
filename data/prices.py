@@ -192,11 +192,13 @@ def fetch_prices(
             completed += 1
 
             try:
-                t, hist = future.result()
+                t, hist = future.result(timeout=120)
                 if hist is not None and "Close" in hist.columns:
                     all_prices[t] = hist["Close"]
                 else:
                     errors.append(t)
+            except TimeoutError:
+                errors.append(f"{ticker}: timeout (>120s)")
             except Exception as e:
                 errors.append(f"{ticker}: {e}")
 

@@ -137,13 +137,18 @@ def render_upload_tab() -> Portfolio | None:
         "Upload portfolio CSV",
         type="csv",
         help="Upload a CSV exported from Zerodha, Groww, or any broker. "
-        "Expected columns: ticker/symbol, quantity/qty, avg_price/price.",
+        "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
+        "Max file size: 10MB.",
     )
 
     csv_portfolio = None
     if uploaded is not None:
+        csv_bytes = uploaded.getvalue()
+        if len(csv_bytes) > 10 * 1024 * 1024:
+            st.error("File too large (max 10MB). Please upload a smaller CSV.")
+            st.stop()
+
         try:
-            csv_bytes = uploaded.getvalue()
             csv_portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
             st.success(f"Loaded {csv_portfolio.holding_count} holdings from {uploaded.name}.")
         except ValueError as e:

@@ -18,6 +18,9 @@ from . import Holding, Portfolio
 # Common NSE ticker suffixes to strip
 _TICKER_CLEANUP = re.compile(r"[\.\-–—\s]+(NS|NSE|BSE|EQ|LTD)$", re.IGNORECASE)
 
+# Max holdings to prevent resource exhaustion
+_MAX_HOLDINGS = 200
+
 # Known ticker corrections for common user input mistakes
 _TICKER_ALIASES = {
     "NIFTY": "^NSEI",
@@ -91,6 +94,9 @@ def parse_portfolio_csv(
             )
         except (ValueError, KeyError) as e:
             errors.append(f"Row {row_idx}: {e}")
+
+    if len(holdings) > _MAX_HOLDINGS:
+        raise ValueError(f"Portfolio exceeds max holdings ({_MAX_HOLDINGS}). Found {len(holdings)} rows.")
 
     if not holdings:
         msg = "No valid holdings found in CSV."

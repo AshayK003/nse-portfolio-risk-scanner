@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.6.4 (2026-06-30)
+
+### Security
+
+- **CSV file size limit (10MB)** — `ui/upload.py` now checks uploaded file size before parsing. Files >10MB are rejected with a user-facing error via `st.error()`. Prevents OOM or excessive memory allocation from crafted uploads (V1).
+- **Row limit on portfolio parsing** — `engine/portfolio.py` enforces `_MAX_HOLDINGS = 200`. Portfolios exceeding this raise `ValueError` with a clear message. Prevents unbounded resource consumption from oversized portfolios (V2).
+- **Per-ticker HTTP timeout (120s)** — `data/prices.py` wraps `future.result()` with `timeout=120`. A stuck yfinance ticker no longer blocks the entire parallel fetch indefinitely. Explicit `TimeoutError` caught separately (V3).
+- **Dependency upper bounds pinned** — all `pyproject.toml` deps now have major-version upper caps (`<2`, `<3`, etc.). Prevents unexpected breaking changes from future releases (V6).
+
+### Changed
+
+- `.streamlit/config.toml` — removed `runOnSave = true` from production config (V7).
+- `pyproject.toml` — all runtime dependencies pinned with upper version bounds.
+
 ## v0.6.3 (2026-06-30)
 
 ### Performance
