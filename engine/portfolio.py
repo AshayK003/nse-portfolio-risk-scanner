@@ -55,11 +55,17 @@ def parse_portfolio_csv(
         raise ValueError("CSV file is empty or has no header row")
 
     # Map column names (case-insensitive, flexible matching)
-    col_map = _build_column_map(reader.fieldnames)
+    col_map, matched_alias = _build_column_map(reader.fieldnames)
 
     holdings: list[Holding] = []
     errors: list[str] = []
     seen_tickers: set[str] = set()
+
+    # Detect if the "price" column is ambiguous (could be total cost, not per-share)
+    price_col = col_map.get("price", "")
+    price_col_lower = price_col.lower().strip() if price_col else ""
+    _AMBIGUOUS_PRICE_TERMS = ["cost", "total"]
+    is_ambiguous_price_col = any(w in price_col_lower for w in _AMBIGUOUS_PRICE_TERMS)
 
     for row_idx, row in enumerate(reader, start=2):  # 1-indexed, skip header
         try:
@@ -80,6 +86,15 @@ def parse_portfolio_csv(
             if price <= 0:
                 errors.append(f"Row {row_idx}: invalid avg price '{price_str}'")
                 continue
+
+            # Auto-correct: if the price column is ambiguous ("cost", "total")
+            # and avg_price looks like a total value (not per-share), divide by qty.
+            # Heuristic: if price > 10K (too high for a typical per-share price when qty>1)
+            # and price/qty gives a reasonable per-share price (< 10K), it's a total column.
+            if is_ambiguous_price_col and qty > 1 and price > 10000:
+                per_share = price / qty
+                if per_share < 10000:  # reasonable per-share price for most NSE stocks
+                    price = per_share
 
             name = row.get(col_map.get("name", ""), ticker).strip()
 
@@ -156,8 +171,29 @@ def validate_portfolio(portfolio: Portfolio) -> list[str]:
     return warnings
 
 
-def _build_column_map(fieldnames: list[str]) -> dict[str, str]:
-    """Build a case-insensitive column name mapping."""
+# Common currency suffixes to strip from column names before matching
+_CURRENCY_SUFFIXES = ["(₹)", "(rs)", "(inr)", "($)", "(rs.)"]
+
+
+def _clean_col_name(name: str) -> str:
+    """Strip common currency suffixes for alias matching."""
+    name = name.lower().strip()
+    for suffix in _CURRENCY_SUFFIXES:
+        if name.endswith(suffix):
+            name = name[: -len(suffix)].strip()
+            break
+    return name
+
+
+def _build_column_map(fieldnames: list[str]) -> tuple[dict[str, str], dict[str, str]]:
+    """Build a case-insensitive column name mapping.
+
+    Matches in order: exact match (lowercase+stripped) first,
+    then currency-suffix-stripped match, then positional fallback.
+
+    Returns (col_map, matched_alias) where matched_alias records which
+    alias was used for each key (for downstream disambiguation).
+    """
     candidates = {
         "ticker": ["ticker", "symbol", "stock", "scrip", "isin"],
         "quantity": ["quantity", "qty", "shares", "holdings"],
@@ -166,27 +202,35 @@ def _build_column_map(fieldnames: list[str]) -> dict[str, str]:
             "avg price",
             "average price",
             "average cost",
+            "avg cost",
             "buy_price",
             "buy price",
-            "cost",
+            "atp",
             "price",
+            "cost",
         ],
         "name": ["name", "company", "company name", "security"],
     }
 
     col_map: dict[str, str] = {}
+    matched_alias: dict[str, str] = {}
     normalized_fields = {f.lower().strip(): f for f in fieldnames}
+    clean_fields = {_clean_col_name(f): f for f in fieldnames}
 
     for key, aliases in candidates.items():
         for alias in aliases:
             if alias in normalized_fields:
                 col_map[key] = normalized_fields[alias]
+                matched_alias[key] = alias
+                break
+            if alias in clean_fields:
+                col_map[key] = clean_fields[alias]
+                matched_alias[key] = alias
                 break
 
     required = ["ticker", "quantity", "price"]
     missing = [r for r in required if r not in col_map]
     if missing:
-        # Best-effort: try first 3 columns as ticker/qty/price
         if len(fieldnames) >= 3:
             col_map["ticker"] = fieldnames[0]
             col_map["quantity"] = fieldnames[1]
@@ -198,7 +242,7 @@ def _build_column_map(fieldnames: list[str]) -> dict[str, str]:
                 f"Got: {fieldnames}"
             )
 
-    return col_map
+    return col_map, matched_alias
 
 
 def _parse_float(s: str) -> float:

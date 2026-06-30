@@ -161,6 +161,44 @@ class TestParsePortfolio:
         )
         assert portfolio.holdings[1].avg_price == 3500.0
 
+    def test_atp_alias(self):
+        """CSV with 'ATP' column uses it as avg_price."""
+        csv = b"Symbol,Qty,ATP,Price\nRELIANCE,10,2500,2750\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_atp_with_currency_suffix(self):
+        """'ATP (₹)' column is matched via suffix stripping."""
+        csv = "Stock,Shares,ATP (₹),Cost (₹),Price (₹)\nRELIANCE,10,2500,25000,2750\n".encode("utf-8")
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_price_preferred_over_cost(self):
+        """With both 'Price' and 'Cost', prefer 'Price' (less ambiguous).
+        'Price' is usually current LTP not avg buy price, but it's a far
+        better approximation than using a total-cost column as per-share."""
+        csv = b"Symbol,Qty,Price,Cost\nRELIANCE,10,2750,25000\n"
+        portfolio = parse_portfolio_csv(csv)
+        # 'price' alias comes before 'cost', so 'Price' column is used
+        assert portfolio.holdings[0].avg_price == 2750.0
+
+    def test_cost_total_auto_corrected(self):
+        """When 'Cost' column has total values (only price column), auto-correct divides by qty."""
+        csv = b"Symbol,Qty,Cost\nRELIANCE,10,25000\nTCS,5,17500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0, (
+            "25000 (total) / 10 (qty) = 2500, "
+            f"got {portfolio.holdings[0].avg_price}"
+        )
+        assert portfolio.holdings[1].avg_price == 3500.0
+
+    def test_cost_per_share_not_corrected(self):
+        """When 'Cost' has reasonable per-share values, auto-correct doesn't trigger."""
+        csv = b"Symbol,Qty,Cost\nRELIANCE,1,2500\nTCS,5,3500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0  # qty=1, check bypassed
+        assert portfolio.holdings[1].avg_price == 3500.0  # 3500 < 10000, bypassed
+
     def test_three_column_fallback(self):
         """Unrecognized headers with exactly 3 columns -> best-effort mapping."""
         csv = b"col1,col2,col3\nRELIANCE,10,2500\n"
