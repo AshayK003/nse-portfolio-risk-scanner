@@ -1,7 +1,6 @@
 """
-Refined premium dark theme for the NSE Portfolio Risk Scanner.
+Premium stock-market dark theme — red/green/grey palette.
 Injected via st.markdown with unsafe_allow_html=True.
-Shadcn-inspired aesthetic via pure CSS on native Streamlit elements.
 """
 
 import streamlit as st
@@ -22,24 +21,37 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.6;
 }
 
-/* ── Metric Cards (shadcn-inspired) ── */
+/* ── Metric Cards (premium stock-market style) ── */
 div[data-testid="metric-container"] {
-    background: linear-gradient(135deg, #181b2e 0%, #1e2238 100%);
-    border: 1px solid #2a2d42;
+    background: linear-gradient(135deg, #12162a 0%, #181d35 100%);
+    border: 1px solid #252a45;
     border-radius: 12px;
     padding: 1.2rem 1.25rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.02) inset;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+div[data-testid="metric-container"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    border-radius: 12px 0 0 12px;
+    background: #6b7280;
+    opacity: 0.5;
 }
 div[data-testid="metric-container"]:hover {
-    border-color: rgba(59,130,246,0.4);
-    box-shadow: 0 4px 20px rgba(59,130,246,0.08), 0 0 0 1px rgba(59,130,246,0.12) inset;
+    border-color: rgba(220,38,38,0.35);
+    box-shadow: 0 6px 24px rgba(220,38,38,0.08), 0 0 0 1px rgba(220,38,38,0.10) inset;
     transform: translateY(-1px);
 }
 div[data-testid="metric-container"] label {
     color: #7e8ba3 !important;
-    font-size: 0.75rem !important;
-    font-weight: 500 !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     line-height: 1.4;
@@ -51,25 +63,43 @@ div[data-testid="metric-container"] div[data-testid="metric-value"] {
     letter-spacing: -0.02em;
     line-height: 1.3;
 }
+/* Delta colors: Streamlit renders deltas with [data-testid="stMetricDelta"] */
+div[data-testid="metric-container"] [data-testid="stMetricDelta"] {
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+}
 
 /* ── Custom Metric Cards ── */
 .custom-metric-card {
-    background: linear-gradient(135deg, #181b2e 0%, #1e2238 100%);
-    border: 1px solid #2a2d42;
+    background: linear-gradient(135deg, #12162a 0%, #181d35 100%);
+    border: 1px solid #252a45;
     border-radius: 12px;
     padding: 1.2rem 1.25rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+.custom-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    border-radius: 12px 0 0 12px;
+    background: #6b7280;
+    opacity: 0.5;
 }
 .custom-metric-card:hover {
-    border-color: rgba(59,130,246,0.4);
-    box-shadow: 0 4px 20px rgba(59,130,246,0.08), 0 0 0 1px rgba(59,130,246,0.12) inset;
+    border-color: rgba(220,38,38,0.35);
+    box-shadow: 0 6px 24px rgba(220,38,38,0.08), 0 0 0 1px rgba(220,38,38,0.10) inset;
     transform: translateY(-1px);
 }
 .custom-metric-card .card-label {
     color: #7e8ba3;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.72rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     line-height: 1.4;
@@ -88,12 +118,12 @@ div[data-testid="metric-container"] div[data-testid="metric-value"] {
     margin-top: 4px;
 }
 .custom-metric-card .card-delta-positive {
-    color: #4ade80;
+    color: #29c76a;
     font-size: 0.8rem;
     font-weight: 600;
 }
 .custom-metric-card .card-delta-negative {
-    color: #f87171;
+    color: #ef4444;
     font-size: 0.8rem;
     font-weight: 600;
 }
@@ -119,38 +149,39 @@ div[data-baseweb="notification"] {
     letter-spacing: 0.01em;
 }
 .stButton button:hover {
-    box-shadow: 0 4px 16px rgba(59,130,246,0.25);
+    box-shadow: 0 4px 16px rgba(220,38,38,0.20);
 }
 .stButton button:active {
     transform: scale(0.98);
 }
 .stButton button:focus-visible {
-    outline: 2px solid #3b82f6 !important;
+    outline: 2px solid #dc2626 !important;
     outline-offset: 2px;
     box-shadow: none !important;
 }
 
 /* ── Focus indicators (global) ── */
 :focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid #dc2626;
     outline-offset: 2px;
 }
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.4);
+    box-shadow: 0 0 0 2px rgba(220,38,38,0.35);
 }
 
 /* ── Data Editor & Table ── */
 div[data-testid="stDataFrame"] {
     border-radius: 10px !important;
     overflow: hidden;
-    border: 1px solid #282b40;
+    border: 1px solid #252a45;
     font-size: 0.85rem;
+    background: #0e1124;
 }
 div[data-testid="stDataFrame"] thead tr th {
-    background: #181b2e !important;
+    background: #12162a !important;
     color: #7e8ba3 !important;
     font-size: 0.72rem !important;
     text-transform: uppercase;
@@ -160,40 +191,40 @@ div[data-testid="stDataFrame"] thead tr th {
 
 /* ── Expander ── */
 .streamlit-expanderHeader {
-    background: #181b2e !important;
+    background: #12162a !important;
     border-radius: 10px !important;
-    border: 1px solid #282b40 !important;
+    border: 1px solid #252a45 !important;
     font-weight: 500 !important;
     font-size: 0.9rem !important;
     transition: border-color 0.15s ease !important;
 }
 .streamlit-expanderHeader:hover {
-    border-color: rgba(59,130,246,0.35) !important;
+    border-color: rgba(220,38,38,0.30) !important;
 }
 
-/* ── Tabs (shadcn-inspired line variant) ── */
+/* ── Tabs (line variant, red accent) ── */
 button[data-baseweb="tab"] {
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
     padding: 0.5rem 0.75rem !important;
     transition: color 0.15s ease !important;
     letter-spacing: 0.01em;
 }
 button[data-baseweb="tab"]:hover {
-    color: #94a3b8 !important;
+    color: #9ca3af !important;
 }
 button[data-baseweb="tab"][aria-selected="true"] {
-    color: #60a5fa !important;
+    color: #ef4444 !important;
 }
 div[data-baseweb="tab-border"] {
-    background: #60a5fa !important;
+    background: #ef4444 !important;
     height: 2px !important;
 }
 
 /* ── Sidebar ── */
 section[data-testid="stSidebar"] {
-    background: #0c0f19 !important;
-    border-right: 1px solid #1a1d30 !important;
+    background: #0a0d1a !important;
+    border-right: 1px solid #181d30 !important;
 }
 section[data-testid="stSidebar"] .sidebar-content {
     padding-top: 1.5rem;
@@ -205,15 +236,15 @@ section[data-testid="stSidebar"] .stSelectbox label {
 
 /* ── File Uploader ── */
 div[data-testid="stFileUploader"] {
-    border: 1.5px dashed #2a2d42;
+    border: 1.5px dashed #252a45;
     border-radius: 12px;
     padding: 1.5rem;
-    background: #0e111f;
+    background: #0a0d1a;
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 div[data-testid="stFileUploader"]:hover {
-    border-color: rgba(59,130,246,0.5);
-    background: #111426;
+    border-color: rgba(220,38,38,0.40);
+    background: #0e1124;
 }
 
 /* ── Selectbox ── */
@@ -223,7 +254,7 @@ div[data-baseweb="select"] {
 
 /* ── Spinner ── */
 .stSpinner > div {
-    border-color: #60a5fa !important;
+    border-color: #ef4444 !important;
 }
 
 /* ── Icon inline styling ── */
@@ -249,16 +280,16 @@ div[data-baseweb="select"] {
     font-weight: 500;
     letter-spacing: 0.01em;
 }
-.badge-green { background: rgba(34,197,94,0.12); color: #4ade80; }
-.badge-red { background: rgba(239,68,68,0.12); color: #f87171; }
-.badge-blue { background: rgba(59,130,246,0.12); color: #60a5fa; }
-.badge-yellow { background: rgba(234,179,8,0.12); color: #facc15; }
+.badge-green { background: rgba(34,197,94,0.12); color: #29c76a; }
+.badge-red { background: rgba(239,68,68,0.12); color: #ef4444; }
+.badge-grey { background: rgba(107,114,128,0.12); color: #9ca3af; }
+.badge-yellow { background: rgba(234,179,8,0.12); color: #eab308; }
 
 /* ── Empty State ── */
 .empty-state {
     text-align: center;
     padding: 3rem 2rem;
-    color: #94a3b8;
+    color: #9ca3af;
 }
 .empty-state-icon {
     font-size: 3rem;
@@ -295,33 +326,39 @@ div[data-baseweb="select"] {
     color: #5a6680;
     font-size: 0.72rem;
     padding: 1.5rem 0 0.5rem;
-    border-top: 1px solid #1a1d30;
+    border-top: 1px solid #181d30;
     margin-top: 2rem;
 }
 .app-footer a {
-    color: #60a5fa;
+    color: #9ca3af;
     text-decoration: none;
 }
 .app-footer a:hover {
+    color: #ef4444;
     text-decoration: underline;
 }
 
 /* ── Disclaimer details ── */
 details {
-    border: 1px solid #282b40;
+    border: 1px solid #252a45;
     border-radius: 10px;
     padding: 0.75rem 1rem;
-    background: #0e111f;
+    background: #0a0d1a;
 }
 
-/* ── Progress bar ── */
+/* ── Progress bar (stock-market gradient: green → yellow → red) ── */
 .stProgress > div > div > div {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa) !important;
+    background: linear-gradient(90deg, #16a34a, #eab308, #dc2626) !important;
 }
 
 /* ── Subheader consistency ── */
 .stSubheader {
     letter-spacing: -0.01em;
+}
+
+/* ── Data editor rows ── */
+div[data-testid="stDataFrame"] tbody tr:hover {
+    background: rgba(220,38,38,0.04) !important;
 }
 
 /* ── Reduced motion ── */

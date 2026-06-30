@@ -21,7 +21,7 @@ def sector_treemap(sector_allocation: dict[str, float]) -> go.Figure:
         parents=[""] * len(labels),
         values=values,
         color=values,
-        color_continuous_scale="RdYlGn",
+        color_continuous_scale=["#29c76a", "#eab308", "#ef4444"],
         title="Sector Allocation",
     )
     fig.update_traces(textinfo="label+percent root", hovertemplate="%{label}<br>%{value:.1f}%")
@@ -37,8 +37,8 @@ def drawdown_chart(drawdown_series: pd.Series) -> go.Figure:
             x=drawdown_series.index,
             y=drawdown_series * 100,
             fill="tozeroy",
-            fillcolor="rgba(255, 80, 80, 0.3)",
-            line=dict(color="red", width=1),
+            fillcolor="rgba(239, 68, 68, 0.20)",
+            line=dict(color="#ef4444", width=1.5),
             name="Drawdown",
             hovertemplate="%{x|%b %Y}<br>%{y:.1f}%",
         )
@@ -65,7 +65,7 @@ def benchmark_chart(
         go.Scatter(
             x=portfolio_cum.index,
             y=(portfolio_cum - 1) * 100,
-            line=dict(color="#0066cc", width=2),
+            line=dict(color="#29c76a", width=2.5),
             name="Portfolio",
             hovertemplate="%{x|%b %Y}<br>%{y:.1f}%",
         )
@@ -74,7 +74,7 @@ def benchmark_chart(
         go.Scatter(
             x=benchmark_cum.index,
             y=(benchmark_cum - 1) * 100,
-            line=dict(color="#ff6600", width=2, dash="dash"),
+            line=dict(color="#6b7280", width=2, dash="dash"),
             name="Nifty 50",
             hovertemplate="%{x|%b %Y}<br>%{y:.1f}%",
         )
@@ -95,7 +95,7 @@ def correlation_heatmap(corr_matrix: pd.DataFrame) -> go.Figure:
     fig = px.imshow(
         corr_matrix,
         text_auto=".2f",
-        color_continuous_scale="RdBu_r",
+        color_continuous_scale=["#29c76a", "#f1f5f9", "#ef4444"],
         aspect="auto",
         title="Correlation Matrix",
         zmin=-1,
@@ -114,14 +114,14 @@ def volatility_gauge(volatility: float) -> go.Figure:
             title={"text": "Annual Volatility (%)"},
             gauge={
                 "axis": {"range": [0, 80]},
-                "bar": {"color": "#0066cc"},
+                "bar": {"color": "#ef4444"},
                 "steps": [
-                    {"range": [0, 15], "color": "#d4f5d4"},
-                    {"range": [15, 30], "color": "#fdf5d4"},
-                    {"range": [30, 80], "color": "#f5d4d4"},
+                    {"range": [0, 15], "color": "rgba(41,199,106,0.2)"},
+                    {"range": [15, 30], "color": "rgba(234,179,8,0.2)"},
+                    {"range": [30, 80], "color": "rgba(239,68,68,0.2)"},
                 ],
                 "threshold": {
-                    "line": {"color": "red", "width": 2},
+                    "line": {"color": "#dc2626", "width": 2},
                     "thickness": 0.75,
                     "value": volatility,
                 },
@@ -145,7 +145,7 @@ def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.
                 x=list(range(paths.shape[0])),
                 y=paths[:, i],
                 mode="lines",
-                line=dict(width=0.5, color="rgba(0,102,204,0.1)"),
+                line=dict(width=0.5, color="rgba(41,199,106,0.08)"),
                 showlegend=False,
                 hovertemplate="%{y:.1f}",
             )
@@ -167,7 +167,7 @@ def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.
             x=list(range(paths.shape[0])),
             y=lower,
             fill="tonexty",
-            fillcolor="rgba(0,102,204,0.15)",
+            fillcolor="rgba(41,199,106,0.12)",
             mode="lines",
             line=dict(width=0, color="rgba(0,0,0,0)"),
             name="5th-95th percentile",
@@ -178,7 +178,7 @@ def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.
             x=list(range(paths.shape[0])),
             y=median,
             mode="lines",
-            line=dict(width=2, color="#0066cc"),
+            line=dict(width=2, color="#29c76a"),
             name="Median",
             hovertemplate="Day %{x}<br>%{y:.1f}",
         )
@@ -197,7 +197,7 @@ def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.
 def regime_chart(returns: pd.Series, state_sequence: list, colors: dict | None = None) -> go.Figure:
     """Portfolio returns colored by market regime."""
     if colors is None:
-        colors = {"Bull": "#00cc66", "Neutral": "#ffaa00", "Bear": "#ff4444"}
+        colors = {"Bull": "#29c76a", "Neutral": "#9ca3af", "Bear": "#ef4444"}
     fig = go.Figure()
     unique_states = sorted(set(state_sequence))
     for state in unique_states:
@@ -230,13 +230,16 @@ def allocation_pie(weights: dict[str, float], title: str = "Allocation") -> go.F
     tickers = list(weights.keys())
     values = list(weights.values())
     cleaned = [t.replace(".NS", "") for t in tickers]
+    # Stock-market palette: greens, greys, muted reds
+    stock_colors = ["#29c76a", "#6b7280", "#ef4444", "#eab308", "#8b5cf6",
+                    "#14b8a6", "#f97316", "#3b82f6", "#ec4899", "#84cc16"]
     fig = go.Figure(
         go.Pie(
             labels=cleaned,
             values=values,
             textinfo="label+percent",
             hole=0.4,
-            marker=dict(colors=px.colors.qualitative.Set2[: len(tickers)]),
+            marker=dict(colors=stock_colors[: len(tickers)]),
         )
     )
     fig.update_layout(
