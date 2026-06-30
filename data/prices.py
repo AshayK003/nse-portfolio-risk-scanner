@@ -194,7 +194,10 @@ def fetch_prices(
             try:
                 t, hist = future.result(timeout=120)
                 if hist is not None and "Close" in hist.columns:
-                    all_prices[t] = hist["Close"]
+                    series = hist["Close"]
+                    if series.index.tz is not None:
+                        series = series.tz_localize(None)
+                    all_prices[t] = series
                 else:
                     errors.append(t)
             except TimeoutError:
