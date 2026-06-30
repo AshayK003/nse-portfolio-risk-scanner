@@ -98,7 +98,7 @@ def _inverse_variance(cov: np.ndarray) -> np.ndarray:
     return inv_diag / inv_diag.sum()
 
 
-def optimize_min_volatility(returns: pd.DataFrame) -> OptimizationResult:
+def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065) -> OptimizationResult:
     """Minimum volatility portfolio (SciPy constrained optimization)."""
     from scipy.optimize import minimize
 
@@ -120,7 +120,7 @@ def optimize_min_volatility(returns: pd.DataFrame) -> OptimizationResult:
     w = w / w.sum()
     port_ret = w @ (returns.mean().values * 252)
     port_vol = portfolio_vol(w)
-    sharpe = port_ret / port_vol if port_vol > 0 else 0.0
+    sharpe = (port_ret - risk_free_rate) / port_vol if port_vol > 0 else 0.0
 
     return OptimizationResult(
         method="min_volatility",

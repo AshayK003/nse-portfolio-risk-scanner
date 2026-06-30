@@ -77,8 +77,8 @@ def compute_sortino_ratio(
     """Annualized Sortino ratio (uses downside deviation)."""
     daily_rf = risk_free_rate / 252
     excess_mean = portfolio_returns.mean() - daily_rf
-    downside = portfolio_returns[portfolio_returns < 0]
-    downside_vol = downside.std() * np.sqrt(252) if len(downside) > 0 else 1e-10
+    downside = np.minimum(0, portfolio_returns - daily_rf)
+    downside_vol = np.sqrt(np.mean(downside**2)) * np.sqrt(252) if len(downside) > 0 else 1e-10
     return round((excess_mean * 252) / downside_vol, 2)
 
 

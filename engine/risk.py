@@ -114,8 +114,8 @@ def compute_risk_metrics(
     sharpe = np.sqrt(252) * excess_returns.mean() / daily_vol if daily_vol > 0 else 0.0
 
     # --- Sortino Ratio ---
-    downside = portfolio_returns[portfolio_returns < 0]
-    downside_vol = downside.std() * np.sqrt(252) if len(downside) > 0 else 1e-10
+    downside = np.minimum(0, portfolio_returns - daily_rf)
+    downside_vol = np.sqrt(np.mean(downside**2)) * np.sqrt(252) if len(downside) > 0 else 1e-10
     annual_excess = (portfolio_returns.mean() - daily_rf) * 252
     sortino = annual_excess / downside_vol if downside_vol > 0 else 0.0
 
@@ -301,6 +301,9 @@ def denoise_correlation(corr: pd.DataFrame, n_samples: int) -> pd.DataFrame:
     Eigenvalues above the MP bound are retained; those below are averaged
     to reduce noise while preserving signal.
 
+    Requires n_samples > n_features (q < 1) for a meaningful MP bound.
+    When q >= 1, returns the original matrix unchanged.
+
     Args:
         corr: Empirical correlation matrix
         n_samples: Number of observations used to estimate the matrix
@@ -312,6 +315,10 @@ def denoise_correlation(corr: pd.DataFrame, n_samples: int) -> pd.DataFrame:
         return corr
 
     n = corr.shape[0]
+    q = n / n_samples if n_samples > 0 else 1.0
+    if q >= 1:
+        return corr  # MP bound is meaningless — return as-is
+
     values, vectors = np.linalg.eigh(corr.values)
     mp_bound = _marchenko_pastur_bound(n, n_samples)
 
