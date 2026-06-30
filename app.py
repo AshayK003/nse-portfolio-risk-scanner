@@ -170,9 +170,9 @@ if _needs_compute:
     with st.spinner("Fetching benchmark data..."):
         try:
             benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
-    except Exception as e:
-        logger.warning("Benchmark fetch failed: {e}", e=e)
-        benchmark_prices = pd.Series(dtype=float)
+        except Exception as e:
+            logger.warning("Benchmark fetch failed: {e}", e=e)
+            benchmark_prices = pd.Series(dtype=float)
 
     benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
     benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
