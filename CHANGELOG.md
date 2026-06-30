@@ -1,6 +1,10 @@
 # Changelog
 
-## v0.7.0 (2026-06-30)
+## v0.7.1 (2026-06-30)
+
+### Changed
+
+- **UI makeover — shadcn-inspired CSS refinement** — completely overhauled `ui/styles.py` with refined dark theme CSS. Metric cards now use subtle gradient backgrounds, smoother hover transitions with `translateY(-1px)` lift, refined border colors, and improved typography scale. Tab styling updated to line-variant with blue accent indicator. Buttons get hover shadow + active press `scale(0.98)` feedback. File uploader gets background shift on hover. Added custom metric card CSS classes (`.custom-metric-card`) for future rich card components. Section header, progress bar gradient, disclaimer `details` container, and spinner color styled for design consistency. All visual — zero functional changes. 268/268 tests pass, zero new dependencies.
 
 ### Added
 
