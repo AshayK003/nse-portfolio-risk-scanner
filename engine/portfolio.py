@@ -194,6 +194,15 @@ def parse_portfolio_csv(
             current_price_str = row.get(col_map.get("current_price", ""), "").strip()
             current_price = _parse_float(current_price_str) if current_price_str else 0.0
 
+            # Fallback: if no current_price column but total_value exists,
+            # compute current_price = total_value / qty
+            if current_price <= 0 and "total_value" in col_map:
+                tv_str = row.get(col_map["total_value"], "").strip()
+                if tv_str:
+                    tv = _parse_float(tv_str)
+                    if tv > 0 and qty > 0:
+                        current_price = tv / qty
+
             name = row.get(col_map.get("name", ""), ticker).strip()
 
             if ticker in seen_tickers:
@@ -461,6 +470,8 @@ def _resolve_column_map(
     }
     if cur_col and cur_col != price_col:
         col_map["current_price"] = cur_col
+    if val_col and val_col != price_col and val_col != cur_col:
+        col_map["total_value"] = val_col
     if name_col:
         col_map["name"] = name_col
 
