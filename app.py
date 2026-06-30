@@ -13,11 +13,12 @@ import streamlit as st
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
-from engine.optimization import optimize_hrp
+from engine.optimization import optimize_hrp, suggest_rebalance
 from engine.performance import (
     compute_max_drawdown,
     compute_portfolio_returns,
 )
+from engine.scenario import run_default_scenarios
 from engine.portfolio import validate_portfolio
 from engine.regime import detect_regimes
 from engine.risk import (
@@ -43,8 +44,10 @@ from ui.dashboard import (
     render_metric_row,
     render_monte_carlo_section,
     render_optimization_section,
+    render_rebalance_section,
     render_regime_section,
     render_risk_cards,
+    render_scenario_section,
     render_sector_section,
     render_stock_table,
 )
@@ -182,6 +185,21 @@ regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty
 # Correlation denoising
 denoised_corr = denoise_correlation(raw_corr, len(portfolio_returns)) if not portfolio_returns.empty else None
 
+# Per-holding betas for scenario analysis
+stock_betas: dict[str, float] = {}
+if benchmark_returns is not None and not prices.empty:
+    returns = prices.pct_change().dropna()
+    for col in returns.columns:
+        aligned = pd.concat([returns[col], benchmark_returns], axis=1, join="inner").dropna()
+        if len(aligned) > 5:
+            cov = aligned.iloc[:, 0].cov(aligned.iloc[:, 1])
+            var = aligned.iloc[:, 1].var()
+            stock_betas[col] = round(cov / var, 2) if var > 0 else 1.0
+        else:
+            stock_betas[col] = 1.0
+
+scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
+rebalance = suggest_rebalance(portfolio.holdings) if portfolio.holding_count >= 1 else None
 
 # Store in session
 st.session_state.report = AnalysisReport(
@@ -201,7 +219,7 @@ report = st.session_state.report
 render_metric_row(report.portfolio, report.risk)
 
 # Tabs
-tab_names = ["Risk Metrics", "Sector", "vs Nifty 50", "Charts", "Holdings", "Export", "Optimization", "Regime"]
+tab_names = ["Risk Metrics", "Sector", "vs Nifty 50", "Charts", "Holdings", "Export", "Optimization", "Regime", "Scenario"]
 tabs = st.tabs(tab_names)
 
 with tabs[0]:
@@ -268,11 +286,15 @@ with tabs[5]:
 
 with tabs[6]:
     render_optimization_section(opt_result, portfolio=report.portfolio)
+    render_rebalance_section(rebalance)
 
 with tabs[7]:
     render_regime_section(regime_result)
     if regime_result:
         st.plotly_chart(regime_chart(portfolio_returns, regime_result.state_sequence), use_container_width=True, key="regime_chart")
+
+with tabs[8]:
+    render_scenario_section(scenarios)
 
 # ── Step 5: Save analysis run to history ──
 try:

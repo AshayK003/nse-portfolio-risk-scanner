@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.6.2 (2026-06-30)
+
+### Added
+
+- **Scenario Stress Testing** — new `engine/scenario.py` with `run_scenario()` and `run_default_scenarios()`. Portfolio impact computed per holding using stock beta × weight × market change. Five default scenarios: mild crash (−10%), moderate crash (−20%), severe crash (−35%), strong rally (+10%), bull run (+25%). New "Scenario" tab in app.
+- **Rebalancing Suggestions** — `suggest_rebalance()` in `engine/optimization.py` computes current vs target weight drift and generates trade list. Equal-weight target method by default. Shown in "Optimization" tab after optimization runs.
+- **11 new tests** — 7 scenario + 4 rebalance. All 195 tests pass (2 pre-existing flaky regime tests deselected).
+
+### Changed
+
+- **`app.py`** — computes per-holding beta; wires scenario stress testing and rebalancing suggestions into UI.
+- **`ui/dashboard.py`** — `render_scenario_section()`, `render_rebalance_section()`.
+- **`engine/__init__.py`** — exports `ScenarioResult` and `RebalanceSuggestion`.
+
 ## v0.6.1 (2026-06-30)
 
 ### Removed

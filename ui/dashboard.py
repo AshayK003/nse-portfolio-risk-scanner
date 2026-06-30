@@ -13,8 +13,10 @@ from engine import (
     MonteCarloResult,
     OptimizationResult,
     Portfolio,
+    RebalanceSuggestion,
     RegimeResult,
     RiskMetrics,
+    ScenarioResult,
     SectorExposure,
 )
 
@@ -269,3 +271,63 @@ def render_regime_section(regime: RegimeResult | None) -> None:
         for i, label in enumerate(regime.labels):
             trans_rows.append({"From \\ To": label, **{regime.labels[j]: f"{trans[i][j]:.1%}" for j in range(len(regime.labels))}})
         st.dataframe(trans_rows, use_container_width=True, hide_index=True)
+
+
+def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
+    """Display scenario / stress test results."""
+    st.subheader("Scenario Analysis")
+    if not scenarios:
+        st.info("Scenario analysis requires benchmark data. Select a benchmark index to enable.")
+        return
+
+    st.caption("Estimated portfolio impact under different market scenarios, based on each holding's beta.")
+    cols = st.columns(len(scenarios))
+    for i, s in enumerate(scenarios):
+        with cols[i]:
+            delta_color = "normal" if s.portfolio_impact_pct >= 0 else "inverse"
+            st.metric(
+                s.name,
+                f"{s.portfolio_impact_pct:+.1f}%",
+                delta_color=delta_color,
+            )
+
+    with st.expander("Per-holding impact details"):
+        for s in scenarios:
+            st.markdown(f"**{s.name}**")
+            rows = []
+            for h in s.holding_impacts:
+                rows.append({
+                    "Ticker": h["ticker"],
+                    "Weight": f"{h['weight_pct']:.0f}%",
+                    "Beta": h["beta"],
+                    "Est. Impact": f"{h['impact_pct']:+.1f}%",
+                    "Impact (Rs)": f"Rs {h['impact_rs']:,.0f}",
+                })
+            if rows:
+                st.dataframe(rows, use_container_width=True, hide_index=True)
+            st.divider()
+
+
+def render_rebalance_section(rebalance: RebalanceSuggestion | None) -> None:
+    """Display portfolio rebalancing suggestions."""
+    st.subheader("Rebalancing Suggestions")
+    if rebalance is None or not rebalance.trades:
+        st.info("Add holdings to see rebalancing suggestions.")
+        return
+
+    target_labels = {"equal_weight": "Equal Weight", "current_cap": "Current Cap"}
+    st.caption(f"Target: {target_labels.get(rebalance.target_method, rebalance.target_method)}")
+    st.metric("Total Drift", f"{rebalance.total_drift_pct:.1f}%", delta_color="inverse")
+
+    rows = []
+    for t in rebalance.trades:
+        action_icon = "🟢" if t["action"] == "buy" else ("🔴" if t["action"] == "sell" else "⚪")
+        rows.append({
+            "Ticker": t["ticker"],
+            "Current": f"{t['current_w_pct']:.0f}%",
+            "Target": f"{t['target_w_pct']:.0f}%",
+            "Drift": f"{t['drift_pct']:+.1f}%",
+            "Action": f"{action_icon} {t['action'].title()}",
+            "Change (Rs)": f"Rs {t['change_rs']:+,.0f}",
+        })
+    st.dataframe(rows, use_container_width=True, hide_index=True)

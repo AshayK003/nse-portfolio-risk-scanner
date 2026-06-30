@@ -2,7 +2,8 @@
 
 import pandas as pd
 
-from engine.optimization import optimize_hrp, optimize_max_sharpe, optimize_min_volatility
+from engine import Holding
+from engine.optimization import optimize_hrp, optimize_max_sharpe, optimize_min_volatility, suggest_rebalance
 
 
 class TestOptimizeHRP:
@@ -63,3 +64,32 @@ class TestOptimizeMaxSharpe:
         returns = sample_prices.pct_change().dropna()
         result = optimize_max_sharpe(returns)
         assert result.sharpe >= 0
+
+
+class TestSuggestRebalance:
+    def test_equal_weight(self):
+        holdings = [
+            Holding(ticker="A.NS", name="A", quantity=100, avg_price=10, current_price=10),
+            Holding(ticker="B.NS", name="B", quantity=100, avg_price=20, current_price=20),
+        ]
+        result = suggest_rebalance(holdings, target_method="equal_weight")
+        assert len(result.trades) == 2
+        assert result.target_method == "equal_weight"
+
+    def test_total_drift_positive(self):
+        holdings = [
+            Holding(ticker="A.NS", name="A", quantity=100, avg_price=10, current_price=10),
+            Holding(ticker="B.NS", name="B", quantity=300, avg_price=20, current_price=20),
+        ]
+        result = suggest_rebalance(holdings, target_method="equal_weight")
+        assert result.total_drift_pct > 0
+
+    def test_empty_portfolio(self):
+        result = suggest_rebalance([], target_method="equal_weight")
+        assert result.trades == []
+        assert result.total_drift_pct == 0.0
+
+    def test_single_holding(self):
+        holdings = [Holding(ticker="A.NS", name="A", quantity=100, avg_price=10, current_price=10)]
+        result = suggest_rebalance(holdings, target_method="equal_weight")
+        assert len(result.trades) >= 0

@@ -166,3 +166,60 @@ def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065) ->
         expected_volatility=round(port_vol * 100, 2),
         sharpe=round(sharpe, 2),
     )
+
+
+@dataclass
+class RebalanceSuggestion:
+    target_method: str
+    trades: list[dict]
+    total_drift_pct: float
+
+
+def suggest_rebalance(
+    holdings: list,
+    target_method: str = "equal_weight",
+    custom_targets: dict[str, float] | None = None,
+) -> RebalanceSuggestion:
+    """
+    Suggest trades to reach target allocation.
+
+    target_method: "equal_weight" splits evenly, "current_cap" keeps current weights.
+    custom_targets: mapping of ticker -> target weight fraction.
+    """
+    total_value = sum(h.current_value for h in holdings)
+    if total_value <= 0:
+        return RebalanceSuggestion(target_method=target_method, trades=[], total_drift_pct=0.0)
+
+    if custom_targets:
+        target_weights = custom_targets
+    elif target_method == "equal_weight":
+        target_weights = {h.ticker: 1.0 / len(holdings) for h in holdings}
+    else:
+        target_weights = {h.ticker: h.current_value / total_value for h in holdings}
+
+    total_target = sum(target_weights.values())
+    if total_target > 0:
+        target_weights = {t: w / total_target for t, w in target_weights.items()}
+
+    trades = []
+    total_abs_drift = 0.0
+    for h in holdings:
+        current_w = h.current_value / total_value
+        target_w = target_weights.get(h.ticker, 0.0)
+        drift = target_w - current_w
+        total_abs_drift += abs(drift)
+        trades.append({
+            "ticker": h.ticker.replace(".NS", ""),
+            "name": h.name,
+            "current_w_pct": round(current_w * 100, 1),
+            "target_w_pct": round(target_w * 100, 1),
+            "drift_pct": round(drift * 100, 1),
+            "action": "buy" if drift > 0.5 else ("sell" if drift < -0.5 else "hold"),
+            "change_rs": round(drift * total_value, 0),
+        })
+
+    return RebalanceSuggestion(
+        target_method=target_method,
+        trades=[t for t in trades if abs(t["drift_pct"]) > 0.1],
+        total_drift_pct=round(total_abs_drift * 100, 1),
+    )
