@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.4.0 (2026-06-30)
+
+### Added
+
+- **Full Storage Layer Tests** — 17 tests for SQLite CRUD: portfolio save/load/delete, analysis history, price cache upsert, TTL expiry, stale clearing
+- **Cache Tests** — 11 tests for PriceCache: round-trip, TTL, clear, has, disabled cache
+- **Model Serialization Tests** — 10 tests for Portfolio/RiskMetrics round-trips, missing fields, analysis_from_report
+- **Integration Tests** — 7 full pipeline tests (CSV → risk metrics) with mocked network layer
+- **Expanded Unit Tests** — 36 portfolio tests (Indian format, BOM, malformed rows), 22 risk tests (stock risk, rolling volatility), 13 sector tests (yfinance fallback, HHI)
+- **Shared Test Fixtures** — conftest.py with tmp_db, tmp_cache_dir, mock network, report fixtures
+
+### Fixed
+
+- **`data/cache.py`** — diskcache TTL was silently broken: `expire=timedelta(hours=24)` passed to diskcache which expects numeric seconds. Cache entries never expired. Fixed to `expire=self.ttl_hours * 3600`
+- **`storage/db.py`** — `get_cached_prices()` used `SELECT *` which returned `fetched_at` column not present in `CachedPrice` dataclass, causing `TypeError` on any real use. Fixed to `SELECT ticker, date, close`
+- **`app.py`** — Removed redundant `.cumprod()` computed 4 times; single `portfolio_cum` variable reused
+- **`data/prices.py`** — Parallel price fetching with `ThreadPoolExecutor(max_workers=8)` + retry with exponential backoff replacing sequential loop (from prior session)
+
+### Changed
+
+- Test count: 39 → 168 (+129 new tests)
+- Overall coverage: 56% → 83%
+- `engine/` coverage: 82-100% across all modules
+- `storage/db.py` coverage: 0% → 96%
+- `storage/models.py` coverage: 0% → 100%
+- `data/cache.py` coverage: 0% → 92%
+
 ## v0.2.0 (2026-06-29)
 
 ### Added

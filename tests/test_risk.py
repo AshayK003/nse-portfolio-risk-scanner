@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 
 from engine import RiskMetrics
-from engine.risk import compute_correlation_matrix, compute_risk_metrics
+from engine.risk import (
+    compute_correlation_matrix,
+    compute_risk_metrics,
+    compute_stock_risk,
+    rolling_volatility,
+)
 
 
 class TestComputeRiskMetrics:
@@ -51,7 +56,6 @@ class TestComputeRiskMetrics:
 
     def test_with_benchmark(self, sample_prices):
         weights = [0.4, 0.3, 0.3]
-        # Create benchmark that's highly correlated with the portfolio
         portfolio_returns = sample_prices.pct_change().dropna().dot(np.array(weights))
         bench = portfolio_returns * 0.8 + pd.Series(
             np.random.normal(0.0, 0.002, len(portfolio_returns)),
@@ -59,7 +63,93 @@ class TestComputeRiskMetrics:
         )
         result = compute_risk_metrics(sample_prices, weights, benchmark_returns=bench)
         assert isinstance(result.beta, float)
-        assert result.beta > 0  # correlated -> positive beta
+        assert result.beta > 0
+
+    def test_all_zero_prices(self):
+        """All prices identical -> zero volatility, zero returns."""
+        dates = pd.date_range(end="2024-01-01", periods=10, freq="B")
+        prices = pd.DataFrame(
+            {"A.NS": [100.0] * 10, "B.NS": [100.0] * 10},
+            index=dates,
+        )
+        result = compute_risk_metrics(prices, [0.5, 0.5])
+        assert result.volatility_annual == 0.0
+        assert result.var_95 == 0.0
+
+    def test_empty_weights(self):
+        dates = pd.date_range(end="2024-01-01", periods=10, freq="B")
+        prices = pd.DataFrame({"A.NS": [100.0] * 10}, index=dates)
+        result = compute_risk_metrics(prices, [])
+        assert result.volatility_annual == 0.0
+
+    def test_drawdown_dates_populated(self, sample_prices):
+        weights = [0.4, 0.3, 0.3]
+        result = compute_risk_metrics(sample_prices, weights)
+        assert result.max_drawdown_start != ""
+        assert result.max_drawdown_end != ""
+
+    def test_cagr_and_total_return(self, sample_prices):
+        weights = [0.4, 0.3, 0.3]
+        result = compute_risk_metrics(sample_prices, weights)
+        assert isinstance(result.cagr, float)
+        assert isinstance(result.total_return, float)
+
+
+class TestComputeStockRisk:
+    def test_returns_dict(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = compute_stock_risk(returns)
+        assert "volatility" in result
+        assert "var_95" in result
+        assert "max_drawdown" in result
+
+    def test_volatility_positive(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = compute_stock_risk(returns)
+        assert result["volatility"] > 0
+
+    def test_max_drawdown_negative(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = compute_stock_risk(returns)
+        assert result["max_drawdown"] <= 0
+
+
+class TestRollingVolatility:
+    def test_returns_series(self):
+        dates = pd.date_range(end="2024-01-01", periods=100, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 100), index=dates)
+        result = rolling_volatility(returns)
+        assert isinstance(result, pd.Series)
+        assert len(result) == 100
+
+    def test_first_window_is_nan(self):
+        dates = pd.date_range(end="2024-01-01", periods=50, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 50), index=dates)
+        result = rolling_volatility(returns, window=21)
+        assert pd.isna(result.iloc[0])
+        assert not pd.isna(result.iloc[21])
+
+    def test_custom_window(self):
+        dates = pd.date_range(end="2024-01-01", periods=60, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 60), index=dates)
+        result = rolling_volatility(returns, window=10)
+        assert not pd.isna(result.iloc[10])
+
+    def test_short_series(self):
+        dates = pd.date_range(end="2024-01-01", periods=5, freq="B")
+        returns = pd.Series([0.01, -0.01, 0.02, -0.02, 0.01], index=dates)
+        result = rolling_volatility(returns, window=21)
+        # All NaN since series shorter than window
+        assert result.isna().all()
 
 
 class TestCorrelationMatrix:

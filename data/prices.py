@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 
 import pandas as pd
@@ -43,8 +44,6 @@ except ImportError:
 
 from engine import Holding
 
-_BATCH_SIZE = 10
-_BATCH_DELAY = 1.0
 _DEFAULT_PERIOD = "1y"
 
 _L2_CACHE = None
@@ -92,6 +91,35 @@ def _fetch_via_nselib(ticker: str) -> pd.DataFrame | None:
         return None
 
 
+_MAX_RETRIES = 3
+_RETRY_BACKOFF = [0.5, 1.5, 3.0]  # seconds between attempts
+
+
+def _fetch_with_retry(ticker: str, period: str) -> tuple[str, pd.DataFrame | None]:
+    """Fetch a single ticker with retry + exponential backoff.
+
+    Returns (ticker, DataFrame | None) so callers can identify which ticker succeeded/failed.
+    """
+    for attempt in range(_MAX_RETRIES):
+        try:
+            df = _cached_fetch(ticker, period)
+            if df is not None and not df.empty:
+                return ticker, df
+        except Exception as exc:
+            logger.debug(
+                "Attempt {a}/{m} failed for {t}: {e}",
+                a=attempt + 1,
+                m=_MAX_RETRIES,
+                t=ticker,
+                e=exc,
+            )
+
+        if attempt < _MAX_RETRIES - 1:
+            time.sleep(_RETRY_BACKOFF[attempt])
+
+    return ticker, None
+
+
 @lru_cache(maxsize=64)
 def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
     """
@@ -136,6 +164,8 @@ def fetch_prices(
     """
     Fetch historical prices for all holdings.
 
+    Uses parallel fetching with retry for speed and resilience.
+
     Args:
         holdings: List of Holding dataclasses with .ticker
         period: Period string ('1y', '6mo', '3mo', '1mo', 'ytd', 'max')
@@ -162,30 +192,49 @@ def fetch_prices(
 
     all_prices: dict[str, pd.Series] = {}
     errors: list[str] = []
+    completed = 0
 
-    for i in range(0, len(tickers), _BATCH_SIZE):
-        batch = tickers[i : i + _BATCH_SIZE]
+    max_workers = min(len(tickers), 6)
 
-        if progress_callback:
-            progress_callback(
-                f"Fetching prices: {i + 1}-{min(i + _BATCH_SIZE, len(tickers))} of {len(tickers)}"
-            )
+    if progress_callback:
+        progress_callback(f"Fetching prices for {len(tickers)} stocks...")
 
-        for ticker in batch:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(_fetch_with_retry, ticker, period): ticker
+            for ticker in tickers
+        }
+
+        for future in as_completed(futures):
+            ticker = futures[future]
+            completed += 1
+
             try:
-                hist = _cached_fetch(ticker, period)
-                if hist is not None and not hist.empty:
-                    all_prices[ticker] = hist["Close"]
+                t, hist = future.result()
+                if hist is not None and "Close" in hist.columns:
+                    all_prices[t] = hist["Close"]
                 else:
-                    errors.append(ticker)
+                    errors.append(t)
             except Exception as e:
                 errors.append(f"{ticker}: {e}")
 
-        if i + _BATCH_SIZE < len(tickers):
-            time.sleep(_BATCH_DELAY)
+            if progress_callback and completed % 5 == 0:
+                progress_callback(
+                    f"Fetched {completed}/{len(tickers)} stocks..."
+                )
+
+    if progress_callback:
+        progress_callback("Processing prices...")
 
     if not all_prices:
         raise ValueError(f"Could not fetch prices for any holdings. Failed: {', '.join(errors[:5])}")
+
+    if errors:
+        logger.warning(
+            "Failed to fetch {n} tickers: {e}",
+            n=len(errors),
+            e=", ".join(errors[:10]),
+        )
 
     prices = pd.DataFrame(all_prices)
     latest = prices.iloc[-1] if len(prices) > 0 else pd.Series(dtype=float)

@@ -68,3 +68,76 @@ RELIANCE,10,2500.00
 TCS,5,3500.00
 HDFCBANK,20,1600.00
 """
+
+
+@pytest.fixture
+def tmp_db(tmp_path):
+    """Provide a temporary SQLite database path and clean up connections after."""
+    import storage.db as db_mod
+
+    db_path = str(tmp_path / "test.db")
+    # Reset thread-local so each test gets a fresh connection
+    db_mod._local.conn = None
+    yield db_path
+    db_mod._local.conn = None
+
+
+@pytest.fixture
+def tmp_cache_dir(tmp_path):
+    """Provide a temporary directory for diskcache."""
+    return str(tmp_path / "cache")
+
+
+@pytest.fixture
+def sample_risk_metrics():
+    """A minimal RiskMetrics for building AnalysisReport fixtures."""
+    from engine import RiskMetrics
+
+    return RiskMetrics(
+        volatility_annual=15.0,
+        var_95=-2.5,
+        var_99=-4.0,
+        cvar_95=-3.2,
+        max_drawdown=-18.5,
+        max_drawdown_start="2024-03-01",
+        max_drawdown_end="2024-06-15",
+        beta=0.85,
+        correlation_to_benchmark=0.92,
+        sharpe=1.2,
+        sortino=1.8,
+        cagr=12.5,
+        total_return=25.0,
+    )
+
+
+@pytest.fixture
+def sample_sector_exposure(sample_holdings):
+    """A minimal SectorExposure for building AnalysisReport fixtures."""
+    from engine import SectorExposure
+
+    return SectorExposure(
+        holdings=sample_holdings,
+        sector_allocation={"Banking": 50.0, "IT": 30.0, "Oil & Gas": 20.0},
+        concentrated_sectors=["Banking"],
+        diversification_score=65.0,
+        herfindahl_index=0.38,
+    )
+
+
+@pytest.fixture
+def sample_benchmark_comparison():
+    """A minimal BenchmarkComparison for building AnalysisReport fixtures."""
+    from engine import BenchmarkComparison
+
+    return BenchmarkComparison(
+        portfolio_return=25.0,
+        benchmark_return=18.0,
+        alpha=7.0,
+        tracking_error=5.5,
+        information_ratio=1.27,
+        beta=0.85,
+        correlation=0.92,
+        rolling_alpha_6m=8.0,
+        outperformance_months=8,
+        total_months=12,
+    )

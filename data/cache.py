@@ -21,8 +21,6 @@ Usage:
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 import pandas as pd
 
 try:
@@ -60,7 +58,7 @@ class PriceCache:
             d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10] for d in close_series.index
         ]
         values = [round(float(v), 2) for v in close_series.values]
-        self._cache.set(ticker, {"dates": dates, "values": values}, expire=timedelta(hours=self.ttl_hours))
+        self._cache.set(ticker, {"dates": dates, "values": values}, expire=self.ttl_hours * 3600)
 
     def has(self, ticker: str) -> bool:
         return False if self._cache is None else ticker in self._cache

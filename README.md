@@ -44,8 +44,10 @@ pip install -e ".[dev,pdf,nse]"
 │   ├── prices.py         # nselib + yfinance wrapper with multi-tier caching
 │   ├── cache.py          # diskcache-backed L2 cache
 │   └── sectors.yaml      # Ticker-to-sector mapping
-├── storage/              # Persistence
-├── tests/                # 62 tests across all modules
+├── storage/              # Persistence (SQLite)
+│   ├── db.py             # Portfolio CRUD, analysis history, price cache
+│   └── models.py         # Storage-layer data models & serialization
+├── tests/                # 168 tests, 83% coverage
 ├── .github/workflows/    # CI (ruff check + pytest on push/PR)
 └── .pre-commit-config.yaml
 ```
@@ -80,3 +82,26 @@ ruff check .
 ruff format .
 pytest tests/
 ```
+
+## Testing
+
+168 tests across 10 test files, 83% overall coverage.
+
+```bash
+pytest tests/ -v                    # run all tests
+pytest tests/ --cov=engine          # engine coverage only
+pytest tests/test_db.py -v          # run a single test file
+```
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `test_portfolio.py` | 36 | CSV parsing, Indian format, BOM, malformed rows |
+| `test_risk.py` | 22 | VaR, volatility, drawdown, stock risk, edge cases |
+| `test_prices.py` | 11 | Retry logic, parallel fetch, backoff, cooldown |
+| `test_sector.py` | 13 | Classification, yfinance fallback, HHI, custom maps |
+| `test_cache.py` | 11 | Round-trip, TTL expiry, clear, has, disabled cache |
+| `test_models.py` | 10 | Serialization round-trips, edge cases |
+| `test_db.py` | 17 | Schema, CRUD, price cache upsert/clear/stale |
+| `test_integration.py` | 7 | Full pipeline with mock network, sector order |
+| `test_benchmark.py` | 6 | Benchmark comparison |
+| `test_performance.py` | 24 | Sharpe, Sortino, CAGR, max drawdown |

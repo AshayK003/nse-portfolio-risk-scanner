@@ -256,7 +256,7 @@ def get_cached_prices(ticker: str, max_age_hours: int = 24) -> list[CachedPrice]
     conn = get_connection()
     cutoff = (datetime.now() - timedelta(hours=max_age_hours)).isoformat()
     rows = conn.execute(
-        "SELECT * FROM price_cache WHERE ticker = ? AND fetched_at > ? ORDER BY date",
+        "SELECT ticker, date, close FROM price_cache WHERE ticker = ? AND fetched_at > ? ORDER BY date",
         (ticker, cutoff),
     ).fetchall()
     if not rows:

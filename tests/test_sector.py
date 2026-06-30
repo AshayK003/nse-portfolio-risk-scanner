@@ -1,5 +1,7 @@
 """Tests for sector classification module."""
 
+from unittest.mock import patch
+
 from engine import Holding
 from engine.sector import classify_holdings, compute_sector_exposure, load_sector_map
 
@@ -16,11 +18,38 @@ class TestClassifyHoldings:
         assert result[0].sector == "ETF"
 
     def test_sector_map_loaded(self):
-        # Test default map has expected content
         sector_map = load_sector_map()
         assert "RELIANCE" in sector_map
         assert "TCS" in sector_map
-        assert len(sector_map) > 50  # should have at least 50 stocks
+        assert len(sector_map) > 50
+
+    def test_unknown_ticker_falls_back_to_yfinance(self):
+        holdings = [Holding(ticker="FAKECORP.NS", name="Fake", quantity=10, avg_price=100)]
+        with patch("yfinance.Ticker") as mock_ticker_cls:
+            mock_ticker_cls.return_value.info = {"sector": "Mystery Sector"}
+            result = classify_holdings(holdings)
+            assert result[0].sector == "Mystery Sector"
+
+    def test_unknown_ticker_yfinance_fails(self):
+        """When yfinance throws, sector becomes 'Unknown'."""
+        holdings = [Holding(ticker="FAKECORP.NS", name="Fake", quantity=10, avg_price=100)]
+        with patch("yfinance.Ticker") as mock_ticker_cls:
+            mock_ticker_cls.side_effect = Exception("network error")
+            result = classify_holdings(holdings)
+            assert result[0].sector == "Unknown"
+
+    def test_custom_sector_map(self):
+        custom = {"RELIANCE": "Custom Sector"}
+        holdings = [Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500)]
+        result = classify_holdings(holdings, sector_map=custom)
+        assert result[0].sector == "Custom Sector"
+
+    def test_load_sector_map_with_yaml(self, tmp_path):
+        yaml_file = tmp_path / "custom_sectors.yaml"
+        yaml_file.write_text("MYSTERY: Mystery Sector\n")
+        result = load_sector_map(path=str(yaml_file))
+        assert result["MYSTERY"] == "Mystery Sector"
+        assert "RELIANCE" in result  # defaults still present
 
 
 class TestComputeSectorExposure:
@@ -43,7 +72,6 @@ class TestComputeSectorExposure:
         assert abs(result.sector_allocation["Banking"] - 100.0) < 0.1
 
     def test_diversification_score(self):
-        # Two sectors, 50/50 split -> high diversification
         holdings = [
             Holding(
                 ticker="TCS.NS", name="TCS", quantity=10, avg_price=3500, sector="IT", current_price=4000
@@ -53,10 +81,9 @@ class TestComputeSectorExposure:
             ),
         ]
         result = compute_sector_exposure(holdings)
-        assert result.diversification_score > 45  # well diversified
+        assert result.diversification_score > 45
 
     def test_concentration_detection(self):
-        # 95% in one sector -> should flag
         holdings = [
             Holding(
                 ticker="SBIN.NS", name="SBI", quantity=100, avg_price=800, sector="Banking", current_price=900
@@ -69,3 +96,28 @@ class TestComputeSectorExposure:
     def test_empty_holdings(self):
         result = compute_sector_exposure([])
         assert result.sector_allocation == {}
+
+    def test_unknown_sector_grouped(self):
+        """Holdings with sector='Unknown' are grouped under Unknown."""
+        holdings = [
+            Holding(ticker="X.NS", name="X", quantity=10, avg_price=100,
+                    sector="Unknown", current_price=100),
+            Holding(ticker="Y.NS", name="Y", quantity=10, avg_price=100,
+                    sector="Unknown", current_price=100),
+        ]
+        result = compute_sector_exposure(holdings)
+        assert "Unknown" in result.sector_allocation
+        assert result.sector_allocation["Unknown"] == 100.0
+
+    def test_herfindahl_index_range(self):
+        """HHI should be between 0 and 1."""
+        holdings = [
+            Holding(ticker="A.NS", name="A", quantity=10, avg_price=100,
+                    sector="IT", current_price=100),
+            Holding(ticker="B.NS", name="B", quantity=10, avg_price=100,
+                    sector="Banking", current_price=100),
+            Holding(ticker="C.NS", name="C", quantity=10, avg_price=100,
+                    sector="Pharma", current_price=100),
+        ]
+        result = compute_sector_exposure(holdings)
+        assert 0 <= result.herfindahl_index <= 1.0

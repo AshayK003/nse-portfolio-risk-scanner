@@ -128,8 +128,10 @@ portfolio.holdings = classify_holdings(portfolio.holdings, sector_map)
 # Compute returns
 weights = portfolio.weight
 portfolio_returns = compute_portfolio_returns(prices, weights)
+portfolio_cum = (1 + portfolio_returns).cumprod()
 benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
 benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
+benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
 
 # Compute all risk metrics
 risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns)
@@ -178,8 +180,8 @@ with tabs[2]:
         st.warning("Benchmark data not available")
     st.plotly_chart(
         benchmark_chart(
-            (1 + portfolio_returns).cumprod(),
-            (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float),
+            portfolio_cum,
+            benchmark_cum,
         ),
         use_container_width=True,
     )
@@ -188,15 +190,14 @@ with tabs[3]:
     col1, col2 = st.columns(2)
     with col1:
         dd = (
-            compute_max_drawdown((1 + portfolio_returns).cumprod())
+            compute_max_drawdown(portfolio_cum)
             if not portfolio_returns.empty
             else {"max_drawdown": 0.0, "start": "N/A", "end": "N/A"}
         )
+        running_max = portfolio_cum.cummax()
+        drawdown_series = (portfolio_cum - running_max) / running_max
         st.plotly_chart(
-            drawdown_chart(
-                ((1 + portfolio_returns).cumprod() - (1 + portfolio_returns).cumprod().cummax())
-                / (1 + portfolio_returns).cumprod().cummax()
-            ),
+            drawdown_chart(drawdown_series),
             use_container_width=True,
         )
     with col2:
