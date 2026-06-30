@@ -77,8 +77,8 @@ facade.theme.apply(
     preset="default-dark",
     primary="#3b82f6",
     background="#0c0e13",
-    foreground="#e2e8f0",
-    muted="#161822",
+    secondary_background_color="#161822",
+    text_color="#e2e8f0",
     radius="md",
 )
 
