@@ -4,6 +4,7 @@ import pytest
 
 from engine import Holding, Portfolio
 from engine.portfolio import (
+    _detect_delimiter,
     _parse_float,
     normalize_ticker,
     parse_portfolio_csv,
@@ -46,6 +47,23 @@ class TestNormalizeTicker:
 
     def test_handles_whitespace(self):
         assert normalize_ticker("  RELIANCE  ") == "RELIANCE.NS"
+
+
+class TestDelimiterDetection:
+    def test_comma(self):
+        assert _detect_delimiter("a,b,c\n1,2,3\n") == ","
+
+    def test_semicolon(self):
+        assert _detect_delimiter("a;b;c\n1;2;3\n") == ";"
+
+    def test_pipe(self):
+        assert _detect_delimiter("a|b|c\n1|2|3\n") == "|"
+
+    def test_tab(self):
+        assert _detect_delimiter("a\tb\tc\n1\t2\t3\n") == "\t"
+
+    def test_empty_content_defaults_comma(self):
+        assert _detect_delimiter("") == ","
 
 
 class TestParseFloat:
@@ -219,6 +237,75 @@ class TestParsePortfolio:
         csv = b"ticker,quantity,avg_price\nRELIANCE,10,2500\n"
         portfolio = parse_portfolio_csv(csv, portfolio_name="My Fund")
         assert portfolio.name == "My Fund"
+
+    # --- Broker format tests ---
+
+    def test_groww_format(self):
+        """Groww export: Symbol, Qty., Avg. Cost, LTP"""
+        csv = b"Symbol,Qty.,Avg. Cost,LTP\nRELIANCE,10,2500.00,2750.00\nTCS,5,3500.00,4200.00\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+        assert portfolio.holdings[1].avg_price == 3500.0
+
+    def test_angel_one_format(self):
+        """Angel One: Symbol, Quantity, Average Price, LTP"""
+        csv = b"Symbol,Quantity,Average Price,LTP\nRELIANCE,10,2500.00,2750.00\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_upstox_format(self):
+        """Upstox: Symbol, Qty, Avg Price, LTP"""
+        csv = b"Symbol,Qty,Avg Price,LTP\nRELIANCE,10,2500.00,2750.00\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_icici_direct_format(self):
+        """ICICI Direct: Scrip, Qty, Buy Price, LTP"""
+        csv = b"Scrip,Qty,Buy Price,LTP\nRELIANCE,10,2500.00,2750.00\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_semicolon_delimiter(self):
+        """Semicolon-delimited CSV detected and parsed."""
+        csv = b"Symbol;Qty;Avg Price\nRELIANCE;10;2500\nTCS;5;3500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert len(portfolio.holdings) == 2
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_pipe_delimiter(self):
+        """Pipe-delimited CSV detected and parsed."""
+        csv = b"Symbol|Qty|Avg Price\nRELIANCE|10|2500\nTCS|5|3500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert len(portfolio.holdings) == 2
+        assert portfolio.holdings[0].avg_price == 2500.0
+
+    def test_percentage_sign_in_return(self):
+        """Values like '+12.9%' are parsed correctly."""
+        csv = b"Symbol,Qty,Avg Price,Return\nRELIANCE,10,2500,+12.9%\nTCS,5,3500,-2.5%\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert len(portfolio.holdings) == 2
+        assert portfolio.holdings[0].avg_price == 2500.0
+        assert portfolio.holdings[1].avg_price == 3500.0
+
+    def test_cost_within_reasonable_range(self):
+        """Cost column with per-share values (< 10K) treated as per-share price."""
+        csv = b"Symbol,Qty,Cost\nRELIANCE,10,2500\nTCS,5,3500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+        assert portfolio.holdings[1].avg_price == 3500.0
+
+    def test_cost_high_value_not_corrected(self):
+        """Cost column with high per-share values (e.g., MRF at 1.2L) is NOT auto-corrected."""
+        csv = b"Symbol,Qty,Cost\nMRF,3,120000\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 120000.0
+
+    def test_cost_total_auto_correct_with_samples(self):
+        """Cost column with total values is auto-corrected by preprocessing sampling."""
+        csv = b"Symbol,Qty,Cost\nRELIANCE,10,25000\nTCS,5,17500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0
+        assert portfolio.holdings[1].avg_price == 3500.0
 
 
 class TestValidatePortfolio:
