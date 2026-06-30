@@ -172,11 +172,7 @@ with tabs[0]:
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(
-            volatility_gauge(report.risk.volatility_annual),
-            use_container_width=True,
-            aria_label="Annual volatility gauge chart",
-        )
+        st.plotly_chart(volatility_gauge(report.risk.volatility_annual), use_container_width=True)
     with col2:
         rv = rolling_volatility(portfolio_returns)
         if len(rv) > 0:
@@ -185,11 +181,7 @@ with tabs[0]:
 
 with tabs[1]:
     render_sector_section(report.sector)
-    st.plotly_chart(
-        sector_treemap(report.sector.sector_allocation),
-        use_container_width=True,
-        aria_label="Sector allocation treemap",
-    )
+    st.plotly_chart(sector_treemap(report.sector.sector_allocation), use_container_width=True)
 
 with tabs[2]:
     if benchmark:
@@ -199,7 +191,6 @@ with tabs[2]:
     st.plotly_chart(
         benchmark_chart(portfolio_cum, benchmark_cum),
         use_container_width=True,
-        aria_label="Portfolio vs benchmark cumulative returns chart",
     )
 
 with tabs[3]:
@@ -215,14 +206,12 @@ with tabs[3]:
         st.plotly_chart(
             drawdown_chart(drawdown_series),
             use_container_width=True,
-            aria_label="Portfolio drawdown chart",
         )
     with col2:
         corr = compute_correlation_matrix(prices)
         st.plotly_chart(
             correlation_heatmap(corr),
             use_container_width=True,
-            aria_label="Stock correlation heatmap",
         )
 
 with tabs[4]:

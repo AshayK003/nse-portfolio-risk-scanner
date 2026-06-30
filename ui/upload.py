@@ -217,7 +217,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if st.button("Update from Editor", use_container_width=True):
+        if st.button("Update from Editor", use_container_width=True) and df is not None:
             new_holdings = []
             for _, row in df.iterrows():
                 new_holdings.append(

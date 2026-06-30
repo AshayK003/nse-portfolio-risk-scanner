@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.1 (2026-06-30)
+
+### Fixed
+
+- **Production crash: `st.plotly_chart(aria_label=...)`** — `aria_label` is not a valid parameter in Streamlit versions deployed on Streamlit Cloud. Removed from all chart calls to fix `TypeError`.
+- **Production crash: `data_editor` returns `None`** — `st.data_editor` returns `None` when the expander is collapsed on initial load. Added `df is not None` guard before iterating to fix `TypeError: cannot unpack non-iterable NoneType object`.
+
 ## v0.5.0 (2026-06-30)
 
 ### Added
