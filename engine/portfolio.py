@@ -162,14 +162,14 @@ def _build_column_map(fieldnames: list[str]) -> dict[str, str]:
         "ticker": ["ticker", "symbol", "stock", "scrip", "isin"],
         "quantity": ["quantity", "qty", "shares", "holdings"],
         "price": [
-            "price",
             "avg_price",
             "avg price",
             "average price",
+            "average cost",
             "buy_price",
             "buy price",
             "cost",
-            "average cost",
+            "price",
         ],
         "name": ["name", "company", "company name", "security"],
     }

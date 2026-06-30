@@ -152,6 +152,15 @@ class TestParsePortfolio:
         assert len(portfolio.holdings) == 1
         assert portfolio.holdings[0].ticker == "RELIANCE.NS"
 
+    def test_avg_price_preferred_over_price(self):
+        """When CSV has both 'Price' (LTP) and 'Avg Price', prefer Avg Price."""
+        csv = b"Symbol,Qty,Price,Avg Price\nRELIANCE,10,2750,2500\nTCS,5,4200,3500\n"
+        portfolio = parse_portfolio_csv(csv)
+        assert portfolio.holdings[0].avg_price == 2500.0, (
+            f"Expected avg_price=2500 (from Avg Price column), got {portfolio.holdings[0].avg_price}"
+        )
+        assert portfolio.holdings[1].avg_price == 3500.0
+
     def test_three_column_fallback(self):
         """Unrecognized headers with exactly 3 columns -> best-effort mapping."""
         csv = b"col1,col2,col3\nRELIANCE,10,2500\n"
