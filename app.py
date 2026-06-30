@@ -94,6 +94,8 @@ if "portfolio" not in st.session_state:
     st.session_state.portfolio = None
 if "report" not in st.session_state:
     st.session_state.report = None
+if "force_refresh_cb" not in st.session_state:
+    st.session_state.force_refresh_cb = False
 if "force_refresh" not in st.session_state:
     st.session_state.force_refresh = False
 if "selected_benchmark" not in st.session_state:
@@ -127,8 +129,10 @@ benchmark_choice = st.selectbox(
 refresh_col1, refresh_col2 = st.columns([4, 1])
 with refresh_col2:
     force = st.checkbox(
-        "Force refresh prices", value=st.session_state.get("force_refresh", False), key="force_refresh"
+        "Force refresh prices", value=False, key="force_refresh_cb"
     )
+if force:
+    st.session_state.force_refresh = True
 
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
 _input_hash = hashlib.md5(
@@ -141,13 +145,13 @@ _input_hash = hashlib.md5(
     ).encode(),
 ).hexdigest()
 
-_needs_compute = force or st.session_state.get("_last_input_hash") != _input_hash
+_needs_compute = st.session_state.force_refresh or st.session_state.get("_last_input_hash") != _input_hash
 
 if _needs_compute:
     # ── Step 3: Fetch prices ──
     with st.spinner("Fetching prices..."):
         try:
-            if force:
+            if st.session_state.force_refresh:
                 prices = fetch_prices_refreshed(portfolio.holdings, period="1y")
                 st.session_state.force_refresh = False
             else:
