@@ -5,7 +5,6 @@ Report export — CSV download and PDF report generation.
 
 from __future__ import annotations
 
-import facade
 import pandas as pd
 import streamlit as st
 
@@ -81,7 +80,7 @@ def render_export_section(
     except ImportError:
         st.caption("PDF export requires fpdf2: pip install fpdf2")
     except Exception as e:
-        facade.Alert(f"PDF generation failed: {e}", variant="error")
+        st.error(f"PDF generation failed: {e}")
 
     st.caption("Reports include position-level data for further analysis in Excel/Sheets.")
 

@@ -6,7 +6,6 @@ Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander l
 
 from __future__ import annotations
 
-import facade
 import pandas as pd
 import streamlit as st
 
@@ -29,35 +28,36 @@ def render_sidebar():
         saved = list_saved_portfolios()
         if saved:
             options = {f"{p.name} (Rs {p.total_invested:,.0f})": p.id for p in saved}
-            selected = facade.Select(
+            selected = st.sidebar.selectbox(
+                "Load a saved portfolio",
                 options=["— Select —"] + list(options.keys()),
-                placeholder="Load a saved portfolio",
             )
             if selected != "— Select —":
                 p_id = options[selected]
                 sp = [p for p in saved if p.id == p_id][0]
                 loaded = saved_to_portfolio(sp)
-                facade.Alert(f"Loaded: {sp.name}", variant="success")
+                st.sidebar.success(f"Loaded: {sp.name}")
                 st.session_state.portfolio = loaded
                 st.session_state.selected_portfolio_id = sp.id
                 st.rerun()
 
             # Delete
-            delete_name = facade.Select(
+            delete_name = st.sidebar.selectbox(
+                "Delete portfolio",
                 options=["— Select —"] + list(options.keys()),
-                placeholder="Delete portfolio",
+                key="delete_portfolio",
             )
-            if delete_name and delete_name != "— Select —" and st.sidebar.button("Delete", use_container_width=True):
+            if delete_name != "— Select —" and st.sidebar.button("Delete", use_container_width=True):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
-                facade.Alert("Portfolio deleted.", variant="success")
+                st.sidebar.success("Portfolio deleted.")
                 st.rerun()
         else:
-            facade.Alert("No saved portfolios yet.", variant="info")
+            st.sidebar.info("No saved portfolios yet.")
     except ImportError:
         st.sidebar.caption("Storage module not available")
     except Exception as e:
-        facade.Alert(f"Could not load portfolios: {e}", variant="error")
+        st.sidebar.error(f"Could not load portfolios: {e}")
 
 
 def render_manual_entry() -> list[Holding]:
@@ -73,8 +73,8 @@ def render_manual_entry() -> list[Holding]:
         cols = st.columns([2, 1, 1, 1])
         with cols[0]:
             ticker = (
-                facade.Input(
-                    label="Ticker",
+                st.text_input(
+                    "Ticker",
                     placeholder="e.g. RELIANCE",
                 )
                 .strip()
@@ -92,11 +92,11 @@ def render_manual_entry() -> list[Holding]:
             )
         with cols[3]:
             st.write("")
-            submitted = facade.Button("Add Stock")
+            submitted = st.form_submit_button("Add Stock", use_container_width=True)
 
         if submitted:
             if not ticker:
-                facade.Alert("Enter a ticker symbol.", variant="warning")
+                st.warning("Enter a ticker symbol.")
             else:
                 from engine.portfolio import normalize_ticker
 
@@ -122,7 +122,7 @@ def render_manual_entry() -> list[Holding]:
             with col_c:
                 st.text(f"Rs {h.avg_price:,.2f}")
             with col_d:
-                if facade.Button("Remove", key=f"remove_manual_{i}"):
+                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}"):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 
@@ -146,17 +146,17 @@ def render_upload_tab() -> Portfolio | None:
     if uploaded is not None:
         csv_bytes = uploaded.getvalue()
         if len(csv_bytes) > 10 * 1024 * 1024:
-            facade.Alert("File too large (max 10MB). Please upload a smaller CSV.", variant="error")
+            st.error("File too large (max 10MB). Please upload a smaller CSV.")
             st.stop()
 
         try:
             csv_portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
-            facade.Alert(f"Loaded {csv_portfolio.holding_count} holdings from {uploaded.name}.", variant="success")
+            st.success(f"Loaded {csv_portfolio.holding_count} holdings from {uploaded.name}.")
         except ValueError as e:
-            facade.Alert(f"Could not parse CSV: {e}", variant="error")
+            st.error(f"Could not parse CSV: {e}")
 
     # ── Manual Entry Section ──
-    facade.Separator()
+    st.divider()
     manual_holdings = render_manual_entry()
 
     # ── Check for any data before proceeding ──
@@ -194,7 +194,7 @@ def render_upload_tab() -> Portfolio | None:
 
 def render_data_editor(portfolio: Portfolio) -> Portfolio:
     """Show an editable data editor for the portfolio holdings."""
-    with facade.Accordion("Edit Holdings"):
+    with st.expander("Edit Holdings", expanded=False):
         data = []
         for h in portfolio.holdings:
             data.append(
@@ -219,9 +219,9 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if facade.Button("Update from Editor"):
+        if st.button("Update from Editor", use_container_width=True):
             if not isinstance(df, pd.DataFrame) or df.empty:
-                facade.Alert("Add rows in the data editor, then click Update.", variant="warning")
+                st.warning("Add rows in the data editor, then click Update.")
             else:
                 new_holdings = []
                 for _, row in df.iterrows():
@@ -238,7 +238,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
                 portfolio.holdings = new_holdings
                 if "manual_holdings" in st.session_state:
                     st.session_state.manual_holdings = []
-                facade.Alert(f"Updated to {len(new_holdings)} holdings.", variant="success")
+                st.success(f"Updated to {len(new_holdings)} holdings.")
                 st.session_state.portfolio = portfolio
                 st.rerun()
 
@@ -247,17 +247,17 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
 
 def render_save_button(portfolio: Portfolio):
     """Show save portfolio button."""
-    with facade.Accordion("Save Portfolio"):
-        save_name = facade.Input(label="Portfolio name", placeholder=portfolio.name or "My Portfolio")
-        if facade.Button("Save to Database"):
+    with st.expander("Save Portfolio", expanded=False):
+        save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
+        if st.button("Save to Database", use_container_width=True):
             try:
                 from storage.db import save_portfolio
                 from storage.models import portfolio_to_saved
 
                 saved = portfolio_to_saved(portfolio, name=save_name)
                 p_id = save_portfolio(saved)
-                facade.Alert(f"Saved as **{save_name}** (ID: {p_id}).", variant="success")
+                st.success(f"Saved as **{save_name}** (ID: {p_id}).")
             except ImportError:
-                facade.Alert("Storage module is not available.", variant="error")
+                st.error("Storage module is not available.")
             except Exception as e:
-                facade.Alert(f"Could not save portfolio: {e}", variant="error")
+                st.error(f"Could not save portfolio: {e}")
