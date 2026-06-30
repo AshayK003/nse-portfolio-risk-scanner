@@ -207,7 +207,7 @@ def portfolio_from_dict(data: dict) -> Portfolio:
     """Create a Portfolio from a dict (useful for testing / API)."""
     holdings = [
         Holding(
-            ticker=h.get("ticker", ""),
+            ticker=normalize_ticker(h.get("ticker", "")),
             name=h.get("name", h.get("ticker", "")),
             quantity=int(h.get("quantity", 0)),
             avg_price=float(h.get("avg_price", 0)),

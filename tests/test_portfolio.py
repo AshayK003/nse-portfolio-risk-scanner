@@ -252,7 +252,7 @@ class TestPortfolioFromDict:
         p = portfolio_from_dict(data)
         assert p.name == "Test"
         assert len(p.holdings) == 1
-        assert p.holdings[0].ticker == "RELIANCE"
+        assert p.holdings[0].ticker == "RELIANCE.NS"
 
     def test_missing_fields_defaults(self):
         data = {"holdings": [{"ticker": "TCS"}]}

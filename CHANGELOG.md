@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.2 (2026-06-30)
+
+### Fixed
+
+- **nselib ignored `period` parameter** — `_fetch_via_nselib` hardcoded `period="1M"` instead of forwarding the caller's `period`. All risk metrics (CAGR, Sharpe, beta, tracking error) were computed from 1 month of data for nselib users. Now forwards the requested period (default "1Y").
+- **Concentration check never fired** — `validate_portfolio()` ran before `fetch_prices()`, so all `current_price` values were 0.0 and `weight` returned all zeros. The "high concentration risk" warning could never trigger. Moved validation after price fetch.
+- **L2 cache ignored period** — `PriceCache.get()` returned cached data regardless of how much was stored. A 1-month cache entry satisfied a 1-year request. Now validates minimum data points per period.
+- **Inconsistent drawdown start dates** — `engine/risk.py` used `index[0]` (first peak) while `engine/performance.py` used `index[-1]` (last peak) for drawdown period discovery. Standardized both to `index[0]`.
+- **`change_pct` stored wrong value** — computed as the last daily return (near 0%) instead of total return since `avg_price`. Now computes `(current_price - avg_price) / avg_price * 100`.
+- **`portfolio_from_dict` skipped ticker normalization** — raw tickers like `"RELIANCE"` were not converted to `"RELIANCE.NS"`, unlike `parse_portfolio_csv`. Now calls `normalize_ticker`.
+
 ## v0.5.1 (2026-06-30)
 
 ### Fixed

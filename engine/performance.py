@@ -104,7 +104,7 @@ def compute_max_drawdown(prices: pd.Series | pd.DataFrame) -> dict:
     dd_series = drawdown[drawdown == max_dd]
     if not dd_series.empty:
         end = dd_series.index[0]
-        start = cum[:end][cum[:end] == cum[:end].max()].index[-1]
+        start = cum[:end][cum[:end] == cum[:end].max()].index[0]
     else:
         start = cum.index[0]
         end = cum.index[-1]

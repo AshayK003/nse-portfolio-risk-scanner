@@ -86,11 +86,6 @@ st.session_state.portfolio = portfolio
 portfolio = render_data_editor(portfolio)
 render_save_button(portfolio)
 
-# Validate
-warnings = validate_portfolio(portfolio)
-for w in warnings:
-    st.warning(w)
-
 # ── Step 2: Benchmark selection ──
 benchmark_options = {v: k for k, v in BENCHMARK_TICKERS.items()}
 default_benchmark = "^NSEI"
@@ -123,6 +118,11 @@ with st.spinner("Fetching prices..."):
     except Exception:
         st.error("An unexpected error occurred while fetching prices. Please try again.")
         st.stop()
+
+# Validate portfolio (now that current_price is set)
+warnings = validate_portfolio(portfolio)
+for w in warnings:
+    st.warning(w)
 
 # Classify sectors
 sector_map = load_sector_map()

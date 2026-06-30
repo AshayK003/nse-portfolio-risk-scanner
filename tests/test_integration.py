@@ -35,14 +35,11 @@ def _mock_fetch_prices(holdings, period="1y", force_refresh=False, progress_call
     tickers = [h.ticker for h in holdings]
     prices = _make_mock_prices(tickers)
     latest = prices.iloc[-1]
-    prev_close = prices.iloc[-2] if len(prices) > 1 else pd.Series(dtype=float)
     for h in holdings:
         if h.ticker in latest:
             h.current_price = round(latest[h.ticker], 2)
-            if h.ticker in prev_close and prev_close[h.ticker] > 0:
-                h.change_pct = round(
-                    (latest[h.ticker] - prev_close[h.ticker]) / prev_close[h.ticker] * 100, 2
-                )
+            if h.avg_price > 0:
+                h.change_pct = round((h.current_price - h.avg_price) / h.avg_price * 100, 2)
     return prices
 
 

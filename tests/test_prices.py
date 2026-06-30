@@ -125,8 +125,8 @@ class TestFetchPricesParallel:
         fetch_prices(holdings, period="1y")
 
         assert holdings[0].current_price == 102.0
-        # price went from 101 to 102 -> +0.99%
-        assert holdings[0].change_pct == pytest.approx(0.99, abs=0.01)
+        # total change from avg_price=100 to current_price=102 -> +2.00%
+        assert holdings[0].change_pct == pytest.approx(2.00, abs=0.01)
 
     def test_empty_holdings_returns_empty(self):
         prices = fetch_prices([], period="1y")

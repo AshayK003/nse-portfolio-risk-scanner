@@ -68,13 +68,13 @@ def _get_l2_cache():
     return _L2_CACHE
 
 
-def _fetch_via_nselib(ticker: str) -> pd.DataFrame | None:
+def _fetch_via_nselib(ticker: str, period: str = "1Y") -> pd.DataFrame | None:
     """Fetch historical prices from nselib for an NSE equity."""
     if not _NSELIB_AVAILABLE:
         return None
     try:
         clean = ticker.replace(".NS", "")
-        raw = capital_market.price_volume_data(symbol=clean, period="1M")
+        raw = capital_market.price_volume_data(symbol=clean, period=period)
         if raw is None or raw.empty:
             return None
         if "CLOSE_PRICE" not in raw.columns:
@@ -128,12 +128,15 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
     l2 = _get_l2_cache()
     cached_series = l2.get(ticker)
     if cached_series is not None and len(cached_series) > 0:
-        df = pd.DataFrame({"Close": cached_series})
-        return df
+        min_points = {"1mo": 10, "3mo": 40, "6mo": 80, "1y": 180, "2y": 360}
+        if len(cached_series) >= min_points.get(period, 20):
+            df = pd.DataFrame({"Close": cached_series})
+            return df
+        logger.debug("Cached data too short ({n} pts) for period {p} — refetching", n=len(cached_series), p=period)
 
     df = None
     if not ticker.startswith("^"):
-        df = _fetch_via_nselib(ticker)
+        df = _fetch_via_nselib(ticker, period)
 
     if df is None:
         try:
@@ -238,16 +241,12 @@ def fetch_prices(
 
     prices = pd.DataFrame(all_prices)
     latest = prices.iloc[-1] if len(prices) > 0 else pd.Series(dtype=float)
-    prev_close = prices.iloc[-2] if len(prices) > 1 else pd.Series(dtype=float)
 
     for h in holdings:
         if h.ticker in latest:
             h.current_price = round(latest[h.ticker], 2)
-            if h.ticker in prev_close and prev_close[h.ticker] > 0:
-                h.change_pct = round(
-                    (latest[h.ticker] - prev_close[h.ticker]) / prev_close[h.ticker] * 100,
-                    2,
-                )
+            if h.avg_price > 0:
+                h.change_pct = round((h.current_price - h.avg_price) / h.avg_price * 100, 2)
 
     return prices
 
