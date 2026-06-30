@@ -151,7 +151,58 @@ def render_stock_table(portfolio: Portfolio) -> None:
     st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
-def render_optimization_section(opt: OptimizationResult | None, portfolio: Portfolio | None = None) -> None:
+def _opt_reason(
+    ticker: str, cur_w_pct: float, opt_w_pct: float, risk_data: dict | None,
+) -> str:
+    """One-line explanation for a weight change recommendation."""
+    change = opt_w_pct - cur_w_pct
+    if abs(change) < 1.0:
+        return ""
+    if not risk_data:
+        return ""
+
+    vol = risk_data.get("volatility", {}).get(ticker)
+    avg_vol = risk_data.get("avg_volatility")
+    avg_corr = risk_data.get("avg_correlation", {}).get(ticker)
+    sector = risk_data.get("sector", {}).get(ticker, "")
+    sec_alloc = risk_data.get("sector_allocation", {})
+    beta = risk_data.get("beta", {}).get(ticker)
+
+    if change > 0:
+        if vol is not None and avg_vol and vol < avg_vol * 0.85:
+            return f"Lower vol ({vol:.0f}% vs {avg_vol:.0f}% avg) → increase"
+        if avg_corr is not None and avg_corr < 0.35:
+            return f"Low avg corr ({avg_corr:.2f}) → diversification benefit"
+        if beta is not None and beta < 0.7:
+            return f"Low beta ({beta:.2f}) → reduces market sensitivity"
+        if sector and sec_alloc.get(sector, 0) > 25:
+            return f"Offsets {sector} concentr. ({sec_alloc[sector]:.0f}%)"
+        if vol is not None and avg_vol and vol < avg_vol:
+            return f"Below-avg vol ({vol:.0f}%) → higher allocation"
+        if avg_corr is not None and avg_corr < 0.5:
+            return f"Moderate corr ({avg_corr:.2f}) → some diversification"
+        return "Underweight vs optimal allocation"
+    else:
+        if vol is not None and avg_vol and vol > avg_vol * 1.15:
+            return f"Higher vol ({vol:.0f}% vs {avg_vol:.0f}% avg) → reduce"
+        if avg_corr is not None and avg_corr > 0.65:
+            return f"High avg corr ({avg_corr:.2f}) → limits diversification"
+        if sector and sec_alloc.get(sector, 0) > 25:
+            return f"Sector concentr. ({sec_alloc[sector]:.0f}%) → reduce"
+        if beta is not None and beta > 1.3:
+            return f"High beta ({beta:.2f}) → amplifies market risk"
+        if vol is not None and avg_vol and vol > avg_vol:
+            return f"Above-avg vol ({vol:.0f}%) → lower allocation"
+        if avg_corr is not None and avg_corr > 0.5:
+            return f"Moderately high corr ({avg_corr:.2f})"
+        return "Overweight vs optimal allocation"
+
+
+def render_optimization_section(
+    opt: OptimizationResult | None,
+    portfolio: Portfolio | None = None,
+    risk_data: dict | None = None,
+) -> None:
     """Display portfolio optimization results."""
     st.subheader("Portfolio Optimization")
 
@@ -218,13 +269,13 @@ def render_optimization_section(opt: OptimizationResult | None, portfolio: Portf
             cur_val = cur_w * total_value
             opt_val = opt_w * total_value
             diff = opt_val - cur_val
+            reason = _opt_reason(ticker, cur_w * 100, opt_w * 100, risk_data)
             comparison.append({
                 "Ticker": ticker.replace(".NS", ""),
-                "Current Weight": f"{cur_w * 100:.1f}%",
-                "Optimized Weight": f"{opt_w * 100:.1f}%",
-                "Current Value (Rs)": f"{cur_val:,.0f}",
-                "Optimized Value (Rs)": f"{opt_val:,.0f}",
+                "Current": f"{cur_w * 100:.0f}%",
+                "Optimized": f"{opt_w * 100:.0f}%",
                 "Change (Rs)": f"{diff:+,.0f}",
+                "Why": reason,
             })
         st.dataframe(comparison, use_container_width=True, hide_index=True)
 
@@ -336,7 +387,10 @@ def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
             st.divider()
 
 
-def render_rebalance_section(rebalance: RebalanceSuggestion | None) -> None:
+def render_rebalance_section(
+    rebalance: RebalanceSuggestion | None,
+    risk_data: dict | None = None,
+) -> None:
     """Display portfolio rebalancing suggestions."""
     st.subheader("Rebalancing Suggestions")
     if rebalance is None or not rebalance.trades:
@@ -350,6 +404,12 @@ def render_rebalance_section(rebalance: RebalanceSuggestion | None) -> None:
     rows = []
     for t in rebalance.trades:
         action_icon = "🟢" if t["action"] == "buy" else ("🔴" if t["action"] == "sell" else "⚪")
+        reason = _opt_reason(
+            f"{t['ticker']}.NS",
+            t["current_w_pct"],
+            t["target_w_pct"],
+            risk_data,
+        )
         rows.append({
             "Ticker": t["ticker"],
             "Current": f"{t['current_w_pct']:.0f}%",
@@ -357,5 +417,6 @@ def render_rebalance_section(rebalance: RebalanceSuggestion | None) -> None:
             "Drift": f"{t['drift_pct']:+.1f}%",
             "Action": f"{action_icon} {t['action'].title()}",
             "Change (Rs)": f"Rs {t['change_rs']:+,.0f}",
+            "Why": reason,
         })
     st.dataframe(rows, use_container_width=True, hide_index=True)

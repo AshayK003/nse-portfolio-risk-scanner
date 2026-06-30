@@ -608,10 +608,26 @@ with tabs[5]:
             key="regime_chart",
         )
 
+# ── Per-stock risk data for explainability ──
+risk_data = {}
+if prices is not None and not prices.empty:
+    ann_vol = prices.pct_change().std() * np.sqrt(252)
+    ticker_vols = (ann_vol * 100).to_dict()
+    risk_data["volatility"] = ticker_vols
+    risk_data["avg_volatility"] = sum(ticker_vols.values()) / len(ticker_vols) if ticker_vols else 0
+if raw_corr is not None and hasattr(raw_corr, "mean"):
+    risk_data["avg_correlation"] = raw_corr.mean(axis=1).to_dict()
+if stock_betas:
+    risk_data["beta"] = stock_betas
+if portfolio and portfolio.holdings:
+    risk_data["sector"] = {h.ticker: h.sector for h in portfolio.holdings}
+if sector:
+    risk_data["sector_allocation"] = sector.sector_allocation
+
 # ── Tab 6: Recommendations ──
 with tabs[6]:
-    render_optimization_section(opt_result, portfolio=report.portfolio)
-    render_rebalance_section(rebalance)
+    render_optimization_section(opt_result, portfolio=report.portfolio, risk_data=risk_data)
+    render_rebalance_section(rebalance, risk_data=risk_data)
     st.divider()
     if recommendations:
         st.subheader("Portfolio Action Recommendations")
