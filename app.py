@@ -170,7 +170,7 @@ with tabs[2]:
 with tabs[3]:
     col1, col2 = st.columns(2)
     with col1:
-        dd = compute_max_drawdown((1 + portfolio_returns).cumprod())
+        dd = compute_max_drawdown((1 + portfolio_returns).cumprod()) if not portfolio_returns.empty else {"max_drawdown": 0.0, "start": "N/A", "end": "N/A"}
         st.plotly_chart(
             drawdown_chart(
                 ((1 + portfolio_returns).cumprod() -

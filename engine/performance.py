@@ -95,6 +95,9 @@ def compute_max_drawdown(prices: pd.Series | pd.DataFrame) -> dict:
     else:
         cum = prices
     
+    if cum.empty:
+        return {"max_drawdown": 0.0, "start": "N/A", "end": "N/A"}
+    
     running_max = cum.cummax()
     drawdown = (cum - running_max) / running_max * 100
     max_dd = drawdown.min()
