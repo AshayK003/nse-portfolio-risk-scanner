@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.7.0 (2026-06-30)
+
+### Added
+
+- **Institutional Risk Scoring (P×I×C Framework)** — new `engine/scoring.py` computes five composite scores: Overall Risk Score, Conviction Score, Portfolio Stress Score, Hidden Correlation Score, and Tail Risk Score. Each risk factor scored by Probability × Impact × Confidence with causal reasoning. Top 5 actionable insights ranked by composite score (`engine/scoring.py`, `tests/test_scoring.py`).
+- **Multi-Factor Risk Decomposition** — new `engine/factors.py` decomposes portfolio risk into Market (beta), Size, Momentum, Volatility, Liquidity, and Concentration factors. Estimates macro driver sensitivities for crude oil, interest rates, INR/USD, global risk sentiment, and credit quality with regime classification and causal reasoning (`engine/factors.py`, `tests/test_factors.py`).
+- **Macro-Driven Stress Tests** — enhanced `engine/scenario.py` with 7 real-world macro scenarios (crude oil spike, INR depreciation, rate hike/cut, global risk-off, recession, black swan). Sector-specific multipliers model differential impact across 18 sectors. Each scenario includes probability, severity, and causal reasoning (`engine/scenario.py`, `tests/test_macro_scenarios.py`).
+- **Portfolio Recommendations Engine** — new `engine/recommendations.py` generates actionable recommendations (reduce, hedge, diversify, accumulate, monitor, rebalance) with causal reasoning, trade-off analysis, and expected risk reduction estimates. Covers concentration risk, beta risk, tail risk, momentum breakdown, and macro sensitivities (`engine/recommendations.py`, `tests/test_recommendations.py`).
+- **Early-Warning Signal Detection** — new `engine/warnings.py` detects technical signals (MA crossovers, RSI overbought/oversold), volatility regime shifts, correlation breakdown (diversification failure), and momentum divergences. Each signal includes severity, reasoning, affected holdings, and suggested action (`engine/warnings.py`, `tests/test_warnings.py`).
+- **Hidden Correlation Detection** — scoring engine computes average pairwise correlation, high-correlation pair count, and diversification ratio to detect when holdings are more correlated than they appear (`engine/scoring.py`).
+- **4 new UI tabs** — Institutional Intelligence (scores, factor breakdown, top 5 insights), Macro Scenarios (sector-aware stress tests), Recommendations (priority actions with trade-offs), Early Warnings (signal dashboard with severity indicators).
+- **84 new tests** — 15 factor tests, 9 scoring tests, 9 macro scenario tests, 10 recommendation tests, 10 warning tests. Total test count: 252.
+
+### Changed
+
+- `engine/__init__.py` — added imports for FactorExposure, FactorRiskReport, MacroDriver, InstitutionalRiskScores, RiskScore, MacroScenarioResult, RecommendationReport, Recommendation, WarningReport, WarningSignal. Extended `AnalysisReport` with 6 new optional fields (backward compatible).
+- `engine/scenario.py` — extended with `MacroScenarioResult` dataclass, `SECTOR_MULTIPLIERS` dict, `MACRO_SCENARIOS` definitions, `run_macro_scenarios()`, and `_build_scenario_reasoning()`. Original `ScenarioResult` and `run_default_scenarios()` unchanged.
+- `app.py` — orchestrates all new intelligence modules, adds 4 new tabs to the UI, caches new results in session state.
+
+### Architecture
+
+- All new modules are pure Python (zero Streamlit imports, zero IO side effects)
+- Each module is independently testable with synthetic data
+- New data models follow existing dataclass pattern in `engine/__init__.py`
+- No new dependencies required — all computations use existing numpy/pandas/scipy
+
 ## v0.6.6 (2026-06-30)
 
 ### Fixed
