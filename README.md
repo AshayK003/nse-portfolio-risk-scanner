@@ -15,15 +15,26 @@ For NSE-native data (recommended for Indian equities):
 pip install -e ".[dev,pdf,nse]"
 ```
 
+With ML-based regime detection:
+
+```bash
+pip install -e ".[dev,pdf,nse,ml]"
+```
+
 ## Features
 
 - **CSV Upload** — Import portfolios from Zerodha, Groww, Upstox
-- **Risk Metrics** — Annualized volatility, VaR (95%), CVaR, Sharpe/Sortino ratios, beta, max drawdown
+- **Risk Metrics** — Annualized volatility, VaR (95%/99%), CVaR, Sharpe/Sortino ratios, beta, max drawdown
+- **Monte Carlo Projection** — Forward-looking 10,000-path simulation with probability-of-profit, confidence intervals, and VaR at horizon
+- **Portfolio Optimization** — Hierarchical Risk Parity (HRP), Minimum Volatility, and Maximum Sharpe ratio optimizers with allocation pie chart
+- **Market Regime Detection** — HMM-based regime classification (Bull/Neutral/Bear) with per-regime stats and transition matrix
+- **Correlation Denoising** — Marchenko-Pastur eigenvalue clipping for cleaner correlation estimates
 - **Sector Classification** — 160+ NSE stocks auto-classified via static mapping + nselib/yfinance fallback, concentration detection
 - **Benchmark Comparison** — Performance vs Nifty 50, alpha, tracking error, information ratio
-- **Interactive Charts** — Drawdown chart, benchmark overlay, sector treemap, correlation heatmap
+- **Interactive Charts** — Drawdown chart, benchmark overlay, sector treemap, correlation heatmap, regime scatter, Monte Carlo fan chart
 - **Export** — Download position-level CSV or PDF report
 - **NSE-Native Data** — Uses nselib for direct NSE data when available, falls back to yfinance
+- **No Paid APIs** — All data sources are free (yfinance, nselib). Zero paid dependencies.
 - **Accessibility** — Semantic headings, visible form labels, focus indicators, keyboard navigation, reduced motion support
 
 ## Project Structure
@@ -32,10 +43,13 @@ pip install -e ".[dev,pdf,nse]"
 ├── app.py                # Entry point (thin orchestration)
 ├── engine/               # Business logic (pure Python, zero UI deps)
 │   ├── portfolio.py      # CSV parsing, validation, normalization
-│   ├── risk.py           # VaR, volatility, beta, drawdown
+│   ├── risk.py           # VaR, volatility, beta, drawdown, Monte Carlo, correlation denoising
 │   ├── sector.py         # NSE sector classification
 │   ├── performance.py    # Sharpe, Sortino, CAGR
-│   └── benchmark.py      # Nifty 50 comparison
+│   ├── benchmark.py      # Nifty 50 comparison
+│   ├── optimization.py   # HRP, min-vol, max-Sharpe optimization
+│   ├── regime.py         # HMM market regime detection (optional)
+│   └── delivery.py       # NSE delivery analysis (optional)
 ├── ui/                   # Streamlit presentation layer
 │   ├── upload.py         # File upload
 │   ├── dashboard.py      # Metric cards, tabs, layout
@@ -67,10 +81,11 @@ pip install -e ".[dev,pdf,nse]"
 | streamlit | Web UI framework | No |
 | plotly | Interactive charts | No |
 | yfinance | Yahoo Finance data (fallback) | No |
-| numpy / pandas | Data processing | No |
+| numpy / pandas / scipy | Data processing & optimization | No |
 | loguru | Structured logging | No |
 | diskcache | Persistent price cache | No |
 | nselib | Direct NSE India data | Yes (`[nse]`) |
+| hmmlearn | HMM market regime detection | Yes (`[ml]`) |
 | fpdf2 | PDF report export | Yes (`[pdf]`) |
 | ruff / pre-commit | Linting & formatting | Dev only |
 | pytest / vcrpy | Testing | Dev only |

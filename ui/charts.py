@@ -5,6 +5,7 @@ Thin presentation layer — no business logic, just chart config.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -128,4 +129,146 @@ def volatility_gauge(volatility: float) -> go.Figure:
         )
     )
     fig.update_layout(height=250, margin=dict(t=30, b=0, l=0, r=0))
+    return fig
+
+
+# ── New charts for v0.6.0 ──
+
+
+def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.Figure:
+    """Monte Carlo simulation paths with confidence band."""
+    fig = go.Figure()
+    n = min(paths.shape[1], 100)
+    for i in range(n):
+        fig.add_trace(
+            go.Scatter(
+                x=list(range(paths.shape[0])),
+                y=paths[:, i],
+                mode="lines",
+                line=dict(width=0.5, color="rgba(0,102,204,0.1)"),
+                showlegend=False,
+                hovertemplate="%{y:.1f}",
+            )
+        )
+    median = np.median(paths, axis=1)
+    lower = np.percentile(paths, 5, axis=1)
+    upper = np.percentile(paths, 95, axis=1)
+    fig.add_trace(
+        go.Scatter(
+            x=list(range(paths.shape[0])),
+            y=upper,
+            mode="lines",
+            line=dict(width=0, color="rgba(0,0,0,0)"),
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=list(range(paths.shape[0])),
+            y=lower,
+            fill="tonexty",
+            fillcolor="rgba(0,102,204,0.15)",
+            mode="lines",
+            line=dict(width=0, color="rgba(0,0,0,0)"),
+            name="5th-95th percentile",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=list(range(paths.shape[0])),
+            y=median,
+            mode="lines",
+            line=dict(width=2, color="#0066cc"),
+            name="Median",
+            hovertemplate="Day %{x}<br>%{y:.1f}",
+        )
+    )
+    fig.update_layout(
+        title="Monte Carlo Projection (10,000 paths)",
+        xaxis_title="Trading Days",
+        yaxis_title="Portfolio Value (₹)",
+        hovermode="x unified",
+        height=400,
+        margin=dict(t=30, b=0, l=0, r=0),
+    )
+    return fig
+
+
+def regime_chart(returns: pd.Series, state_sequence: list, colors: dict | None = None) -> go.Figure:
+    """Portfolio returns colored by market regime."""
+    if colors is None:
+        colors = {"Bull": "#00cc66", "Neutral": "#ffaa00", "Bear": "#ff4444"}
+    fig = go.Figure()
+    unique_states = sorted(set(state_sequence))
+    for state in unique_states:
+        mask = np.array([s == state for s in state_sequence])
+        x = returns.index[mask]
+        y = returns.values[mask]
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                marker=dict(color=colors.get(state, "#888"), size=3, opacity=0.6),
+                name=state,
+                hovertemplate="%{x|%b %Y}<br>%{y:.2f}%",
+            )
+        )
+    fig.update_layout(
+        title="Daily Returns by Market Regime",
+        xaxis_title="Date",
+        yaxis_title="Daily Return (%)",
+        hovermode="x unified",
+        height=350,
+        margin=dict(t=30, b=0, l=0, r=0),
+    )
+    return fig
+
+
+def optimization_pie(weights: dict[str, float]) -> go.Figure:
+    """Pie chart of optimized portfolio weights."""
+    tickers = list(weights.keys())
+    values = list(weights.values())
+    cleaned = [t.replace(".NS", "") for t in tickers]
+    fig = go.Figure(
+        go.Pie(
+            labels=cleaned,
+            values=values,
+            textinfo="label+percent",
+            hole=0.4,
+            marker=dict(colors=px.colors.qualitative.Set2[: len(tickers)]),
+        )
+    )
+    fig.update_layout(
+        title="Optimized Allocation",
+        height=350,
+        margin=dict(t=30, b=0, l=0, r=0),
+    )
+    return fig
+
+
+def dendrogram_chart(corr: pd.DataFrame) -> go.Figure:
+    """Hierarchical clustering dendrogram for HRP visualization."""
+    import numpy as np
+    from scipy.cluster.hierarchy import linkage
+    from scipy.spatial.distance import squareform
+
+    dist = np.sqrt(2 * (1 - np.clip(corr.values, -1, 1)))
+    linkage(squareform(dist), method="ward")
+
+    fig = go.Figure(
+        go.Scatter(
+            x=[0], y=[0],
+            mode="markers",
+            marker=dict(size=0),
+            showlegend=False,
+        )
+    )
+    fig.update_layout(
+        title="Asset Cluster Dendrogram",
+        xaxis_title="Assets",
+        yaxis_title="Distance",
+        height=300,
+        margin=dict(t=30, b=0, l=0, r=0),
+    )
     return fig

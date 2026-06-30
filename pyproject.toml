@@ -33,6 +33,9 @@ pdf = [
 nse = [
     "nselib>=2.5.0",
 ]
+ml = [
+    "hmmlearn>=0.3.0",
+]
 
 [tool.uv]
 package = false

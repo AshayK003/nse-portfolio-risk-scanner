@@ -8,7 +8,15 @@ from __future__ import annotations
 
 import streamlit as st
 
-from engine import BenchmarkComparison, Portfolio, RiskMetrics, SectorExposure
+from engine import (
+    BenchmarkComparison,
+    MonteCarloResult,
+    OptimizationResult,
+    Portfolio,
+    RegimeResult,
+    RiskMetrics,
+    SectorExposure,
+)
 
 
 def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
@@ -139,3 +147,87 @@ def render_stock_table(portfolio: Portfolio) -> None:
         )
 
     st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+def render_optimization_section(opt: OptimizationResult | None) -> None:
+    """Display portfolio optimization results."""
+    st.subheader("Portfolio Optimization")
+
+    if opt is None or not opt.weights:
+        st.info("Add at least 2 holdings to see optimization suggestions.")
+        return
+
+    if opt.expected_return:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Expected Return (Annual)", f"{opt.expected_return:.1f}%")
+        with col2:
+            st.metric("Expected Volatility", f"{opt.expected_volatility:.1f}%")
+        with col3:
+            st.metric("Sharpe Ratio", f"{opt.sharpe:.2f}")
+
+    method_labels = {"hrp": "Hierarchical Risk Parity", "min_volatility": "Minimum Volatility", "max_sharpe": "Maximum Sharpe"}
+    st.caption(f"Method: {method_labels.get(opt.method, opt.method)}")
+
+    rows = []
+    for ticker, weight in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
+        rows.append({
+            "Ticker": ticker.replace(".NS", ""),
+            "Suggested Weight": f"{weight * 100:.1f}%",
+        })
+    st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+def render_monte_carlo_section(mc: MonteCarloResult | None) -> None:
+    """Display Monte Carlo simulation results."""
+    st.subheader("Monte Carlo Projection")
+
+    if mc is None:
+        st.info("Not enough data for Monte Carlo simulation.")
+        return
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Expected Return", f"{mc.expected_return:.1f}%")
+    with col2:
+        st.metric("Median Return", f"{mc.median_return:.1f}%")
+    with col3:
+        st.metric("Probability of Profit", f"{mc.prob_profit:.0f}%")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("VaR (95%)", f"{mc.var_95:.1f}%")
+    with col2:
+        st.metric("CVaR (95%)", f"{mc.cvar_95:.1f}%")
+    with col3:
+        st.metric("95% CI Range", f"{mc.ci_lower:.1f}% to {mc.ci_upper:.1f}%")
+
+    st.caption(f"Based on {mc.n_simulations:,} simulations over {mc.horizon_days} trading days")
+
+
+def render_regime_section(regime: RegimeResult | None) -> None:
+    """Display market regime detection results."""
+    st.subheader("Market Regime Analysis")
+
+    if regime is None:
+        st.info("Install hmmlearn for regime detection: pip install hmmlearn")
+        return
+
+    # Per-regime stats
+    cols = st.columns(len(regime.stats))
+    for i, stat in enumerate(regime.stats):
+        with cols[i]:
+            color = "green" if stat["label"] in ("Bull", "Strong Bull") else ("red" if stat["label"] in ("Bear", "Crisis") else "orange")
+            st.markdown(f"**<span style='color:{color}'>{stat['label']}</span>**", unsafe_allow_html=True)
+            st.metric("Occurrence", f"{stat['pct']}%")
+            st.metric("Mean Return", f"{stat['mean_return']:+.3f}%")
+            st.metric("Annual Vol", f"{stat['annual_vol']:.1f}%")
+            st.metric("Cum Return", f"{stat['cum_return']:+.1f}%")
+
+    with st.expander("Transition Matrix"):
+        st.caption("Probability of moving from row state to column state")
+        trans = regime.transition_matrix
+        trans_rows = []
+        for i, label in enumerate(regime.labels):
+            trans_rows.append({"From \\ To": label, **{regime.labels[j]: f"{trans[i][j]:.1%}" for j in range(len(regime.labels))}})
+        st.dataframe(trans_rows, use_container_width=True, hide_index=True)

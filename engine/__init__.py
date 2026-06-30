@@ -126,6 +126,44 @@ class BenchmarkComparison:
 
 
 @dataclass
+class OptimizationResult:
+    """Optimal portfolio weights from optimization."""
+
+    method: str  # "hrp", "min_volatility", "max_sharpe"
+    weights: dict[str, float]  # ticker -> weight
+    expected_return: float = 0.0
+    expected_volatility: float = 0.0
+    sharpe: float = 0.0
+
+
+@dataclass
+class MonteCarloResult:
+    """Forward-looking Monte Carlo simulation results."""
+
+    n_simulations: int
+    horizon_days: int
+    expected_return: float  # mean final return %
+    median_return: float
+    var_95: float  # 95% VaR of final value
+    var_99: float
+    cvar_95: float
+    prob_profit: float  # % of paths ending positive
+    ci_lower: float  # 5th percentile return
+    ci_upper: float  # 95th percentile return
+
+
+@dataclass
+class RegimeResult:
+    """Market regime detection results."""
+
+    n_states: int
+    labels: list[str]  # e.g. ["Bull", "Neutral", "Bear"]
+    state_sequence: list  # one per trading day (state label per day)
+    transition_matrix: list[list[float]]
+    stats: list[dict]  # per-regime: return, vol, count
+
+
+@dataclass
 class AnalysisReport:
     """Complete analysis result returned by the engine."""
 
@@ -134,3 +172,6 @@ class AnalysisReport:
     sector: SectorExposure
     benchmark: BenchmarkComparison
     prices: dict | None = None  # serialized price history (for export)
+    optimization: OptimizationResult | None = None
+    monte_carlo: MonteCarloResult | None = None
+    regime: RegimeResult | None = None

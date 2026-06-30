@@ -8,6 +8,8 @@ from engine.risk import (
     compute_correlation_matrix,
     compute_risk_metrics,
     compute_stock_risk,
+    denoise_correlation,
+    monte_carlo_simulation,
     rolling_volatility,
 )
 
@@ -166,3 +168,70 @@ class TestCorrelationMatrix:
         corr = compute_correlation_matrix(sample_prices)
         for i in range(corr.shape[0]):
             assert abs(corr.iloc[i, i] - 1.0) < 0.001
+
+
+class TestMonteCarloSimulation:
+    def test_returns_result(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = monte_carlo_simulation(returns, n_simulations=1000, horizon_days=252)
+        assert result.n_simulations == 1000
+        assert isinstance(result.expected_return, float)
+        assert isinstance(result.prob_profit, float)
+
+    def test_ci_bounds(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = monte_carlo_simulation(returns, n_simulations=1000, horizon_days=252)
+        assert result.ci_lower <= result.ci_upper
+
+    def test_var_negative(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = monte_carlo_simulation(returns, n_simulations=1000, horizon_days=252)
+        assert result.var_95 < 0
+
+    def test_empty_returns(self):
+        result = monte_carlo_simulation(pd.Series(dtype=float))
+        assert result.expected_return == 0.0
+
+    def test_prob_profit_range(self):
+        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
+        result = monte_carlo_simulation(returns, n_simulations=1000, horizon_days=252)
+        assert 0 <= result.prob_profit <= 100
+
+
+class TestDenoiseCorrelation:
+    def test_returns_dataframe(self, sample_prices):
+        corr = sample_prices.pct_change().dropna().corr()
+        result = denoise_correlation(corr, len(sample_prices))
+        assert isinstance(result, pd.DataFrame)
+        assert result.shape == corr.shape
+
+    def test_diagonal_ones(self, sample_prices):
+        corr = sample_prices.pct_change().dropna().corr()
+        result = denoise_correlation(corr, len(sample_prices))
+        for i in range(result.shape[0]):
+            assert abs(result.iloc[i, i] - 1.0) < 0.01
+
+    def test_symmetric(self, sample_prices):
+        corr = sample_prices.pct_change().dropna().corr()
+        result = denoise_correlation(corr, len(sample_prices))
+        for i in range(result.shape[0]):
+            for j in range(result.shape[1]):
+                assert abs(result.iloc[i, j] - result.iloc[j, i]) < 0.01
+
+    def test_empty_corr(self):
+        result = denoise_correlation(pd.DataFrame(), 100)
+        assert result.empty
+
+    def test_single_asset(self):
+        import pandas as pd
+        corr = pd.DataFrame({"A": [1.0]})
+        result = denoise_correlation(corr, 100)
+        assert abs(result.iloc[0, 0] - 1.0) < 0.01

@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from . import RiskMetrics
+from . import MonteCarloResult, RiskMetrics
 
 
 def compute_risk_metrics(
@@ -158,3 +158,141 @@ def _empty_risk_metrics() -> RiskMetrics:
         cagr=0.0,
         total_return=0.0,
     )
+
+
+# ── Monte Carlo Simulation ──
+
+
+def monte_carlo_simulation(
+    returns: pd.Series,
+    n_simulations: int = 10000,
+    horizon_days: int = 252,
+    seed: int = 42,
+) -> MonteCarloResult:
+    """
+    Forward-looking Monte Carlo simulation using Geometric Brownian Motion.
+
+    Args:
+        returns: Historical portfolio daily returns
+        n_simulations: Number of simulated paths
+        horizon_days: Trading days to project forward
+        seed: Random seed for reproducibility
+
+    Returns:
+        MonteCarloResult with distribution statistics
+    """
+    if returns.empty:
+        return MonteCarloResult(
+            n_simulations=n_simulations,
+            horizon_days=horizon_days,
+            expected_return=0.0,
+            median_return=0.0,
+            var_95=0.0,
+            var_99=0.0,
+            cvar_95=0.0,
+            prob_profit=0.0,
+            ci_lower=0.0,
+            ci_upper=0.0,
+        )
+
+    mu = returns.mean()
+    sigma = returns.std()
+
+    rng = np.random.default_rng(seed)
+    dt = 1.0
+    # GBM: S_t = S_0 * exp((mu - 0.5*sigma^2)*t + sigma * sqrt(t) * Z)
+    drift = (mu - 0.5 * sigma**2) * dt
+    shock = sigma * np.sqrt(dt) * rng.normal(0, 1, (horizon_days, n_simulations))
+
+    # Cumulative returns for each path
+    cum_returns = np.exp(np.cumsum(drift + shock, axis=0))
+
+    # Final period returns (relative to start = 1.0)
+    final = cum_returns[-1, :] - 1.0
+
+    expected = float(np.mean(final)) * 100
+    median_r = float(np.median(final)) * 100
+    var_95 = float(np.percentile(final, 5)) * 100
+    var_99 = float(np.percentile(final, 1)) * 100
+    cvar_95 = float(np.mean(final[final <= np.percentile(final, 5)])) * 100
+    prob_profit = float(np.mean(final > 0)) * 100
+    ci_lower = float(np.percentile(final, 5)) * 100
+    ci_upper = float(np.percentile(final, 95)) * 100
+
+    return MonteCarloResult(
+        n_simulations=n_simulations,
+        horizon_days=horizon_days,
+        expected_return=round(expected, 2),
+        median_return=round(median_r, 2),
+        var_95=round(var_95, 2),
+        var_99=round(var_99, 2),
+        cvar_95=round(cvar_95, 2),
+        prob_profit=round(prob_profit, 1),
+        ci_lower=round(ci_lower, 2),
+        ci_upper=round(ci_upper, 2),
+    )
+
+
+def monte_carlo_paths(
+    returns: pd.Series,
+    n_simulations: int = 1000,
+    horizon_days: int = 252,
+    seed: int = 42,
+) -> np.ndarray:
+    """Return raw simulation paths for charting (shape: horizon_days x n_simulations)."""
+    mu = returns.mean()
+    sigma = returns.std()
+    rng = np.random.default_rng(seed)
+    drift = (mu - 0.5 * sigma**2)
+    shocks = sigma * rng.normal(0, 1, (horizon_days, n_simulations))
+    return np.exp(np.cumsum(drift + shocks, axis=0)) * 100
+
+
+# ── Correlation Denoising (Marchenko-Pastur) ──
+
+
+def _marchenko_pastur_bound(n_features: int, n_samples: int, q: float | None = None) -> float:
+    """Upper bound of Marchenko-Pastur distribution for noisy eigenvalues."""
+    if q is None:
+        q = n_features / n_samples if n_samples > 0 else 1.0
+    q = max(q, 1e-6)
+    return (1 + np.sqrt(q)) ** 2
+
+
+def denoise_correlation(corr: pd.DataFrame, n_samples: int) -> pd.DataFrame:
+    """
+    Denoise correlation matrix using Marchenko-Pastur eigenvalue clipping.
+
+    Eigenvalues above the MP bound are retained; those below are averaged
+    to reduce noise while preserving signal.
+
+    Args:
+        corr: Empirical correlation matrix
+        n_samples: Number of observations used to estimate the matrix
+
+    Returns:
+        Denoised correlation matrix
+    """
+    if corr.empty or corr.shape[0] < 2:
+        return corr
+
+    n = corr.shape[0]
+    values, vectors = np.linalg.eigh(corr.values)
+    mp_bound = _marchenko_pastur_bound(n, n_samples)
+
+    # Keep eigenvalues above MP bound, replace noise with mean of noise eigenvalues
+    noise_mask = values <= mp_bound
+    noise_mean = values[noise_mask].mean() if noise_mask.any() else 0.0
+
+    denoised_values = np.where(noise_mask, noise_mean, values)
+
+    # Reconstruct
+    denoised = vectors @ np.diag(denoised_values) @ vectors.T
+
+    # Re-normalize to correlation matrix (unit diagonal)
+    d = np.sqrt(np.diag(denoised))
+    d[d == 0] = 1.0
+    denoised = denoised / np.outer(d, d)
+    denoised = np.clip(denoised, -1, 1)
+
+    return pd.DataFrame(denoised, index=corr.index, columns=corr.columns)

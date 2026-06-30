@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.6.0 (2026-06-30)
+
+### Added
+
+- **Hierarchical Risk Parity (HRP) Optimization** — new `engine/optimization.py` implements Lopez de Prado's HRP algorithm using scipy hierarchical clustering. No covariance matrix inversion needed. Also includes minimum volatility and maximum Sharpe ratio optimizers via SciPy SLSQP. New "Optimization" tab shows optimal weights with pie chart.
+- **Monte Carlo Simulation** — forward-looking portfolio projection using Geometric Brownian Motion (10,000 paths). New section in "Risk Metrics" tab shows expected return, median return, probability of profit, VaR/CVaR at horizon, and confidence interval bands. Chart shows all paths with 5th-95th percentile shading.
+- **Correlation Matrix Denoising** — Marchenko-Pastur eigenvalue clipping removes noise from the empirical correlation matrix. Accessible via "Denoised Correlation" expander in the Charts tab. Improves reliability of all covariance-dependent metrics.
+- **HMM Market Regime Detection** — new `engine/regime.py` uses Gaussian Hidden Markov Models (hmmlearn) to detect market states (Bull/Neutral/Bear). New "Regime" tab shows per-regime stats (mean return, volatility, cumulative return), transition matrix, and daily returns colored by regime. Optional dependency: `pip install hmmlearn`.
+- **NSE Delivery Analysis** — new `engine/delivery.py` fetches delivery volume data from nselib bhavcopy. Tracks delivery percentage and trend (rising/falling/stable) per holding. Uses nselib (already an optional dep).
+- **`ml` optional dependency** — `pip install -e ".[ml]"` installs hmmlearn for regime detection.
+- **New test files** — 20+ tests across `test_optimization.py` (9), `test_regime.py` (6), `test_delivery.py` (1), plus Monte Carlo and denoising tests in `test_risk.py` (10).
+
+### Architecture
+
+- `engine/optimization.py` — pure NumPy/SciPy, zero UI deps
+- `engine/regime.py` — optional hmmlearn, graceful None fallback
+- `engine/delivery.py` — optional nselib, graceful {} fallback
+- All new results added to `AnalysisReport` as optional fields (backward compatible)
+
 ## v0.5.2 (2026-06-30)
 
 ### Fixed

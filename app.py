@@ -13,23 +13,38 @@ import streamlit as st
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
+from engine.optimization import optimize_hrp
 from engine.performance import (
     compute_max_drawdown,
     compute_portfolio_returns,
 )
 from engine.portfolio import validate_portfolio
-from engine.risk import compute_correlation_matrix, compute_risk_metrics, rolling_volatility
+from engine.regime import detect_regimes
+from engine.risk import (
+    compute_correlation_matrix,
+    compute_risk_metrics,
+    denoise_correlation,
+    monte_carlo_paths,
+    monte_carlo_simulation,
+    rolling_volatility,
+)
 from engine.sector import classify_holdings, compute_sector_exposure, load_sector_map
 from ui.charts import (
     benchmark_chart,
     correlation_heatmap,
     drawdown_chart,
+    monte_carlo_chart,
+    optimization_pie,
+    regime_chart,
     sector_treemap,
     volatility_gauge,
 )
 from ui.dashboard import (
     render_benchmark_section,
     render_metric_row,
+    render_monte_carlo_section,
+    render_optimization_section,
+    render_regime_section,
     render_risk_cards,
     render_sector_section,
     render_stock_table,
@@ -150,12 +165,40 @@ with st.spinner("Computing risk metrics..."):
         compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
     )
 
+# ── New v0.6.0 features ──
+
+# Correlation matrix (needed for denoising)
+raw_corr = compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
+
+# HRP Optimization
+opt_result = optimize_hrp(prices.pct_change().dropna()) if len(weights) >= 2 else None
+
+# Monte Carlo simulation
+mc_result = monte_carlo_simulation(portfolio_returns) if not portfolio_returns.empty else None
+mc_paths = monte_carlo_paths(portfolio_returns) if not portfolio_returns.empty else None
+
+# HMM Regime detection
+regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty else None
+
+# Correlation denoising
+denoised_corr = denoise_correlation(raw_corr, len(portfolio_returns)) if not portfolio_returns.empty else None
+
+# Delivery analysis
+try:
+    from engine.delivery import fetch_delivery_for_holdings
+    delivery_data = fetch_delivery_for_holdings([h.ticker for h in portfolio.holdings])
+except Exception:
+    delivery_data = {}
+
 # Store in session
 st.session_state.report = AnalysisReport(
     portfolio=portfolio,
     risk=risk,
     sector=sector,
     benchmark=benchmark,
+    optimization=opt_result,
+    monte_carlo=mc_result,
+    regime=regime_result,
 )
 
 # ── Step 4: Display ──
@@ -165,7 +208,7 @@ report = st.session_state.report
 render_metric_row(report.portfolio, report.risk)
 
 # Tabs
-tab_names = ["Risk Metrics", "Sector", "vs Nifty 50", "Charts", "Holdings", "Export"]
+tab_names = ["Risk Metrics", "Sector", "vs Nifty 50", "Charts", "Holdings", "Export", "Optimization", "Regime"]
 tabs = st.tabs(tab_names)
 
 with tabs[0]:
@@ -178,6 +221,10 @@ with tabs[0]:
         if len(rv) > 0:
             st.subheader("Rolling 21-day Volatility")
             st.line_chart(rv)
+    st.divider()
+    render_monte_carlo_section(mc_result)
+    if mc_paths is not None:
+        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True)
 
 with tabs[1]:
     render_sector_section(report.sector)
@@ -208,17 +255,30 @@ with tabs[3]:
             use_container_width=True,
         )
     with col2:
-        corr = compute_correlation_matrix(prices)
+        corr = raw_corr if not raw_corr.empty else compute_correlation_matrix(prices)
         st.plotly_chart(
             correlation_heatmap(corr),
             use_container_width=True,
         )
+    if denoised_corr is not None and not denoised_corr.empty:
+        with st.expander("Denoised Correlation (Marchenko-Pastur)"):
+            st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True)
 
 with tabs[4]:
     render_stock_table(report.portfolio)
 
 with tabs[5]:
     render_export_section(report.portfolio, risk=report.risk, sector_data=report.sector.sector_allocation)
+
+with tabs[6]:
+    render_optimization_section(opt_result)
+    if opt_result and opt_result.weights:
+        st.plotly_chart(optimization_pie(opt_result.weights), use_container_width=True)
+
+with tabs[7]:
+    render_regime_section(regime_result)
+    if regime_result:
+        st.plotly_chart(regime_chart(portfolio_returns, regime_result.state_sequence), use_container_width=True)
 
 # ── Step 5: Save analysis run to history ──
 try:
