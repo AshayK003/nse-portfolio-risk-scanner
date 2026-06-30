@@ -6,6 +6,7 @@ Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander l
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from engine import Holding, Portfolio
@@ -219,8 +220,8 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
         )
 
         if st.button("Update from Editor", use_container_width=True):
-            if df is None:
-                st.warning("Open the expander and click Update again.")
+            if not isinstance(df, pd.DataFrame) or df.empty:
+                st.warning("Add rows in the data editor, then click Update.")
             else:
                 new_holdings = []
                 for _, row in df.iterrows():
