@@ -225,8 +225,8 @@ def regime_chart(returns: pd.Series, state_sequence: list, colors: dict | None =
     return fig
 
 
-def optimization_pie(weights: dict[str, float]) -> go.Figure:
-    """Pie chart of optimized portfolio weights."""
+def allocation_pie(weights: dict[str, float], title: str = "Allocation") -> go.Figure:
+    """Pie chart of portfolio weights."""
     tickers = list(weights.keys())
     values = list(weights.values())
     cleaned = [t.replace(".NS", "") for t in tickers]
@@ -240,11 +240,16 @@ def optimization_pie(weights: dict[str, float]) -> go.Figure:
         )
     )
     fig.update_layout(
-        title="Optimized Allocation",
+        title=title,
         height=350,
         margin=dict(t=30, b=0, l=0, r=0),
     )
     return fig
+
+
+def optimization_pie(weights: dict[str, float]) -> go.Figure:
+    """Pie chart of optimized portfolio weights."""
+    return allocation_pie(weights, "Optimized Allocation")
 
 
 def dendrogram_chart(corr: pd.DataFrame) -> go.Figure:

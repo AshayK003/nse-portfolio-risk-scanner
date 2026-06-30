@@ -149,7 +149,7 @@ def render_stock_table(portfolio: Portfolio) -> None:
     st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
-def render_optimization_section(opt: OptimizationResult | None) -> None:
+def render_optimization_section(opt: OptimizationResult | None, portfolio: Portfolio | None = None) -> None:
     """Display portfolio optimization results."""
     st.subheader("Portfolio Optimization")
 
@@ -169,13 +169,51 @@ def render_optimization_section(opt: OptimizationResult | None) -> None:
     method_labels = {"hrp": "Hierarchical Risk Parity", "min_volatility": "Minimum Volatility", "max_sharpe": "Maximum Sharpe"}
     st.caption(f"Method: {method_labels.get(opt.method, opt.method)}")
 
-    rows = []
-    for ticker, weight in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
-        rows.append({
-            "Ticker": ticker.replace(".NS", ""),
-            "Suggested Weight": f"{weight * 100:.1f}%",
-        })
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    # Current vs Optimized comparison
+    if portfolio and portfolio.total_current > 0:
+        col1, col2 = st.columns(2)
+        total_value = portfolio.total_current
+        current_weights = {h.ticker: h.current_value / total_value for h in portfolio.holdings if h.ticker in opt.weights}
+
+        with col1:
+            from ui.charts import allocation_pie
+            st.plotly_chart(
+                allocation_pie(current_weights, "Current Allocation"),
+                use_container_width=True,
+                key="current_alloc",
+            )
+
+        with col2:
+            from ui.charts import allocation_pie
+            st.plotly_chart(
+                allocation_pie(opt.weights, "Optimized Allocation"),
+                use_container_width=True,
+                key="opt_alloc",
+            )
+
+        comparison = []
+        for ticker, opt_w in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
+            cur_w = current_weights.get(ticker, 0.0)
+            cur_val = cur_w * total_value
+            opt_val = opt_w * total_value
+            diff = opt_val - cur_val
+            comparison.append({
+                "Ticker": ticker.replace(".NS", ""),
+                "Current Weight": f"{cur_w * 100:.1f}%",
+                "Optimized Weight": f"{opt_w * 100:.1f}%",
+                "Current Value (Rs)": f"{cur_val:,.0f}",
+                "Optimized Value (Rs)": f"{opt_val:,.0f}",
+                "Change (Rs)": f"{diff:+,.0f}",
+            })
+        st.dataframe(comparison, use_container_width=True, hide_index=True)
+    else:
+        rows = []
+        for ticker, weight in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
+            rows.append({
+                "Ticker": ticker.replace(".NS", ""),
+                "Suggested Weight": f"{weight * 100:.1f}%",
+            })
+        st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
 def render_monte_carlo_section(mc: MonteCarloResult | None) -> None:

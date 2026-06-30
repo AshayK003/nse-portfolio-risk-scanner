@@ -34,7 +34,6 @@ from ui.charts import (
     correlation_heatmap,
     drawdown_chart,
     monte_carlo_chart,
-    optimization_pie,
     regime_chart,
     sector_treemap,
     volatility_gauge,
@@ -274,9 +273,7 @@ with tabs[5]:
     render_export_section(report.portfolio, risk=report.risk, sector_data=report.sector.sector_allocation)
 
 with tabs[6]:
-    render_optimization_section(opt_result)
-    if opt_result and opt_result.weights:
-        st.plotly_chart(optimization_pie(opt_result.weights), use_container_width=True, key="opt_pie")
+    render_optimization_section(opt_result, portfolio=report.portfolio)
 
 with tabs[7]:
     render_regime_section(regime_result)
