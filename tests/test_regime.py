@@ -7,20 +7,17 @@ from engine.regime import detect_regimes
 
 
 class TestDetectRegimes:
-    def test_returns_none_without_hmmlearn(self):
-        """When hmmlearn is not installed, return None."""
+    def test_returns_result_statistical_fallback(self):
+        """Returns result via statistical fallback when hmmlearn unavailable."""
         dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
         returns = pd.Series(np.random.normal(0.001, 0.02, 252), index=dates)
         result = detect_regimes(returns)
-        # Will return result if hmmlearn available, None otherwise
-        import engine.regime as reg_mod
-        if reg_mod._HMMLEARN_AVAILABLE:
-            assert result is not None
-            assert result.n_states == 3
-            assert len(result.labels) == 3
-            assert len(result.state_sequence) == len(returns)
-        else:
-            assert result is None
+        # Statistical fallback also returns result for 252 data points
+        assert result is not None
+        assert result.n_states == 3
+        assert len(result.labels) == 3
+        assert len(result.state_sequence) == len(returns)
+        assert len(result.stats) == 3
 
     def test_detect_three_states(self):
         """With hmmlearn, should return 3-state result."""

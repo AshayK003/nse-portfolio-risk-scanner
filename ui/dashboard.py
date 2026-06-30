@@ -248,7 +248,7 @@ def render_regime_section(regime: RegimeResult | None) -> None:
     st.subheader("Market Regime Analysis")
 
     if regime is None:
-        st.info("Install hmmlearn for regime detection: pip install hmmlearn")
+        st.info("Not enough return data for regime detection (need 50+ trading days).")
         return
 
     # Per-regime stats
