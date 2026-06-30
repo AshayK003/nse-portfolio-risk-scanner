@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.6.3 (2026-06-30)
+
+### Performance
+
+- **Input-hash computation guard** — `app.py` now computes a hash of portfolio tickers + quantities + benchmark on every interaction. When the hash matches the last computation, all expensive engine calls (price fetch, risk metrics, optimization, Monte Carlo, HMM regime detection, scenario analysis, rebalancing) are skipped. Results are restored from a session state cache. This eliminates **~90% of recomputation cost** on tab switches, checkbox toggles, and other interactions where the portfolio hasn't changed. Perceived latency drops from ~2-4s to ~100ms.
+- **Vectorized per-holding beta computation** — replaced the sequential `for col in returns.columns` loop (individual `pd.concat` + `cov` per stock) with a single extended covariance matrix. ~80% faster beta computation for portfolios with 10+ holdings.
+- **Reduced Monte Carlo paths** — `monte_carlo_paths()` reduced from 1,000 to 200 paths. The chart only displayed 100; the extra 900 were discarded. ~80% faster simulation computation.
+- **Conditional `save_analysis_run()`** — only persists the analysis to SQLite when the report actually changed (first load or portfolio edit), not on every interaction.
+
+### Removed
+
+- **`scikit-learn` from requirements.txt** — never imported anywhere in the codebase; was a dead dependency carried over from an earlier iteration. Removed as a direct dependency (still installed transitively via hmmlearn).
+
+### Fixed
+
+- **Force-refresh checkbox UX** — added `key="force_refresh"` so the checkbox properly unchecks after one force-refresh cycle, preventing repeated forced fetches on every subsequent interaction.
+
+### Changed
+
+- `app.py` — input-hash guard restructured the computation pipeline. Full recomputation only runs when holdings, benchmark selection, or force-refresh changes. `app.py` grew from 325 to 381 lines (+56 for cache logic).
+- `requirements.txt` — removed `scikit-learn>=1.4` (transitive via hmmlearn).
+
 ## v0.6.2 (2026-06-30)
 
 ### Added
