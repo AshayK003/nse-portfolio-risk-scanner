@@ -17,7 +17,29 @@ from collections.abc import Callable
 from functools import lru_cache
 
 import pandas as pd
-from loguru import logger
+
+try:
+    from loguru import logger
+except ImportError:
+    import sys as _sys
+
+    class _Logger:
+        def _fmt(self, m, kw):
+            return m.format(**kw) if kw else m
+
+        def info(self, m, **kw):
+            print(self._fmt(m, kw), file=_sys.stderr)
+
+        def warning(self, m, **kw):
+            print(f"WARN: {self._fmt(m, kw)}", file=_sys.stderr)
+
+        def debug(self, m, **kw):
+            pass
+
+        def error(self, m, **kw):
+            print(f"ERROR: {self._fmt(m, kw)}", file=_sys.stderr)
+
+    logger = _Logger()
 
 from engine import Holding
 

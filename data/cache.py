@@ -24,7 +24,11 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pandas as pd
-from diskcache import Cache
+
+try:
+    from diskcache import Cache as _Cache
+except ImportError:
+    _Cache = None
 
 _CACHE_DIR = "data/.price_cache"
 
@@ -34,9 +38,14 @@ class PriceCache:
 
     def __init__(self, ttl_hours: int = 24, directory: str = _CACHE_DIR):
         self.ttl_hours = ttl_hours
-        self._cache = Cache(directory)
+        if _Cache is not None:
+            self._cache = _Cache(directory)
+        else:
+            self._cache = None
 
     def get(self, ticker: str) -> pd.Series | None:
+        if self._cache is None:
+            return None
         raw = self._cache.get(ticker)
         if raw is None:
             return None
@@ -45,7 +54,7 @@ class PriceCache:
         return series
 
     def set(self, ticker: str, close_series: pd.Series):
-        if close_series is None or close_series.empty:
+        if self._cache is None or close_series is None or close_series.empty:
             return
         dates = [
             d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10] for d in close_series.index
@@ -54,13 +63,16 @@ class PriceCache:
         self._cache.set(ticker, {"dates": dates, "values": values}, expire=timedelta(hours=self.ttl_hours))
 
     def has(self, ticker: str) -> bool:
-        return ticker in self._cache
+        return False if self._cache is None else ticker in self._cache
 
     def clear(self, ticker: str):
-        del self._cache[ticker]
+        if self._cache is not None:
+            del self._cache[ticker]
 
     def clear_all(self):
-        self._cache.clear()
+        if self._cache is not None:
+            self._cache.clear()
 
     def evict_stale(self):
-        self._cache.expire()
+        if self._cache is not None:
+            self._cache.expire()
