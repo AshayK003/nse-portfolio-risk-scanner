@@ -126,6 +126,70 @@ def _data_table(pdf, headers: list[str], widths: list[int], rows: list[list[str]
         pdf.ln()
 
 
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    _MPL_AVAILABLE = True
+except ImportError:
+    _MPL_AVAILABLE = False
+
+
+def _chart_bytes(fig) -> bytes:
+    """Render a matplotlib figure to PNG bytes."""
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
+    """Matplotlib pie chart for sector allocation."""
+    if not _MPL_AVAILABLE:
+        return None
+    labels = list(sector_data.keys())
+    sizes = list(sector_data.values())
+    colors = plt.cm.Set2.colors[: len(labels)]
+    fig, ax = plt.subplots(figsize=(page_w / 25.4, 2.5))
+    wedges, texts, autotexts = ax.pie(
+        sizes, labels=None, autopct="%1.0f%%", startangle=90,
+        colors=colors, textprops={"fontsize": 7},
+    )
+    ax.legend(
+        wedges, [f"{l} ({s:.0f}%)" for l, s in zip(labels, sizes)],
+        loc="center left", bbox_to_anchor=(1, 0.5), fontsize=6,
+    )
+    ax.set_title("Sector Allocation", fontsize=9, fontweight="bold")
+    return _chart_bytes(fig)
+
+
+def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
+    """Matplotlib horizontal bar chart of P&L per holding."""
+    if not _MPL_AVAILABLE:
+        return None
+    top = df.iloc[df["P&L %"].abs().argsort()[::-1][:15]] if "P&L %" in df.columns else df.head(15)
+    tickers = [t.replace(".NS", "") for t in top["Ticker"]]
+    pnl_values = top["P&L %"].values
+    colors = ["#2ecc71" if v >= 0 else "#e74c3c" for v in pnl_values]
+    fig, ax = plt.subplots(figsize=(page_w / 25.4, max(2, len(tickers) * 0.35)))
+    bars = ax.barh(range(len(tickers)), pnl_values, color=colors, height=0.6)
+    ax.set_yticks(range(len(tickers)))
+    ax.set_yticklabels(tickers, fontsize=7)
+    ax.axvline(0, color="black", linewidth=0.5)
+    ax.set_xlabel("P&L %", fontsize=7)
+    ax.tick_params(axis="x", labelsize=6)
+    for bar, val in zip(bars, pnl_values, strict=False):
+        px = bar.get_width()
+        ax.text(px + (0.3 if px >= 0 else -0.3), bar.get_y() + bar.get_height() / 2,
+                f"{val:+.1f}%", va="center", fontsize=6,
+                ha="left" if px >= 0 else "right")
+    ax.margins(x=0.15)
+    return _chart_bytes(fig)
+
+
 def _generate_pdf_report(
     portfolio: Portfolio,
     risk: RiskMetrics | None,
@@ -219,10 +283,23 @@ def _generate_pdf_report(
     if sector_data:
         pdf.ln(2)
         _section_header(pdf, "Sector Allocation")
-        sorted_sectors = sorted(sector_data.items(), key=lambda x: x[1], reverse=True)
-        sector_rows = [[s, f"{pct:.1f}%", "=" * max(int(pct / 5), 1)] for s, pct in sorted_sectors]
-        _data_table(pdf, ["Sector", "Weight", "Bar"], [60, 30, page_w - 90], sector_rows)
+        chart = _sector_pie_chart(sector_data, page_w)
+        if chart:
+            img_w = page_w * 0.6
+            pdf.image(chart, x=pdf.l_margin + (page_w - img_w) / 2, w=img_w)
+            pdf.ln(3)
+        else:
+            sorted_sectors = sorted(sector_data.items(), key=lambda x: x[1], reverse=True)
+            sector_rows = [[s, f"{pct:.1f}%", "=" * max(int(pct / 5), 1)] for s, pct in sorted_sectors]
+            _data_table(pdf, ["Sector", "Weight", "Bar"], [60, 30, page_w - 90], sector_rows)
         pdf.ln(3)
+
+    # ── Holdings P&L Chart ──
+    pnl_chart = _pnl_bar_chart(df, page_w)
+    if pnl_chart:
+        img_w = page_w
+        pdf.image(pnl_chart, x=pdf.l_margin, w=img_w)
+        pdf.ln(2)
 
     # ── Holdings Section ──
     pdf.ln(2)
