@@ -5,12 +5,9 @@ import pandas as pd
 
 from engine import Holding
 from engine.performance import (
-    compute_cagr,
     compute_holding_returns,
     compute_max_drawdown,
     compute_portfolio_returns,
-    compute_sharpe_ratio,
-    compute_sortino_ratio,
     compute_total_return,
     compute_win_rate,
 )
@@ -42,26 +39,6 @@ class TestComputePortfolioReturns:
         assert len(result) == 0
 
 
-class TestComputeCAGR:
-    def test_positive_cagr(self):
-        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
-        # 10% annual return
-        daily_ret = 0.10 / 252
-        returns = pd.Series(np.full(252, daily_ret), index=dates)
-        cagr = compute_cagr(returns)
-        assert abs(cagr - 10.0) < 1.0  # ~10% with compounding
-
-    def test_zero_returns(self):
-        returns = pd.Series(dtype=float)
-        assert compute_cagr(returns) == 0.0
-
-    def test_negative_cagr(self):
-        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
-        returns = pd.Series(np.full(252, -0.001), index=dates)
-        cagr = compute_cagr(returns)
-        assert cagr < 0
-
-
 class TestComputeTotalReturn:
     def test_total_return(self):
         dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
@@ -85,40 +62,6 @@ class TestComputeTotalReturn:
         assert "total" in result
         # Should not have period returns for very short history
         assert "1y" not in result
-
-
-class TestComputeSharpeRatio:
-    def test_positive_sharpe(self):
-        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
-        # Positive excess returns
-        returns = pd.Series(np.random.normal(0.0015, 0.02, 252), index=dates)
-        sharpe = compute_sharpe_ratio(returns, risk_free_rate=0.065)
-        assert isinstance(sharpe, float)
-
-    def test_sharpe_with_no_volatility(self):
-        returns = pd.Series(np.zeros(100))
-        sharpe = compute_sharpe_ratio(returns)
-        assert sharpe == 0.0
-
-
-class TestComputeSortinoRatio:
-    def test_positive_sortino(self):
-        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
-        returns = pd.Series(np.random.normal(0.0015, 0.02, 252), index=dates)
-        sortino = compute_sortino_ratio(returns, risk_free_rate=0.065)
-        assert isinstance(sortino, float)
-
-    def test_sortino_vs_sharpe(self):
-        """With only upside volatility, Sortino should be higher than Sharpe."""
-        dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
-        np.random.seed(42)
-        # Create returns with more upside than downside
-        raw = np.random.normal(0.001, 0.02, 252)
-        raw[raw < 0] = raw[raw < 0] * 0.5  # halve negative returns
-        returns = pd.Series(raw, index=dates)
-        sharpe = compute_sharpe_ratio(returns)
-        sortino = compute_sortino_ratio(returns)
-        assert sortino >= sharpe  # Sortino >= Sharpe when downside is lower
 
 
 class TestComputeMaxDrawdown:

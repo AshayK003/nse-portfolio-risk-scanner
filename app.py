@@ -182,12 +182,6 @@ regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty
 # Correlation denoising
 denoised_corr = denoise_correlation(raw_corr, len(portfolio_returns)) if not portfolio_returns.empty else None
 
-# Delivery analysis
-try:
-    from engine.delivery import fetch_delivery_for_holdings
-    delivery_data = fetch_delivery_for_holdings([h.ticker for h in portfolio.holdings])
-except Exception:
-    delivery_data = {}
 
 # Store in session
 st.session_state.report = AnalysisReport(

@@ -126,29 +126,23 @@ def _data_table(pdf, headers: list[str], widths: list[int], rows: list[list[str]
         pdf.ln()
 
 
-try:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    _MPL_AVAILABLE = True
-except ImportError:
-    _MPL_AVAILABLE = False
-
-
-def _chart_bytes(fig) -> bytes:
+def _chart_bytes(fig, plt_module) -> bytes:
     """Render a matplotlib figure to PNG bytes."""
     import io
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    plt_module.close(fig)
     buf.seek(0)
     return buf.read()
 
 
 def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
     """Matplotlib pie chart for sector allocation."""
-    if not _MPL_AVAILABLE:
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
         return None
     labels = list(sector_data.keys())
     sizes = list(sector_data.values())
@@ -163,12 +157,16 @@ def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
         loc="center left", bbox_to_anchor=(1, 0.5), fontsize=6,
     )
     ax.set_title("Sector Allocation", fontsize=9, fontweight="bold")
-    return _chart_bytes(fig)
+    return _chart_bytes(fig, plt)
 
 
 def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
     """Matplotlib horizontal bar chart of P&L per holding."""
-    if not _MPL_AVAILABLE:
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
         return None
     top = df.iloc[df["P&L %"].abs().argsort()[::-1][:15]] if "P&L %" in df.columns else df.head(15)
     tickers = [t.replace(".NS", "") for t in top["Ticker"]]
@@ -187,7 +185,7 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
                 f"{val:+.1f}%", va="center", fontsize=6,
                 ha="left" if px >= 0 else "right")
     ax.margins(x=0.15)
-    return _chart_bytes(fig)
+    return _chart_bytes(fig, plt)
 
 
 def _generate_pdf_report(

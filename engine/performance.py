@@ -23,16 +23,6 @@ def compute_portfolio_returns(
     return returns.dot(weights_arr)
 
 
-def compute_cagr(portfolio_returns: pd.Series) -> float:
-    """Compound Annual Growth Rate as a percentage."""
-    cum = (1 + portfolio_returns).cumprod()
-    total_return = cum.iloc[-1] - 1 if len(cum) > 0 else 0
-    years = len(portfolio_returns) / 252
-    if years <= 0:
-        return 0.0
-    return ((1 + total_return) ** (1 / years) - 1) * 100
-
-
 def compute_total_return(portfolio_returns: pd.Series) -> dict:
     """Total return over various periods as percentage."""
     cum = (1 + portfolio_returns).cumprod()
@@ -55,31 +45,6 @@ def compute_total_return(portfolio_returns: pd.Series) -> dict:
         returns["1y"] = round((cum.iloc[-1] / year_ago - 1) * 100, 2)
 
     return returns
-
-
-def compute_sharpe_ratio(
-    portfolio_returns: pd.Series,
-    risk_free_rate: float = 0.065,
-) -> float:
-    """Annualized Sharpe ratio."""
-    daily_rf = risk_free_rate / 252
-    excess = portfolio_returns - daily_rf
-    daily_vol = portfolio_returns.std()
-    if daily_vol <= 0:
-        return 0.0
-    return round(np.sqrt(252) * excess.mean() / daily_vol, 2)
-
-
-def compute_sortino_ratio(
-    portfolio_returns: pd.Series,
-    risk_free_rate: float = 0.065,
-) -> float:
-    """Annualized Sortino ratio (uses downside deviation)."""
-    daily_rf = risk_free_rate / 252
-    excess_mean = portfolio_returns.mean() - daily_rf
-    downside = np.minimum(0, portfolio_returns - daily_rf)
-    downside_vol = np.sqrt(np.mean(downside**2)) * np.sqrt(252) if len(downside) > 0 else 1e-10
-    return round((excess_mean * 252) / downside_vol, 2)
 
 
 def compute_max_drawdown(prices: pd.Series | pd.DataFrame) -> dict:

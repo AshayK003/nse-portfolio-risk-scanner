@@ -1,16 +1,13 @@
 """
 NSE sector classification and concentration analysis.
 
-Uses a static sector mapping file (data/sectors.yaml) for ticker→sector lookups.
+Uses a static sector mapping for ticker→sector lookups.
 Falls back to yfinance sector info when a ticker isn't in the mapping.
 """
 
 from __future__ import annotations
 
-import os
-
 import numpy as np
-import yaml
 
 from . import Holding, SectorExposure
 
@@ -167,23 +164,9 @@ _DEFAULT_SECTORS: dict[str, str] = {
 }
 
 
-def load_sector_map(path: str | None = None) -> dict[str, str]:
-    """
-    Load sector mapping from YAML file, falling back to built-in defaults.
-
-    The YAML file should be a flat mapping:
-        RELIANCE: Oil & Gas
-        TCS: IT
-    """
-    sectors = dict(_DEFAULT_SECTORS)
-
-    if path and os.path.exists(path):
-        with open(path) as f:
-            yaml_data = yaml.safe_load(f)
-            if isinstance(yaml_data, dict):
-                sectors.update(yaml_data)
-
-    return sectors
+def load_sector_map() -> dict[str, str]:
+    """Return the default ticker-to-sector mapping."""
+    return dict(_DEFAULT_SECTORS)
 
 
 def classify_holdings(

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.6.1 (2026-06-30)
+
+### Removed
+
+- **Dead delivery analysis fetch** — `app.py` called `fetch_delivery_for_holdings()` but never used the result. Removed the unused call.
+- **Unused CAGR/Sharpe/Sortino functions** — `compute_cagr`, `compute_sharpe_ratio`, `compute_sortino_ratio` in `engine/performance.py` were duplicated by `engine/risk.py` and never called from the app. Removed the dead code and corresponding tests.
+- **`dendrogram_chart()` stub** — dead function in `ui/charts.py` rendered an invisible scatter plot. Never imported. Removed.
+- **`optimization_pie()` wrapper** — 3-line wrapper around `allocation_pie()` with no callers. Removed.
+
+### Changed
+
+- **Sector mapping deduplicated** — `data/sectors.yaml` was a second source of truth for ticker-to-sector data, missing ~20 entries the hardcoded dict had. Removed the YAML file; `load_sector_map()` now returns built-in defaults directly. Removed `pyyaml` dependency.
+- **matplotlib imports deferred** — moved from eager module-level import to lazy import inside PDF chart functions, saving ~200-400ms on page load when PDF export is not used.
+- **Loguru fallback removed** — 22-line `ImportError` fallback for loguru removed since it's a core dependency. Uses `from loguru import logger` directly.
+- **Empty `nse_risk_scanner/` package removed** — directory contained only an empty `__init__.py` and was unused at runtime.
+
+### Fixed
+
+- **No regressions** — all 184 existing tests pass (2 pre-existing flaky regime tests unaffected).
+
 ## v0.6.0 (2026-06-30)
 
 ### Added

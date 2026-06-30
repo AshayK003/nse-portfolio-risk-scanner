@@ -44,13 +44,6 @@ class TestClassifyHoldings:
         result = classify_holdings(holdings, sector_map=custom)
         assert result[0].sector == "Custom Sector"
 
-    def test_load_sector_map_with_yaml(self, tmp_path):
-        yaml_file = tmp_path / "custom_sectors.yaml"
-        yaml_file.write_text("MYSTERY: Mystery Sector\n")
-        result = load_sector_map(path=str(yaml_file))
-        assert result["MYSTERY"] == "Mystery Sector"
-        assert "RELIANCE" in result  # defaults still present
-
 
 class TestComputeSectorExposure:
     def test_single_sector(self):

@@ -247,33 +247,3 @@ def allocation_pie(weights: dict[str, float], title: str = "Allocation") -> go.F
     return fig
 
 
-def optimization_pie(weights: dict[str, float]) -> go.Figure:
-    """Pie chart of optimized portfolio weights."""
-    return allocation_pie(weights, "Optimized Allocation")
-
-
-def dendrogram_chart(corr: pd.DataFrame) -> go.Figure:
-    """Hierarchical clustering dendrogram for HRP visualization."""
-    import numpy as np
-    from scipy.cluster.hierarchy import linkage
-    from scipy.spatial.distance import squareform
-
-    dist = np.sqrt(2 * (1 - np.clip(corr.values, -1, 1)))
-    linkage(squareform(dist), method="ward")
-
-    fig = go.Figure(
-        go.Scatter(
-            x=[0], y=[0],
-            mode="markers",
-            marker=dict(size=0),
-            showlegend=False,
-        )
-    )
-    fig.update_layout(
-        title="Asset Cluster Dendrogram",
-        xaxis_title="Assets",
-        yaxis_title="Distance",
-        height=300,
-        margin=dict(t=30, b=0, l=0, r=0),
-    )
-    return fig
