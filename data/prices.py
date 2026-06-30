@@ -18,7 +18,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 
 import pandas as pd
-
 from loguru import logger
 
 from engine import Holding
@@ -111,7 +110,9 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
         if len(cached_series) >= min_points.get(period, 20):
             df = pd.DataFrame({"Close": cached_series})
             return df
-        logger.debug("Cached data too short ({n} pts) for period {p} — refetching", n=len(cached_series), p=period)
+        logger.debug(
+            "Cached data too short ({n} pts) for period {p} — refetching", n=len(cached_series), p=period
+        )
 
     df = None
     if not ticker.startswith("^"):
@@ -182,10 +183,7 @@ def fetch_prices(
         progress_callback(f"Fetching prices for {len(tickers)} stocks...")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(_fetch_with_retry, ticker, period): ticker
-            for ticker in tickers
-        }
+        futures = {executor.submit(_fetch_with_retry, ticker, period): ticker for ticker in tickers}
 
         for future in as_completed(futures):
             ticker = futures[future]
@@ -206,9 +204,7 @@ def fetch_prices(
                 errors.append(f"{ticker}: {e}")
 
             if progress_callback and completed % 5 == 0:
-                progress_callback(
-                    f"Fetched {completed}/{len(tickers)} stocks..."
-                )
+                progress_callback(f"Fetched {completed}/{len(tickers)} stocks...")
 
     if progress_callback:
         progress_callback("Processing prices...")
@@ -258,7 +254,7 @@ def fetch_benchmark(
     if _NSELIB_AVAILABLE and not ticker.startswith("^"):
         try:
             clean = ticker.replace(".NS", "")
-            raw = capital_market.index_data(index=clean, period="1M")
+            raw = capital_market.index_data(index=clean, period=period)
             if raw is not None and not raw.empty and "CLOSE_PRICE" in raw.columns:
                 raw = raw.copy()
                 raw["DATE"] = pd.to_datetime(raw["DATE"])

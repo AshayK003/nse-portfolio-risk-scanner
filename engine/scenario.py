@@ -292,13 +292,17 @@ def run_macro_scenarios(
             )
 
         # Compute sector-level impacts
+        portfolio_beta = (
+            sum(betas.get(h.ticker, 1.0) * (h.current_value / total_value) for h in holdings)
+            if betas
+            else 1.0
+        )
         for sector, sv in sector_values.items():
             sector_weight = sv / total_value
             sector_adj = sector_multipliers.get(sector, 0.0)
             sector_impacts[sector] = (
                 round(
-                    sector_weight
-                    * (betas.get(list(betas.keys())[0], 1.0) * market_change + sector_adj * 100),
+                    sector_weight * (portfolio_beta * market_change + sector_adj * 100),
                     2,
                 )
                 if betas
@@ -350,9 +354,11 @@ def _build_scenario_reasoning(
                 f"which would face an estimated {worst_impact:.1f}% impact."
             )
 
-    # Count affected holdings
-    severely_affected = sum(1 for h in sector_impacts.values() if h < -10)
-    if severely_affected > 0:
-        parts.append(f"{severely_affected} sector(s) in your portfolio would face double-digit losses.")
+    # Count affected sectors
+    sectors_with_double_digit_losses = sum(1 for v in sector_impacts.values() if v < -10)
+    if sectors_with_double_digit_losses > 0:
+        parts.append(
+            f"{sectors_with_double_digit_losses} sector(s) in your portfolio would face double-digit losses."
+        )
 
     return " ".join(parts)

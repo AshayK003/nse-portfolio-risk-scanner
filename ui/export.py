@@ -136,6 +136,7 @@ def _data_table(pdf, headers: list[str], widths: list[int], rows: list[list[str]
 def _chart_bytes(fig, plt_module) -> bytes:
     """Render a matplotlib figure to PNG bytes."""
     import io
+
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
     plt_module.close(fig)
@@ -147,6 +148,7 @@ def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
     """Matplotlib pie chart for sector allocation."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -156,12 +158,19 @@ def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
     colors = plt.cm.Set2.colors[: len(labels)]
     fig, ax = plt.subplots(figsize=(page_w / 25.4 * 0.55, 2.2))
     wedges, texts, autotexts = ax.pie(
-        sizes, labels=None, autopct="%1.0f%%", startangle=90,
-        colors=colors, textprops={"fontsize": 7},
+        sizes,
+        labels=None,
+        autopct="%1.0f%%",
+        startangle=90,
+        colors=colors,
+        textprops={"fontsize": 7},
     )
     ax.legend(
-        wedges, [f"{lab} ({s:.0f}%)" for lab, s in zip(labels, sizes, strict=False)],
-        loc="center left", bbox_to_anchor=(1, 0.5), fontsize=6,
+        wedges,
+        [f"{lab} ({s:.0f}%)" for lab, s in zip(labels, sizes, strict=False)],
+        loc="center left",
+        bbox_to_anchor=(1, 0.5),
+        fontsize=6,
     )
     ax.set_title("Sector Allocation", fontsize=9, fontweight="bold")
     return _chart_bytes(fig, plt)
@@ -171,6 +180,7 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
     """Matplotlib horizontal bar chart of P&L per holding."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -188,9 +198,14 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
     ax.tick_params(axis="x", labelsize=6)
     for bar, val in zip(bars, pnl_values, strict=False):
         px = bar.get_width()
-        ax.text(px + (0.3 if px >= 0 else -0.3), bar.get_y() + bar.get_height() / 2,
-                f"{val:+.1f}%", va="center", fontsize=6,
-                ha="left" if px >= 0 else "right")
+        ax.text(
+            px + (0.3 if px >= 0 else -0.3),
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:+.1f}%",
+            va="center",
+            fontsize=6,
+            ha="left" if px >= 0 else "right",
+        )
     ax.margins(x=0.15)
     ax.set_title("Holdings P&L", fontsize=9, fontweight="bold")
     fig.tight_layout()
@@ -201,6 +216,7 @@ def _risk_gauge_chart(volatility: float, page_w: float) -> bytes | None:
     """Horizontal risk bar — green/amber/red zones with volatility marker."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -233,12 +249,12 @@ def _drawdown_area_chart(portfolio_cum: pd.Series, page_w: float) -> bytes | Non
     """Red area chart of portfolio drawdown."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
         return None
 
-    fig, ax = plt.subplots(figsize=(page_w / 25.4, 2.0))
     running_max = portfolio_cum.cummax()
     drawdown = (portfolio_cum - running_max) / running_max * 100
 
@@ -257,6 +273,7 @@ def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes 
     """Monte Carlo confidence interval visualization."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -271,20 +288,40 @@ def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes 
 
     ci_lower = max(mc_result.ci_lower, -margin)
     ci_upper = min(mc_result.ci_upper, margin)
-    ax.barh(0.5, ci_upper - ci_lower, left=ci_lower, height=0.25,
-            color="#3b82f6", alpha=0.2, ec="#2563eb", linewidth=0.5)
+    ax.barh(
+        0.5,
+        ci_upper - ci_lower,
+        left=ci_lower,
+        height=0.25,
+        color="#3b82f6",
+        alpha=0.2,
+        ec="#2563eb",
+        linewidth=0.5,
+    )
 
     ax.plot(mc_result.expected_return, 0.5, "D", color="#2563eb", markersize=5, zorder=3)
-    ax.text(mc_result.expected_return, 0.75, f"Expected: {mc_result.expected_return:.1f}%",
-            ha="center", fontsize=6, color="#2563eb")
+    ax.text(
+        mc_result.expected_return,
+        0.75,
+        f"Expected: {mc_result.expected_return:.1f}%",
+        ha="center",
+        fontsize=6,
+        color="#2563eb",
+    )
 
     ax.plot(mc_result.var_95, 0.25, "v", color="#ef4444", markersize=4, zorder=3)
-    ax.text(mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%",
-            ha="center", fontsize=5, color="#ef4444")
+    ax.text(
+        mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%", ha="center", fontsize=5, color="#ef4444"
+    )
 
-    ax.text(0, -0.05,
-            f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, {mc_result.horizon_days}d horizon",
-            ha="center", fontsize=5.5, color="#6b7280")
+    ax.text(
+        0,
+        -0.05,
+        f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, {mc_result.horizon_days}d horizon",
+        ha="center",
+        fontsize=5.5,
+        color="#6b7280",
+    )
 
     ax.set_title("Monte Carlo Projection", fontsize=9, fontweight="bold")
     fig.tight_layout()
@@ -295,6 +332,7 @@ def _holdings_weight_bar(portfolio: Portfolio, page_w: float) -> bytes | None:
     """Horizontal bar chart of top holdings by weight."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -306,15 +344,16 @@ def _holdings_weight_bar(portfolio: Portfolio, page_w: float) -> bytes | None:
     weights = [h.current_value / total * 100 for h in holdings]
 
     fig, ax = plt.subplots(figsize=(page_w / 25.4 * 0.45, 2.2))
-    colors = plt.cm.Set2.colors[:len(tickers)]
+    colors = plt.cm.Set2.colors[: len(tickers)]
     bars = ax.barh(range(len(tickers)), weights, color=colors, height=0.6)
     ax.set_yticks(range(len(tickers)))
     ax.set_yticklabels(tickers, fontsize=7)
     ax.set_xlabel("Weight (%)", fontsize=7)
     ax.tick_params(axis="x", labelsize=6)
-    for bar, w in zip(bars, weights):
-        ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
-                f"{w:.1f}%", va="center", fontsize=6)
+    for bar, w in zip(bars, weights, strict=False):
+        ax.text(
+            bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2, f"{w:.1f}%", va="center", fontsize=6
+        )
     ax.set_title("Top Holdings by Weight", fontsize=9, fontweight="bold")
     ax.margins(x=0.15)
     fig.tight_layout()
@@ -349,7 +388,10 @@ def _risk_assessment_text(risk: RiskMetrics | None) -> tuple[str, tuple]:
     elif vol < 25 or sharpe > 0.5:
         return "MODERATE - moderate volatility with adequate compensation for risk taken.", PDF_COLOR_AMBER
     else:
-        return "HIGH - elevated volatility with weak risk-adjusted returns. Consider defensive positioning.", PDF_COLOR_RED
+        return (
+            "HIGH - elevated volatility with weak risk-adjusted returns. Consider defensive positioning.",
+            PDF_COLOR_RED,
+        )
 
 
 def _generate_pdf_report(
@@ -382,18 +424,26 @@ def _generate_pdf_report(
     pnl_sign = "+" if portfolio.total_pnl >= 0 else ""
 
     _kpi_card(pdf, "Holdings", str(portfolio.holding_count), pdf.l_margin, y0, card_w)
-    _kpi_card(pdf, "Total Invested", f"Rs {portfolio.total_invested:,.0f}",
-              pdf.l_margin + card_w + 3, y0, card_w)
-    _kpi_card(pdf, "Current Value", f"Rs {portfolio.total_current:,.0f}",
-              pdf.l_margin + 2 * (card_w + 3), y0, card_w)
+    _kpi_card(
+        pdf, "Total Invested", f"Rs {portfolio.total_invested:,.0f}", pdf.l_margin + card_w + 3, y0, card_w
+    )
+    _kpi_card(
+        pdf,
+        "Current Value",
+        f"Rs {portfolio.total_current:,.0f}",
+        pdf.l_margin + 2 * (card_w + 3),
+        y0,
+        card_w,
+    )
 
     y1 = y0 + 23
-    _kpi_card(pdf, "P&L", f"{pnl_sign}Rs {portfolio.total_pnl:+,.0f}",
-              pdf.l_margin, y1, card_w, color=pnl_color)
-    _kpi_card(pdf, "P&L %", f"{portfolio.total_pnl_pct:+.2f}%",
-              pdf.l_margin + card_w + 3, y1, card_w)
-    _kpi_card(pdf, "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A",
-              pdf.l_margin + 2 * (card_w + 3), y1, card_w)
+    _kpi_card(
+        pdf, "P&L", f"{pnl_sign}Rs {portfolio.total_pnl:+,.0f}", pdf.l_margin, y1, card_w, color=pnl_color
+    )
+    _kpi_card(pdf, "P&L %", f"{portfolio.total_pnl_pct:+.2f}%", pdf.l_margin + card_w + 3, y1, card_w)
+    _kpi_card(
+        pdf, "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A", pdf.l_margin + 2 * (card_w + 3), y1, card_w
+    )
 
     pdf.set_y(y1 + 23)
 
@@ -438,8 +488,13 @@ def _generate_pdf_report(
     # Info line: date generated
     pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(*PDF_COLOR_GRAY)
-    pdf.cell(0, 4, f"Report generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
-             new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(
+        0,
+        4,
+        f"Report generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )
 
     # ── Page 2: Risk Analysis ──
     pdf.add_page()
@@ -496,11 +551,15 @@ def _generate_pdf_report(
         _section_header(pdf, "Top Priority Actions")
         for rec in recommendations.priority_actions[:3]:
             action_colors_map = {
-                "reduce": "#ef4444", "hedge": "#f59e0b", "diversify": "#3b82f6",
-                "accumulate": "#22c55e", "monitor": "#6b7280", "rebalance": "#a855f7",
+                "reduce": "#ef4444",
+                "hedge": "#f59e0b",
+                "diversify": "#3b82f6",
+                "accumulate": "#22c55e",
+                "monitor": "#6b7280",
+                "rebalance": "#a855f7",
             }
             hex_color = action_colors_map.get(rec.action.value, "#6b7280")
-            rgb = tuple(int(hex_color[i:i+2], 16) for i in (1, 3, 5))
+            rgb = tuple(int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
             pdf.set_fill_color(*rgb)
             pdf.set_text_color(255, 255, 255)
             pdf.set_font("Helvetica", "B", 7)
@@ -562,28 +621,34 @@ def _generate_pdf_report(
     if len(df) > 25:
         pdf.set_font("Helvetica", "I", 7)
         pdf.set_text_color(120, 120, 120)
-        pdf.cell(0, 5, f"(+{len(df) - 25} more holdings - see CSV export for full data)",
-                 new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(
+            0,
+            5,
+            f"(+{len(df) - 25} more holdings - see CSV export for full data)",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
 
     # Disclaimer
     pdf.ln(3)
     pdf.set_font("Helvetica", "I", 6)
     pdf.set_text_color(140, 140, 140)
-    pdf.multi_cell(0, 2.5,
+    pdf.multi_cell(
+        0,
+        2.5,
         "Disclaimer: This report is for informational purposes only and does not "
         "constitute financial advice. Data sourced from public APIs (yfinance, NSE) "
         "may be delayed or inaccurate. Past performance is not indicative of future results. "
         "Consult a SEBI-registered advisor before making investment decisions.",
-        align="C")
+        align="C",
+    )
 
     # Footer
     pdf.ln(2)
     pdf.set_font("Helvetica", "I", 6)
     pdf.set_text_color(160, 160, 160)
-    pdf.cell(0, 3, "Generated by NSE Portfolio Risk Scanner", align="C",
-             new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 3, f"Page {pdf.page_no()}", align="C",
-             new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 3, "Generated by NSE Portfolio Risk Scanner", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 3, f"Page {pdf.page_no()}", align="C", new_x="LMARGIN", new_y="NEXT")
 
     result = pdf.output()
     return bytes(result) if isinstance(result, bytearray) else result
@@ -604,6 +669,7 @@ def _add_page_header(pdf, title: str | None = None) -> None:
     pdf.set_font("Helvetica", "", 7)
     pdf.set_xy(pdf.w - pdf.r_margin - 55, 2.5)
     from datetime import datetime
+
     pdf.cell(55, 6, datetime.now().strftime("%d %b %Y"), align="R")
     pdf.set_y(14)
     pdf.set_text_color(0, 0, 0)

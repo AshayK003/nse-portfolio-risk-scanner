@@ -10,10 +10,14 @@ from datetime import datetime
 
 # Import types from their owning modules to keep each module self-contained.
 # This avoids import-order edge cases on Streamlit Cloud's Linux environment.
+from engine.factors import FactorRiskReport, MacroDriver  # noqa: F401
 from engine.optimization import OptimizationResult, RebalanceSuggestion  # noqa: F401
+from engine.recommendations import RecommendationReport  # noqa: F401
 from engine.regime import RegimeResult  # noqa: F401
 from engine.risk import MonteCarloResult, RiskMetrics  # noqa: F401
-from engine.scenario import ScenarioResult  # noqa: F401
+from engine.scenario import MacroScenarioResult, ScenarioResult  # noqa: F401
+from engine.scoring import InstitutionalRiskScores  # noqa: F401
+from engine.warnings import WarningReport  # noqa: F401
 
 
 @dataclass

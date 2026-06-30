@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.3 (2026-06-30)
+
+### Fixed
+
+- **Sector impact in macro scenarios always used first stock's beta** — `run_macro_scenarios()` computed sector-level impacts using `betas.get(list(betas.keys())[0], 1.0)`, which always used the first ticker's beta regardless of which sector was being computed. Now uses the portfolio weighted-average beta instead, giving correct sector impact estimates (`engine/scenario.py:296-298`).
+- **Duplicated `plt.subplots()` in `_drawdown_area_chart`** — first figure was created and immediately discarded, leaking memory (`ui/export.py:241`).
+- **Missing forward type imports in `engine/__init__.py`** — `AnalysisReport` annotations referenced `FactorRiskReport`, `MacroDriver`, `InstitutionalRiskScores`, `MacroScenarioResult`, `RecommendationReport`, and `WarningReport` without importing them, breaking `typing.get_type_hints(AnalysisReport)` and IDE tooling (`engine/__init__.py:13-19`).
+- **Hardcoded period in nselib benchmark fetch** — `fetch_benchmark()` passed `period="1M"` to nselib's `index_data()` instead of the caller's requested period (`data/prices.py:261`).
+- **Ambiguous variable name in `_build_scenario_reasoning`** — `severely_affected` iterated over sector impacts but the name suggested holding-level counting. Renamed to `sectors_with_double_digit_losses` for clarity (`engine/scenario.py:354`).
+
 ## v0.7.2 (2026-06-30)
 
 ### Fixed
