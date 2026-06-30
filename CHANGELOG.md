@@ -6,6 +6,10 @@
 
 - **UI makeover — shadcn-inspired CSS refinement** — completely overhauled `ui/styles.py` with refined dark theme CSS. Metric cards now use subtle gradient backgrounds, smoother hover transitions with `translateY(-1px)` lift, refined border colors, and improved typography scale. Tab styling updated to line-variant with blue accent indicator. Buttons get hover shadow + active press `scale(0.98)` feedback. File uploader gets background shift on hover. Added custom metric card CSS classes (`.custom-metric-card`) for future rich card components. Section header, progress bar gradient, disclaimer `details` container, and spinner color styled for design consistency. All visual — zero functional changes. 268/268 tests pass, zero new dependencies.
 
+### Fixed
+
+- **Shape mismatch crash when a ticker fails price fetch** — `fetch_prices()` silently drops tickers that fail (bad symbol, network error, etc.), returning prices for N-M tickers. `portfolio.weight` still returned N weights. The subsequent `returns.dot(weights)` in `compute_portfolio_returns()` crashed with "Dot product shape mismatch". Fix: after price fetch, filter `portfolio.holdings` to only include tickers present in `prices.columns`, with a `st.warning()` notifying the user which were dropped (`app.py:163-168`). Added 2 regression tests (`tests/test_integration.py:34-95`). Total: 270/270 tests pass.
+
 ### Added
 
 - **Institutional Risk Scoring (P×I×C Framework)** — new `engine/scoring.py` computes five composite scores: Overall Risk Score, Conviction Score, Portfolio Stress Score, Hidden Correlation Score, and Tail Risk Score. Each risk factor scored by Probability × Impact × Confidence with causal reasoning. Top 5 actionable insights ranked by composite score (`engine/scoring.py`, `tests/test_scoring.py`).

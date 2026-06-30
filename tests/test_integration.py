@@ -11,7 +11,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 
-from engine import AnalysisReport
+from engine import AnalysisReport, Holding, Portfolio
 from engine.benchmark import compare_to_benchmark
 from engine.performance import compute_portfolio_returns
 from engine.portfolio import parse_portfolio_csv, validate_portfolio
@@ -155,6 +155,59 @@ class TestFullPipelineCSVToRisk:
         assert report.risk.volatility_annual > 0
         assert len(report.sector.sector_allocation) > 0
         assert report.benchmark.total_months > 0
+
+
+class TestMismatchedDimensions:
+    """Ensure partial fetch failures don't cause dimension mismatch crashes."""
+
+    def test_partial_fetch_dropped_ticker(self):
+        """Portfolio has 3 holdings, prices only return 2 — dot product must not crash."""
+        from engine.portfolio import normalize_ticker
+
+        portfolio = Portfolio(
+            holdings=[
+                Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500),
+                Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500),
+                Holding(ticker="BADTICKER.NS", name="Bad", quantity=1, avg_price=100),
+            ],
+        )
+        # Simulate fetch returning data for only 2 of 3 tickers
+        dates = pd.bdate_range(end="2024-01-01", periods=252)
+        prices = pd.DataFrame(
+            {
+                "RELIANCE.NS": 100 * np.cumprod(1 + np.random.normal(0.0008, 0.015, 252)),
+                "TCS.NS": 100 * np.cumprod(1 + np.random.normal(0.0008, 0.015, 252)),
+            },
+            index=dates,
+        )
+        # Simulate the app.py filter logic: remove holdings without price data
+        portfolio.holdings = [h for h in portfolio.holdings if h.ticker in prices.columns]
+
+        # Simulate current_price update done by fetch_prices
+        latest = prices.iloc[-1]
+        for h in portfolio.holdings:
+            if h.ticker in latest:
+                h.current_price = round(latest[h.ticker], 2)
+
+        weights = portfolio.weight
+        assert len(weights) == prices.shape[1], "Weights must match prices columns"
+        returns = compute_portfolio_returns(prices, weights)
+        assert isinstance(returns, pd.Series)
+        assert len(returns) > 0
+
+    def test_no_price_data_returns_empty_portfolio(self):
+        """If no tickers have price data, portfolio holds should be empty after filter."""
+        portfolio = Portfolio(
+            holdings=[
+                Holding(ticker="BAD1.NS", name="Bad1", quantity=10, avg_price=100),
+                Holding(ticker="BAD2.NS", name="Bad2", quantity=5, avg_price=200),
+            ],
+        )
+        prices = pd.DataFrame()  # empty — no data fetched
+
+        # Filter logic
+        portfolio.holdings = [h for h in portfolio.holdings if h.ticker in prices.columns]
+        assert portfolio.holding_count == 0
 
 
 class TestPortfolioParsingEdgeCases:

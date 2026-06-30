@@ -160,6 +160,12 @@ if _needs_compute:
             st.error(f"An unexpected error occurred while fetching prices: {e}")
             st.stop()
 
+    # ── Align portfolio with available price data ──
+    failed = [h.ticker for h in portfolio.holdings if h.ticker not in prices.columns]
+    if failed:
+        portfolio.holdings = [h for h in portfolio.holdings if h.ticker in prices.columns]
+        st.warning(f"Could not fetch prices for: {', '.join(failed)}. These holdings are excluded.")
+
     # Validate portfolio (now that current_price is set)
     validation_warnings = validate_portfolio(portfolio)
     for w in validation_warnings:
