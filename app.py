@@ -52,7 +52,7 @@ from ui.dashboard import (
     render_stock_table,
 )
 from ui.export import render_export_section
-from ui.icons import BAR_CHART_3, GITHUB, HEART, icon_html
+from ui.icons import ALERT_TRIANGLE, BAR_CHART_3, GITHUB, HEART, icon_html
 from ui.styles import inject_css
 from ui.upload import render_data_editor, render_save_button, render_sidebar, render_upload_tab
 
@@ -363,12 +363,51 @@ if st.session_state.get("_report_changed", False):
         pass  # non-critical — silently skip on DB error
 
 # ── Disclaimer ──
-st.info(
-    "**Disclaimer:** This tool provides informational analysis only and does not "
-    "constitute financial advice. All data is sourced from public APIs (yfinance, NSE) "
-    "and may be delayed or inaccurate. Past performance is not indicative of future "
-    "results. Consult a SEBI-registered advisor before making investment decisions."
-)
+with st.expander(f"{icon_html(ALERT_TRIANGLE, size=16)} Disclaimer", expanded=False):
+    st.markdown(
+        "**Not financial advice.** This tool provides portfolio risk analysis, "
+        "sector concentration metrics, benchmark comparison, and other quantitative "
+        "indicators for educational and informational purposes only. Nothing on this "
+        "platform constitutes investment advice, a recommendation, or a solicitation "
+        "to buy or sell securities.\n\n"
+        "**No SEBI registration.** The creator is not a SEBI-registered investment "
+        "advisor. All trading and investment decisions are solely your responsibility.\n\n"
+        "**Data accuracy.** Data is sourced from third-party public APIs (yfinance, "
+        "nselib) and may be delayed, incomplete, or inaccurate. We do not guarantee "
+        "the timeliness, accuracy, or completeness of any data displayed.\n\n"
+        "**Limitations you should know:**\n"
+        "- **Price data** — yfinance free tier has 15-20 min delay. Not suitable for "
+        "intraday trading without real-time feeds.\n"
+        "- **NSE data** — nselib is an optional dependency. Without it, all data comes "
+        "from yfinance, which may have gaps for Indian equities (missing delisted "
+        "tickers, delayed corporate actions).\n"
+        "- **Risk metrics** — VaR, CVaR, and Monte Carlo projections are based on "
+        "historical return distributions and assume normality. Tail risk is "
+        "underestimated during market dislocations (2020 COVID crash, 2008 GFC).\n"
+        "- **Beta** — computed against a single benchmark index using daily returns. "
+        "A beta of 1.2 does not guarantee the stock moves 20% more than the market "
+        "in all conditions.\n"
+        "- **Monte Carlo simulation** — uses Geometric Brownian Motion, which assumes "
+        "returns are normally distributed and volatility is constant. Both assumptions "
+        "are violated in real markets.\n"
+        "- **HMM regime detection** — optional dependency (hmmlearn). When unavailable, "
+        "a rolling-quantile heuristic is used instead. Neither is a predictor of "
+        "future market regimes.\n"
+        "- **Scenario analysis** — estimated using stock beta × weight × market change. "
+        "Beta is itself an estimate from historical data and may not hold during "
+        "regime shifts.\n"
+        "- **Delivery analysis** — relies on nselib bhavcopy data, which is typically "
+        "available with a 1-day lag.\n\n"
+        "**No liability.** Under no circumstances shall the creator be liable for any "
+        "direct, indirect, incidental, special, or consequential damages arising from "
+        "your use of this tool, including but not limited to financial losses from "
+        "trading or investment decisions made based on the data provided.\n\n"
+        "**Past performance.** Historical data and past risk metrics do not guarantee "
+        "future results.\n\n"
+        "**Use at your own risk.** By using this tool, you acknowledge that you "
+        "understand and accept these terms. If you do not agree, do not use the tool."
+    )
+    st.caption("Last updated: June 2026")
 
 # ── Footer ──
 st.markdown(
