@@ -12,7 +12,7 @@ import pandas as pd
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 
-from . import OptimizationResult
+from engine import OptimizationResult
 
 
 def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
