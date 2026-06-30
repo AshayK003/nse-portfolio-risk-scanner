@@ -149,8 +149,9 @@ if _needs_compute:
         except ValueError as e:
             st.error(f"Could not fetch price data: {e}")
             st.stop()
-        except Exception:
-            st.error("An unexpected error occurred while fetching prices. Please try again.")
+        except Exception as e:
+            logger.error("Price fetch failed: {e}", e=e)
+            st.error(f"An unexpected error occurred while fetching prices: {e}")
             st.stop()
 
     # Validate portfolio (now that current_price is set)
@@ -158,67 +159,73 @@ if _needs_compute:
     for w in warnings:
         st.warning(w)
 
-    # Classify sectors
-    sector_map = load_sector_map()
-    portfolio.holdings = classify_holdings(portfolio.holdings, sector_map)
+    try:
+        # Classify sectors
+        sector_map = load_sector_map()
+        portfolio.holdings = classify_holdings(portfolio.holdings, sector_map)
 
-    # Compute returns
-    weights = portfolio.weight
-    portfolio_returns = compute_portfolio_returns(prices, weights)
-    portfolio_cum = (1 + portfolio_returns).cumprod()
+        # Compute returns
+        weights = portfolio.weight
+        portfolio_returns = compute_portfolio_returns(prices, weights)
+        portfolio_cum = (1 + portfolio_returns).cumprod()
 
-    with st.spinner("Fetching benchmark data..."):
-        try:
-            benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
-        except Exception as e:
-            logger.warning("Benchmark fetch failed: {e}", e=e)
-            benchmark_prices = pd.Series(dtype=float)
+        with st.spinner("Fetching benchmark data..."):
+            try:
+                benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
+            except Exception as e:
+                logger.warning("Benchmark fetch failed: {e}", e=e)
+                benchmark_prices = pd.Series(dtype=float)
 
-    benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
-    benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
+        benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
+        benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
 
-    # Compute all risk metrics
-    with st.spinner("Computing risk metrics..."):
-        risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns)
-        sector = compute_sector_exposure(portfolio.holdings)
-        benchmark = (
-            compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
-        )
+        # Compute all risk metrics
+        with st.spinner("Computing risk metrics..."):
+            risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns)
+            sector = compute_sector_exposure(portfolio.holdings)
+            benchmark = (
+                compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
+            )
 
-    # ── New v0.6.0 features ──
+        # ── New v0.6.0 features ──
 
-    # Correlation matrix (needed for denoising)
-    raw_corr = compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
+        # Correlation matrix (needed for denoising)
+        raw_corr = compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
 
-    # HRP Optimization
-    opt_result = optimize_hrp(prices.pct_change().dropna()) if len(weights) >= 2 else None
+        # HRP Optimization
+        opt_result = optimize_hrp(prices.pct_change().dropna()) if len(weights) >= 2 else None
 
-    # Monte Carlo simulation (stats + chart paths from single run)
-    mc_data = monte_carlo_simulation(portfolio_returns, return_paths=True, n_paths=200) if not portfolio_returns.empty else None
-    mc_result = mc_data[0] if mc_data else None
-    mc_paths = mc_data[1] if mc_data else None
+        # Monte Carlo simulation (stats + chart paths from single run)
+        mc_data = monte_carlo_simulation(portfolio_returns, return_paths=True, n_paths=200) if not portfolio_returns.empty else None
+        mc_result = mc_data[0] if mc_data else None
+        mc_paths = mc_data[1] if mc_data else None
 
-    # HMM Regime detection
-    regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty else None
+        # HMM Regime detection
+        regime_result = detect_regimes(portfolio_returns) if not portfolio_returns.empty else None
 
-    # Correlation denoising
-    denoised_corr = denoise_correlation(raw_corr, len(portfolio_returns)) if not portfolio_returns.empty else None
+        # Correlation denoising
+        denoised_corr = denoise_correlation(raw_corr, len(portfolio_returns)) if not portfolio_returns.empty else None
 
-    # Per-holding betas (vectorized via single covariance matrix)
-    stock_betas: dict[str, float] = {}
-    if benchmark_returns is not None and not prices.empty:
-        rets = prices.pct_change().dropna()
-        extended = pd.concat([rets, benchmark_returns], axis=1, join="inner").dropna()
-        if len(extended) > 5:
-            cov_matrix = extended.cov()
-            bm_var = cov_matrix.iloc[-1, -1]
-            if bm_var > 0:
-                stock_betas = (cov_matrix.iloc[:-1, -1] / bm_var).round(2).to_dict()
-        if not stock_betas:
-            stock_betas = {c: 1.0 for c in rets.columns}
+        # Per-holding betas (vectorized via single covariance matrix)
+        stock_betas: dict[str, float] = {}
+        if benchmark_returns is not None and not prices.empty:
+            rets = prices.pct_change().dropna()
+            extended = pd.concat([rets, benchmark_returns], axis=1, join="inner").dropna()
+            if len(extended) > 5:
+                cov_matrix = extended.cov()
+                bm_var = cov_matrix.iloc[-1, -1]
+                if bm_var > 0:
+                    stock_betas = (cov_matrix.iloc[:-1, -1] / bm_var).round(2).to_dict()
+            if not stock_betas:
+                stock_betas = {c: 1.0 for c in rets.columns}
 
-    scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
-    rebalance = suggest_rebalance(portfolio.holdings) if portfolio.holding_count >= 1 else None
+        scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
+        rebalance = suggest_rebalance(portfolio.holdings) if portfolio.holding_count >= 1 else None
+
+    except Exception as e:
+        logger.error("Analysis computation failed: {e}", e=e)
+        st.error(f"An unexpected error occurred during analysis: {e}")
+        st.stop()
 
     # Cache everything for skip path
     st.session_state._cache = {
