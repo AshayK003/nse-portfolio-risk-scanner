@@ -8,6 +8,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
+# Import types from their owning modules to keep each module self-contained.
+# This avoids import-order edge cases on Streamlit Cloud's Linux environment.
+from engine.optimization import OptimizationResult  # noqa: F401
+from engine.regime import RegimeResult  # noqa: F401
+from engine.risk import MonteCarloResult, RiskMetrics  # noqa: F401
+
 
 @dataclass
 class Holding:
@@ -80,25 +86,6 @@ class Portfolio:
 
 
 @dataclass
-class RiskMetrics:
-    """Computed risk metrics for the portfolio."""
-
-    volatility_annual: float  # annualized volatility (%)
-    var_95: float  # Value at Risk 95% (%)
-    var_99: float  # Value at Risk 99% (%)
-    cvar_95: float  # Conditional VaR 95% (%)
-    max_drawdown: float  # Maximum drawdown (%)
-    max_drawdown_start: str  # Drawdown period start
-    max_drawdown_end: str  # Drawdown period end
-    beta: float  # Beta to Nifty 50
-    correlation_to_benchmark: float  # Correlation with benchmark
-    sharpe: float  # Sharpe ratio
-    sortino: float  # Sortino ratio
-    cagr: float  # Compound annual growth rate (%)
-    total_return: float  # Total return (%)
-
-
-@dataclass
 class SectorExposure:
     """Sector concentration analysis."""
 
@@ -123,44 +110,6 @@ class BenchmarkComparison:
     rolling_alpha_6m: float  # 6-month rolling alpha (%)
     outperformance_months: int  # Count of months beating benchmark
     total_months: int  # Total months compared
-
-
-@dataclass
-class OptimizationResult:
-    """Optimal portfolio weights from optimization."""
-
-    method: str  # "hrp", "min_volatility", "max_sharpe"
-    weights: dict[str, float]  # ticker -> weight
-    expected_return: float = 0.0
-    expected_volatility: float = 0.0
-    sharpe: float = 0.0
-
-
-@dataclass
-class MonteCarloResult:
-    """Forward-looking Monte Carlo simulation results."""
-
-    n_simulations: int
-    horizon_days: int
-    expected_return: float  # mean final return %
-    median_return: float
-    var_95: float  # 95% VaR of final value
-    var_99: float
-    cvar_95: float
-    prob_profit: float  # % of paths ending positive
-    ci_lower: float  # 5th percentile return
-    ci_upper: float  # 95th percentile return
-
-
-@dataclass
-class RegimeResult:
-    """Market regime detection results."""
-
-    n_states: int
-    labels: list[str]  # e.g. ["Bull", "Neutral", "Bear"]
-    state_sequence: list  # one per trading day (state label per day)
-    transition_matrix: list[list[float]]
-    stats: list[dict]  # per-regime: return, vol, count
 
 
 @dataclass

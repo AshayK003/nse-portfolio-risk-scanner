@@ -6,10 +6,45 @@ Zero side effects, zero IO, zero Streamlit imports.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 
-from . import MonteCarloResult, RiskMetrics
+
+@dataclass
+class RiskMetrics:
+    """Computed risk metrics for the portfolio."""
+
+    volatility_annual: float
+    var_95: float
+    var_99: float
+    cvar_95: float
+    max_drawdown: float
+    max_drawdown_start: str
+    max_drawdown_end: str
+    beta: float
+    correlation_to_benchmark: float
+    sharpe: float
+    sortino: float
+    cagr: float
+    total_return: float
+
+
+@dataclass
+class MonteCarloResult:
+    """Forward-looking Monte Carlo simulation results."""
+
+    n_simulations: int
+    horizon_days: int
+    expected_return: float
+    median_return: float
+    var_95: float
+    var_99: float
+    cvar_95: float
+    prob_profit: float
+    ci_lower: float
+    ci_upper: float
 
 
 def compute_risk_metrics(

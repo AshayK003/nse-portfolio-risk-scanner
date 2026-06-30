@@ -7,10 +7,21 @@ Gracefully falls back to None when not available.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 
-from engine import RegimeResult
+
+@dataclass
+class RegimeResult:
+    """Market regime detection results."""
+
+    n_states: int
+    labels: list[str]  # e.g. ["Bull", "Neutral", "Bear"]
+    state_sequence: list  # one per trading day (state label per day)
+    transition_matrix: list[list[float]]
+    stats: list[dict]  # per-regime: return, vol, count
 
 try:
     from hmmlearn import hmm

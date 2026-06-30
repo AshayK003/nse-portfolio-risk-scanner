@@ -7,12 +7,23 @@ Zero side effects, zero IO, zero Streamlit imports.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 
-from engine import OptimizationResult
+
+@dataclass
+class OptimizationResult:
+    """Optimal portfolio weights from optimization."""
+
+    method: str  # "hrp", "min_volatility", "max_sharpe"
+    weights: dict[str, float]  # ticker -> weight
+    expected_return: float = 0.0
+    expected_volatility: float = 0.0
+    sharpe: float = 0.0
 
 
 def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
