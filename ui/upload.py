@@ -92,7 +92,7 @@ def render_manual_entry() -> list[Holding]:
             )
         with cols[3]:
             st.write("")
-            submitted = facade.Button("Add Stock")
+            submitted = st.form_submit_button("Add Stock", use_container_width=True)
 
         if submitted:
             if not ticker:
