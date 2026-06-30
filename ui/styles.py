@@ -46,14 +46,6 @@ div[data-testid="metric-container"] div[data-testid="metric-value"] {
     border-radius: 12px;
     padding: 1.25rem;
 }
-.section-header {
-    color: #f1f5f9;
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #2a2d3e;
-}
 
 /* ── Warning / Info / Success boxes ── */
 .stAlert {
@@ -68,11 +60,27 @@ div[data-baseweb="notification"] {
 .stButton button {
     border-radius: 8px !important;
     font-weight: 500 !important;
-    transition: all 0.2s !important;
+    transition: background-color 0.15s, box-shadow 0.15s !important;
 }
 .stButton button:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+}
+.stButton button:focus-visible {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
+/* ── Focus indicators (global) ─ */
+:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.4);
 }
 
 /* ── Data Editor & Table ── */
@@ -147,23 +155,6 @@ div[data-baseweb="select"] {
     display: block;
 }
 
-/* ── Manual entry form ── */
-.manual-entry-form {
-    background: #1a1d2e;
-    border: 1px solid #2a2d3e;
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-}
-.manual-entry-form .row {
-    display: flex;
-    gap: 0.75rem;
-    align-items: end;
-}
-.manual-entry-form .row > div {
-    flex: 1;
-}
-
 /* ── Badges ── */
 .badge {
     display: inline-flex;
@@ -178,6 +169,30 @@ div[data-baseweb="select"] {
 .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
 .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
 .badge-yellow { background: rgba(234,179,8,0.15); color: #facc15; }
+
+/* ── Empty State ── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #94a3b8;
+}
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+.empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 0.5rem;
+}
+.empty-state-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto;
+}
 
 /* ── Footer ── */
 .app-footer {
@@ -194,6 +209,26 @@ div[data-baseweb="select"] {
 }
 .app-footer a:hover {
     text-decoration: underline;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+    .stButton button,
+    div[data-testid="metric-container"],
+    div[data-testid="stFileUploader"],
+    .streamlit-expanderHeader {
+        transition: none !important;
+    }
+    .stButton button:hover {
+        transform: none !important;
+    }
+}
+
+/* ── Responsive metric cards ── */
+@media (max-width: 768px) {
+    div[data-testid="metric-container"] div[data-testid="metric-value"] {
+        font-size: 1.2rem !important;
+    }
 }
 </style>
 """

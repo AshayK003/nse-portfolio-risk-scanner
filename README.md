@@ -24,6 +24,7 @@ pip install -e ".[dev,pdf,nse]"
 - **Interactive Charts** — Drawdown chart, benchmark overlay, sector treemap, correlation heatmap
 - **Export** — Download position-level CSV or PDF report
 - **NSE-Native Data** — Uses nselib for direct NSE data when available, falls back to yfinance
+- **Accessibility** — Semantic headings, visible form labels, focus indicators, keyboard navigation, reduced motion support
 
 ## Project Structure
 

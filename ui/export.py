@@ -64,9 +64,9 @@ def render_export_section(
             use_container_width=True,
         )
     except ImportError:
-        st.caption("💡 PDF export requires fpdf2: `pip install fpdf2`")
+        st.caption("PDF export requires fpdf2: pip install fpdf2")
     except Exception as e:
-        st.caption(f"⚠️ PDF generation failed: {e}")
+        st.error(f"PDF generation failed: {e}")
 
     st.caption("Reports include position-level data for further analysis in Excel/Sheets.")
 

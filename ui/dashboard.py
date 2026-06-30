@@ -9,13 +9,6 @@ from __future__ import annotations
 import streamlit as st
 
 from engine import BenchmarkComparison, Portfolio, RiskMetrics, SectorExposure
-from ui.icons import (
-    ACTIVITY,
-    ARROW_UP_DOWN,
-    PIE_CHART,
-    SEARCH,
-    icon_html,
-)
 
 
 def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
@@ -24,18 +17,18 @@ def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
     with col1:
         st.metric(
             "Total Invested",
-            f"₹{portfolio.total_invested:,.0f}",
+            f"Rs {portfolio.total_invested:,.0f}",
         )
     with col2:
         st.metric(
             "Current Value",
-            f"₹{portfolio.total_current:,.0f}",
+            f"Rs {portfolio.total_current:,.0f}",
         )
     with col3:
         pnl = portfolio.total_pnl
         st.metric(
             "P&L",
-            f"₹{pnl:+,.0f}",
+            f"Rs {pnl:+,.0f}",
             delta=f"{portfolio.total_pnl_pct:+.2f}%",
             delta_color="normal",
         )
@@ -48,9 +41,7 @@ def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
 
 def render_risk_cards(risk: RiskMetrics) -> None:
     """Display risk metric cards in a 4-column grid."""
-    st.markdown(
-        f'<div class="section-header">{icon_html(ACTIVITY)} Risk Metrics</div>', unsafe_allow_html=True
-    )
+    st.subheader("Risk Metrics")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -84,9 +75,7 @@ def render_risk_cards(risk: RiskMetrics) -> None:
 
 def render_sector_section(sector: SectorExposure) -> None:
     """Display sector concentration analysis."""
-    st.markdown(
-        f'<div class="section-header">{icon_html(PIE_CHART)} Sector Allocation</div>', unsafe_allow_html=True
-    )
+    st.subheader("Sector Allocation")
 
     if sector.concentrated_sectors:
         for sec in sector.concentrated_sectors:
@@ -107,7 +96,7 @@ def render_sector_section(sector: SectorExposure) -> None:
 
 def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
     """Display benchmark comparison."""
-    st.markdown(f'<div class="section-header">{icon_html(SEARCH)} vs Nifty 50</div>', unsafe_allow_html=True)
+    st.subheader("vs Nifty 50")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -132,10 +121,7 @@ def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
 
 def render_stock_table(portfolio: Portfolio) -> None:
     """Display individual holding P&L table."""
-    st.markdown(
-        f'<div class="section-header">{icon_html(ARROW_UP_DOWN)} Holdings Breakdown</div>',
-        unsafe_allow_html=True,
-    )
+    st.subheader("Holdings Breakdown")
 
     rows = []
     for h in portfolio.holdings:
@@ -144,10 +130,10 @@ def render_stock_table(portfolio: Portfolio) -> None:
                 "Ticker": h.ticker.replace(".NS", ""),
                 "Name": h.name,
                 "Qty": h.quantity,
-                "Avg Price": f"₹{h.avg_price:,.2f}",
-                "Current": f"₹{h.current_price:,.2f}" if h.current_price else "—",
-                "Invested": f"₹{h.invested_value:,.0f}",
-                "P&L": f"₹{h.pnl:+,.0f}",
+                "Avg Price": f"Rs {h.avg_price:,.2f}",
+                "Current": f"Rs {h.current_price:,.2f}" if h.current_price else "—",
+                "Invested": f"Rs {h.invested_value:,.0f}",
+                "P&L": f"Rs {h.pnl:+,.0f}",
                 "P&L %": f"{h.pnl_pct:+.1f}%",
             }
         )

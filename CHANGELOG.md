@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.5.0 (2026-06-30)
+
+### Added
+
+- **Consistent error handling** — all errors now use `st.error()`/`st.warning()`/`st.success()` with user-friendly messages. No raw exception strings shown to users
+- **Loading states** — spinners for benchmark data fetch and risk metric computation, not just price fetch
+- **Empty state** — centered visual card with icon, title, and description guiding users on how to get started
+- **Focus indicators** — `:focus-visible` outlines on buttons, inputs, and interactive elements for keyboard navigation
+- **Reduced motion** — `prefers-reduced-motion` media query disables hover animations for users who need it
+- **Chart accessibility** — all 5 Plotly charts now have `aria-label` attributes for screen readers
+- **Form placeholders** — manual entry fields now show example values (e.g. "e.g. RELIANCE", "e.g. 10", "e.g. 2500.00")
+- **Tooltips** — remove button has `help` text for context
+
+### Changed
+
+- **Semantic headings** — replaced all `<div class="section-header">` HTML with native `st.subheader()` and `st.divider()` for screen reader support and document outline
+- **Form labels visible** — removed `label_visibility="collapsed"` from manual entry form; labels now visible and accessible
+- **Button text** — replace button replaced from "✕" icon to labeled "Remove" for clarity and accessibility
+- **Expander labels** — removed emoji from "✎ Edit Holdings" and "💾 Save Portfolio" expanders
+- **CSS cleanup** — removed unused `.section-header` and `.manual-entry-form` classes, removed `transform: translateY` hover animation, added responsive metric card sizing for mobile
+- **Sidebar** — uses `st.sidebar.subheader()` instead of HTML, consistent success/error messages
+
+### Fixed
+
+- Button hover animation (`transform: translateY(-1px)`) caused layout shift — replaced with `box-shadow` only
+- Raw exception text shown in price fetch error (`st.error(str(e))`) — now shows user-friendly message
+- PDF generation failure shown as `st.caption` — now shown as `st.error`
+- Benchmark fetch had no loading indicator — added spinner
+- Risk computation had no loading indicator — added spinner
+- Remove button "✕" had no tooltip, no accessibility label — now labeled "Remove" with help text
+
 ## v0.4.0 (2026-06-30)
 
 ### Added

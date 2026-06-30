@@ -42,7 +42,7 @@ from ui.upload import render_data_editor, render_save_button, render_sidebar, re
 # Page config
 st.set_page_config(
     page_title="NSE Portfolio Risk Scanner",
-    page_icon=None,  # Lucide SVG used in title instead
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -89,7 +89,7 @@ render_save_button(portfolio)
 # Validate
 warnings = validate_portfolio(portfolio)
 for w in warnings:
-    st.warning(f"⚠️ {w}")
+    st.warning(w)
 
 # ── Step 2: Benchmark selection ──
 benchmark_options = {v: k for k, v in BENCHMARK_TICKERS.items()}
@@ -107,7 +107,7 @@ benchmark_choice = st.selectbox(
 # Force refresh toggle
 refresh_col1, refresh_col2 = st.columns([4, 1])
 with refresh_col2:
-    force = st.checkbox("🔄 Force refresh prices", value=st.session_state.force_refresh)
+    force = st.checkbox("Force refresh prices", value=st.session_state.force_refresh)
 
 # ── Step 3: Fetch prices ──
 with st.spinner("Fetching prices..."):
@@ -118,7 +118,10 @@ with st.spinner("Fetching prices..."):
         else:
             prices = fetch_prices(portfolio.holdings, period="1y")
     except ValueError as e:
-        st.error(str(e))
+        st.error(f"Could not fetch price data: {e}")
+        st.stop()
+    except Exception:
+        st.error("An unexpected error occurred while fetching prices. Please try again.")
         st.stop()
 
 # Classify sectors
@@ -129,16 +132,23 @@ portfolio.holdings = classify_holdings(portfolio.holdings, sector_map)
 weights = portfolio.weight
 portfolio_returns = compute_portfolio_returns(prices, weights)
 portfolio_cum = (1 + portfolio_returns).cumprod()
-benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
+
+with st.spinner("Fetching benchmark data..."):
+    try:
+        benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
+    except Exception:
+        benchmark_prices = pd.Series(dtype=float)
+
 benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
 benchmark_cum = (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
 
 # Compute all risk metrics
-risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns)
-sector = compute_sector_exposure(portfolio.holdings)
-benchmark = (
-    compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
-)
+with st.spinner("Computing risk metrics..."):
+    risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns)
+    sector = compute_sector_exposure(portfolio.holdings)
+    benchmark = (
+        compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
+    )
 
 # Store in session
 st.session_state.report = AnalysisReport(
@@ -162,7 +172,11 @@ with tabs[0]:
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(volatility_gauge(report.risk.volatility_annual), use_container_width=True)
+        st.plotly_chart(
+            volatility_gauge(report.risk.volatility_annual),
+            use_container_width=True,
+            aria_label="Annual volatility gauge chart",
+        )
     with col2:
         rv = rolling_volatility(portfolio_returns)
         if len(rv) > 0:
@@ -171,19 +185,21 @@ with tabs[0]:
 
 with tabs[1]:
     render_sector_section(report.sector)
-    st.plotly_chart(sector_treemap(report.sector.sector_allocation), use_container_width=True)
+    st.plotly_chart(
+        sector_treemap(report.sector.sector_allocation),
+        use_container_width=True,
+        aria_label="Sector allocation treemap",
+    )
 
 with tabs[2]:
     if benchmark:
         render_benchmark_section(report.benchmark)
     else:
-        st.warning("Benchmark data not available")
+        st.info("Benchmark data is not available for the selected index.")
     st.plotly_chart(
-        benchmark_chart(
-            portfolio_cum,
-            benchmark_cum,
-        ),
+        benchmark_chart(portfolio_cum, benchmark_cum),
         use_container_width=True,
+        aria_label="Portfolio vs benchmark cumulative returns chart",
     )
 
 with tabs[3]:
@@ -199,10 +215,15 @@ with tabs[3]:
         st.plotly_chart(
             drawdown_chart(drawdown_series),
             use_container_width=True,
+            aria_label="Portfolio drawdown chart",
         )
     with col2:
         corr = compute_correlation_matrix(prices)
-        st.plotly_chart(correlation_heatmap(corr), use_container_width=True)
+        st.plotly_chart(
+            correlation_heatmap(corr),
+            use_container_width=True,
+            aria_label="Stock correlation heatmap",
+        )
 
 with tabs[4]:
     render_stock_table(report.portfolio)
