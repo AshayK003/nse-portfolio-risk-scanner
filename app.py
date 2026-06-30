@@ -215,7 +215,7 @@ with tabs[0]:
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(volatility_gauge(report.risk.volatility_annual), use_container_width=True)
+        st.plotly_chart(volatility_gauge(report.risk.volatility_annual), use_container_width=True, key="vol_gauge")
     with col2:
         rv = rolling_volatility(portfolio_returns)
         if len(rv) > 0:
@@ -224,11 +224,11 @@ with tabs[0]:
     st.divider()
     render_monte_carlo_section(mc_result)
     if mc_paths is not None:
-        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True)
+        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
 
 with tabs[1]:
     render_sector_section(report.sector)
-    st.plotly_chart(sector_treemap(report.sector.sector_allocation), use_container_width=True)
+    st.plotly_chart(sector_treemap(report.sector.sector_allocation), use_container_width=True, key="sector_treemap")
 
 with tabs[2]:
     if benchmark:
@@ -238,6 +238,7 @@ with tabs[2]:
     st.plotly_chart(
         benchmark_chart(portfolio_cum, benchmark_cum),
         use_container_width=True,
+        key="benchmark_chart",
     )
 
 with tabs[3]:
@@ -253,16 +254,18 @@ with tabs[3]:
         st.plotly_chart(
             drawdown_chart(drawdown_series),
             use_container_width=True,
+            key="drawdown_chart",
         )
     with col2:
         corr = raw_corr if not raw_corr.empty else compute_correlation_matrix(prices)
         st.plotly_chart(
             correlation_heatmap(corr),
             use_container_width=True,
+            key="corr_heatmap",
         )
     if denoised_corr is not None and not denoised_corr.empty:
         with st.expander("Denoised Correlation (Marchenko-Pastur)"):
-            st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True)
+            st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True, key="corr_denoised")
 
 with tabs[4]:
     render_stock_table(report.portfolio)
@@ -273,12 +276,12 @@ with tabs[5]:
 with tabs[6]:
     render_optimization_section(opt_result)
     if opt_result and opt_result.weights:
-        st.plotly_chart(optimization_pie(opt_result.weights), use_container_width=True)
+        st.plotly_chart(optimization_pie(opt_result.weights), use_container_width=True, key="opt_pie")
 
 with tabs[7]:
     render_regime_section(regime_result)
     if regime_result:
-        st.plotly_chart(regime_chart(portfolio_returns, regime_result.state_sequence), use_container_width=True)
+        st.plotly_chart(regime_chart(portfolio_returns, regime_result.state_sequence), use_container_width=True, key="regime_chart")
 
 # ── Step 5: Save analysis run to history ──
 try:
