@@ -161,8 +161,8 @@ if _needs_compute:
             st.stop()
 
     # Validate portfolio (now that current_price is set)
-    warnings = validate_portfolio(portfolio)
-    for w in warnings:
+    validation_warnings = validate_portfolio(portfolio)
+    for w in validation_warnings:
         st.warning(w)
 
     try:
@@ -240,37 +240,55 @@ if _needs_compute:
         scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
         rebalance = suggest_rebalance(portfolio.holdings) if portfolio.holding_count >= 1 else None
 
-        # ── v0.7.0 Intelligence modules ──
+        # ── v0.7.0 Intelligence modules (each guarded so one failure doesn't kill the rest) ──
 
-        # Factor risk decomposition
-        factor_report = compute_factor_exposures(prices, weights, benchmark_returns)
+        factor_report = None
+        try:
+            factor_report = compute_factor_exposures(prices, weights, benchmark_returns)
+        except Exception as e:
+            logger.warning("Factor analysis failed: {e}", e=e)
 
-        # Macro driver sensitivities
-        macro_drivers = estimate_macro_sensitivities(portfolio_returns, prices, weights, benchmark_returns)
+        macro_drivers = None
+        try:
+            macro_drivers = estimate_macro_sensitivities(portfolio_returns, prices, weights, benchmark_returns)
+        except Exception as e:
+            logger.warning("Macro drivers failed: {e}", e=e)
 
-        # Macro-driven stress tests (sector-aware)
-        macro_scenarios = run_macro_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
+        macro_scenarios = []
+        try:
+            macro_scenarios = run_macro_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
+        except Exception as e:
+            logger.warning("Macro scenarios failed: {e}", e=e)
 
-        # Institutional risk scoring (P×I×C framework)
-        institutional_scores = compute_institutional_scores(
-            risk, prices, weights, sector.sector_allocation, raw_corr
-        )
+        institutional_scores = None
+        try:
+            institutional_scores = compute_institutional_scores(
+                risk, prices, weights, sector.sector_allocation, raw_corr
+            )
+        except Exception as e:
+            logger.warning("Institutional scoring failed: {e}", e=e)
 
-        # Early-warning signals
-        warnings = detect_all_warnings(prices, returns=None, corr_matrix=raw_corr)
+        early_warnings = None
+        try:
+            early_warnings = detect_all_warnings(prices, returns=None, corr_matrix=raw_corr)
+        except Exception as e:
+            logger.warning("Early warnings failed: {e}", e=e)
 
-        # Portfolio recommendations with causal reasoning
-        recommendations = generate_recommendations(
-            risk=risk,
-            sector=sector,
-            benchmark=benchmark,
-            portfolio=portfolio,
-            factor_report=factor_report,
-            institutional_scores=institutional_scores,
-            macro_drivers=macro_drivers,
-            corr_matrix=raw_corr,
-            regime_result=regime_result,
-        )
+        recommendations = None
+        try:
+            recommendations = generate_recommendations(
+                risk=risk,
+                sector=sector,
+                benchmark=benchmark,
+                portfolio=portfolio,
+                factor_report=factor_report,
+                institutional_scores=institutional_scores,
+                macro_drivers=macro_drivers,
+                corr_matrix=raw_corr,
+                regime_result=regime_result,
+            )
+        except Exception as e:
+            logger.warning("Recommendations failed: {e}", e=e)
 
     except Exception as e:
         logger.error("Analysis computation failed: {e}", e=e)
@@ -300,7 +318,7 @@ if _needs_compute:
         "macro_drivers": macro_drivers,
         "macro_scenarios": macro_scenarios,
         "institutional_scores": institutional_scores,
-        "warnings": warnings,
+        "early_warnings": early_warnings,
         "recommendations": recommendations,
     }
     st.session_state._last_input_hash = _input_hash
@@ -328,7 +346,7 @@ else:
     macro_drivers = cache.get("macro_drivers")
     macro_scenarios = cache.get("macro_scenarios")
     institutional_scores = cache.get("institutional_scores")
-    warnings = cache.get("warnings")
+    early_warnings = cache.get("early_warnings")
     recommendations = cache.get("recommendations")
     st.session_state._report_changed = False
 
@@ -349,7 +367,7 @@ st.session_state.report = AnalysisReport(
     institutional_scores=institutional_scores,
     macro_scenarios=macro_scenarios,
     recommendations=recommendations,
-    warnings=warnings,
+    warnings=early_warnings,
 )
 
 # ── Step 4: Display ──
@@ -361,18 +379,13 @@ render_metric_row(report.portfolio, report.risk)
 # Tabs
 tab_names = [
     "Risk Metrics",
-    "Institutional Intelligence",
     "Sector",
     "vs Nifty 50",
     "Charts",
     "Holdings",
-    "Macro Scenarios",
-    "Export",
-    "Optimization",
-    "Regime",
-    "Scenario",
+    "Scenarios",
     "Recommendations",
-    "Early Warnings",
+    "Export",
 ]
 tabs = st.tabs(tab_names)
 
@@ -393,9 +406,9 @@ with tabs[0]:
     if mc_paths is not None:
         st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
 
-# ── Tab 1: Institutional Intelligence ──
-with tabs[1]:
+    # ── Institutional Intelligence (inline) ──
     if institutional_scores:
+        st.divider()
         st.subheader("Institutional Risk Scores")
         score_cols = st.columns(5)
         score_labels = [
@@ -413,66 +426,84 @@ with tabs[1]:
         if institutional_scores.score_interpretation:
             st.info(institutional_scores.score_interpretation)
 
-        st.divider()
-        st.subheader("Risk Factor Breakdown")
-        if institutional_scores.risk_factors:
-            for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
-                with st.expander(
-                    f"**{factor.name}** — Score: {factor.composite:.1f}/100", expanded=factor.composite > 20
-                ):
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Probability", f"{factor.probability:.0%}")
-                    c2.metric("Impact", f"{factor.impact:.0%}")
-                    c3.metric("Confidence", f"{factor.confidence:.0%}")
-                    st.caption(factor.reasoning)
+        with st.expander("Risk Factor Breakdown", expanded=False):
+            if institutional_scores.risk_factors:
+                for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
+                    with st.expander(
+                        f"**{factor.name}** — Score: {factor.composite:.1f}/100", expanded=factor.composite > 20
+                    ):
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Probability", f"{factor.probability:.0%}")
+                        c2.metric("Impact", f"{factor.impact:.0%}")
+                        c3.metric("Confidence", f"{factor.confidence:.0%}")
+                        st.caption(factor.reasoning)
 
-        st.divider()
-        st.subheader("Top 5 Actionable Insights")
-        if institutional_scores.top_5_insights:
-            for i, insight in enumerate(institutional_scores.top_5_insights, 1):
-                severity_color = (
-                    "#ef4444"
-                    if insight.composite > 30
-                    else "#f59e0b"
-                    if insight.composite > 15
-                    else "#22c55e"
-                )
-                st.markdown(
-                    f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {severity_color};"
-                    f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
-                    f"<strong>{i}. {insight.name}</strong> (Score: {insight.composite:.1f})<br/>"
-                    f"<span style='color:#9ca3af;font-size:0.85rem;'>{insight.reasoning}</span></div>",
-                    unsafe_allow_html=True,
-                )
+        with st.expander("Top 5 Actionable Insights", expanded=False):
+            if institutional_scores.top_5_insights:
+                for i, insight in enumerate(institutional_scores.top_5_insights, 1):
+                    severity_color = (
+                        "#ef4444"
+                        if insight.composite > 30
+                        else "#f59e0b"
+                        if insight.composite > 15
+                        else "#22c55e"
+                    )
+                    st.markdown(
+                        f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {severity_color};"
+                        f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
+                        f"<strong>{i}. {insight.name}</strong> (Score: {insight.composite:.1f})<br/>"
+                        f"<span style='color:#9ca3af;font-size:0.85rem;'>{insight.reasoning}</span></div>",
+                        unsafe_allow_html=True,
+                    )
 
         if factor_report:
-            st.divider()
-            st.subheader("Factor Risk Decomposition")
-            factor_cols = st.columns(2)
-            for i, factor in enumerate(factor_report.factors):
-                col_idx = i % 2
-                with factor_cols[col_idx]:
-                    st.metric(
-                        factor.name,
-                        f"{factor.risk_contribution_pct:.1f}%",
-                        help=f"Exposure: {factor.exposure:.3f}",
-                    )
-                    st.caption(factor.description)
-            st.caption(
-                f"Factor-explained risk: {factor_report.total_factor_risk_pct:.1f}% · Idiosyncratic: {factor_report.idiosyncratic_risk_pct:.1f}% · Dominant: {factor_report.dominant_factor}"
-            )
-    else:
-        st.info("Institutional scoring requires price data.")
+            with st.expander("Factor Risk Decomposition", expanded=False):
+                factor_cols = st.columns(2)
+                for i, factor in enumerate(factor_report.factors):
+                    col_idx = i % 2
+                    with factor_cols[col_idx]:
+                        st.metric(
+                            factor.name,
+                            f"{factor.risk_contribution_pct:.1f}%",
+                            help=f"Exposure: {factor.exposure:.3f}",
+                        )
+                        st.caption(factor.description)
+                st.caption(
+                    f"Factor-explained risk: {factor_report.total_factor_risk_pct:.1f}% · Idiosyncratic: {factor_report.idiosyncratic_risk_pct:.1f}% · Dominant: {factor_report.dominant_factor}"
+                )
 
-# ── Tab 2: Sector ──
-with tabs[2]:
+    # ── Early Warnings (inline) ──
+    if early_warnings:
+        st.divider()
+        st.subheader("Early Warning Signals")
+        level = early_warnings.overall_warning_level
+        st.caption(f"Overall level: **{level.upper()}** — {early_warnings.summary}")
+
+        if early_warnings.signals:
+            for sig in early_warnings.signals:
+                sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#3b82f6"}
+                sev_color = sev_colors.get(sig.severity.value, "#6b7280")
+                with st.expander(
+                    f"**{sig.name}** — {sig.severity.value.upper()}",
+                    expanded=sig.severity.value == "critical",
+                ):
+                    st.markdown(f"**{sig.description}**")
+                    st.info(f"**Why:** {sig.reasoning}")
+                    st.caption(f"**Suggested Action:** {sig.suggested_action}")
+                    if sig.affected_holdings:
+                        st.caption(f"Affected: {', '.join(sig.affected_holdings)}")
+        else:
+            st.success("No early-warning signals detected. Portfolio appears stable.")
+
+# ── Tab 1: Sector ──
+with tabs[1]:
     render_sector_section(report.sector)
     st.plotly_chart(
         sector_treemap(report.sector.sector_allocation), use_container_width=True, key="sector_treemap"
     )
 
-# ── Tab 3: vs Nifty 50 ──
-with tabs[3]:
+# ── Tab 2: vs Nifty 50 ──
+with tabs[2]:
     if benchmark:
         render_benchmark_section(report.benchmark)
     else:
@@ -483,8 +514,8 @@ with tabs[3]:
         key="benchmark_chart",
     )
 
-# ── Tab 4: Charts ──
-with tabs[4]:
+# ── Tab 3: Charts ──
+with tabs[3]:
     col1, col2 = st.columns(2)
     with col1:
         dd = (
@@ -510,12 +541,14 @@ with tabs[4]:
         with st.expander("Denoised Correlation (Marchenko-Pastur)"):
             st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True, key="corr_denoised")
 
-# ── Tab 5: Holdings ──
-with tabs[5]:
+# ── Tab 4: Holdings ──
+with tabs[4]:
     render_stock_table(report.portfolio)
 
-# ── Tab 6: Macro Scenarios ──
-with tabs[6]:
+# ── Tab 5: Scenarios (merged basic + macro + regime) ──
+with tabs[5]:
+    render_scenario_section(scenarios)
+    st.divider()
     if macro_scenarios:
         st.subheader("Macro-Driven Stress Tests")
         st.caption("Sector-aware scenarios modeling real-world macro events with causal reasoning.")
@@ -554,19 +587,9 @@ with tabs[6]:
                             f"Est. Loss: ₹{abs(h['impact_rs']):,.0f}"
                         )
     else:
-        st.info("Macro scenarios require beta data. Run analysis first.")
+        st.info("Macro scenarios require beta data.")
 
-# ── Tab 7: Export ──
-with tabs[7]:
-    render_export_section(report.portfolio, risk=report.risk, sector_data=report.sector.sector_allocation)
-
-# ── Tab 8: Optimization ──
-with tabs[8]:
-    render_optimization_section(opt_result, portfolio=report.portfolio)
-    render_rebalance_section(rebalance)
-
-# ── Tab 9: Regime ──
-with tabs[9]:
+    st.divider()
     render_regime_section(regime_result)
     if regime_result:
         st.plotly_chart(
@@ -575,12 +598,11 @@ with tabs[9]:
             key="regime_chart",
         )
 
-# ── Tab 10: Basic Scenario ──
-with tabs[10]:
-    render_scenario_section(scenarios)
-
-# ── Tab 11: Recommendations ──
-with tabs[11]:
+# ── Tab 6: Recommendations ──
+with tabs[6]:
+    render_optimization_section(opt_result, portfolio=report.portfolio)
+    render_rebalance_section(rebalance)
+    st.divider()
     if recommendations:
         st.subheader("Portfolio Action Recommendations")
         st.caption(recommendations.summary)
@@ -634,34 +656,11 @@ with tabs[11]:
                     f"Expected risk reduction: {rec.expected_risk_reduction:.1f}% · Confidence: {rec.confidence:.0%}"
                 )
     else:
-        st.info("Recommendations require full analysis. Run analysis first.")
+        st.info("Recommendations require full analysis.")
 
-# ── Tab 12: Early Warnings ──
-with tabs[12]:
-    if warnings:
-        level_colors = {"green": "#22c55e", "amber": "#f59e0b", "red": "#ef4444"}
-        level = warnings.overall_warning_level
-        st.subheader(f"Early Warning Signals — {level.upper()}")
-        st.caption(warnings.summary)
-
-        if warnings.signals:
-            for sig in warnings.signals:
-                sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#3b82f6"}
-                sev_color = sev_colors.get(sig.severity.value, "#6b7280")
-                with st.expander(
-                    f":{'red_circle' if sig.severity.value == 'critical' else 'large_orange_circle' if sig.severity.value == 'warning' else 'blue_circle'} "
-                    f"**{sig.name}** — {sig.severity.value.upper()}",
-                    expanded=sig.severity.value == "critical",
-                ):
-                    st.markdown(f"**{sig.description}**")
-                    st.info(f"**Why:** {sig.reasoning}")
-                    st.caption(f"**Suggested Action:** {sig.suggested_action}")
-                    if sig.affected_holdings:
-                        st.caption(f"Affected: {', '.join(sig.affected_holdings)}")
-        else:
-            st.success("No early-warning signals detected. Portfolio appears stable.")
-    else:
-        st.info("Early warnings require price data. Run analysis first.")
+# ── Tab 7: Export ──
+with tabs[7]:
+    render_export_section(report.portfolio, risk=report.risk, sector_data=report.sector.sector_allocation)
 
 # ── Step 5: Save analysis run to history (only on fresh computation) ──
 if st.session_state.get("_report_changed", False):
