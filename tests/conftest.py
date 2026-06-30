@@ -1,4 +1,5 @@
 """Test fixtures for the NSE Portfolio Risk Scanner."""
+
 import os
 import sys
 
@@ -7,12 +8,13 @@ _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-import pytest
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime  # noqa: E402
 
-from engine import Holding, Portfolio
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
+
+from engine import Holding, Portfolio  # noqa: E402
 
 
 @pytest.fixture
@@ -35,11 +37,11 @@ def sample_prices():
     np.random.seed(42)
     dates = pd.date_range(end=datetime.now(), periods=252, freq="B")
     n_stocks = 3
-    
+
     # Random walk with drift
     returns = np.random.normal(0.001, 0.02, (252, n_stocks))
     prices = 100 * np.cumprod(1 + returns, axis=0)
-    
+
     df = pd.DataFrame(
         prices,
         index=dates,
@@ -51,18 +53,18 @@ def sample_prices():
 @pytest.fixture
 def sample_csv():
     """A realistic portfolio CSV as bytes."""
-    return """ticker,quantity,avg_price
+    return b"""ticker,quantity,avg_price
 RELIANCE,10,2500.00
 TCS,5,3500.00
 HDFCBANK,20,1600.00
-""".encode("utf-8")
+"""
 
 
 @pytest.fixture
 def zerodha_csv():
     """Zerodha-style export format."""
-    return """Symbol,Qty,Avg Price
+    return b"""Symbol,Qty,Avg Price
 RELIANCE,10,2500.00
 TCS,5,3500.00
 HDFCBANK,20,1600.00
-""".encode("utf-8")
+"""

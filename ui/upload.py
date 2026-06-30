@@ -3,12 +3,20 @@ CSV upload, manual stock entry, portfolio data editor, and saved-portfolio manag
 Thin Streamlit presentation — no business logic.
 Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander labels).
 """
+
 from __future__ import annotations
+
 import streamlit as st
+
 from engine import Holding, Portfolio
 from engine.portfolio import parse_portfolio_csv
 from ui.icons import (
-    FOLDER_OPEN, CHECK_CIRCLE, X_CIRCLE, UPLOAD, PLUS, icon_html,
+    CHECK_CIRCLE,
+    FOLDER_OPEN,
+    PLUS,
+    UPLOAD,
+    X_CIRCLE,
+    icon_html,
 )
 
 
@@ -20,7 +28,7 @@ def render_sidebar():
     )
 
     try:
-        from storage.db import list_saved_portfolios, delete_portfolio
+        from storage.db import delete_portfolio, list_saved_portfolios
         from storage.models import saved_to_portfolio
 
         saved = list_saved_portfolios()
@@ -48,9 +56,7 @@ def render_sidebar():
                 options=["— Select —"] + list(options.keys()),
                 key="delete_portfolio",
             )
-            if delete_name != "— Select —" and st.sidebar.button(
-                "Delete", use_container_width=True
-            ):
+            if delete_name != "— Select —" and st.sidebar.button("Delete", use_container_width=True):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
                 st.sidebar.markdown(
@@ -81,16 +87,23 @@ def render_manual_entry() -> list[Holding]:
     with st.form("manual_entry_form", clear_on_submit=True):
         cols = st.columns([2, 1, 1, 1])
         with cols[0]:
-            ticker = st.text_input(
-                "Ticker",
-                placeholder="e.g. RELIANCE",
-                label_visibility="collapsed",
-            ).strip().upper()
+            ticker = (
+                st.text_input(
+                    "Ticker",
+                    placeholder="e.g. RELIANCE",
+                    label_visibility="collapsed",
+                )
+                .strip()
+                .upper()
+            )
         with cols[1]:
             qty = st.number_input("Qty", min_value=1, step=1, label_visibility="collapsed")
         with cols[2]:
             price = st.number_input(
-                "Avg Price (₹)", min_value=0.01, step=1.0, format="%.2f",
+                "Avg Price (₹)",
+                min_value=0.01,
+                step=1.0,
+                format="%.2f",
                 label_visibility="collapsed",
             )
         with cols[3]:
@@ -117,7 +130,7 @@ def render_manual_entry() -> list[Holding]:
     if manual:
         st.markdown(
             f'<div style="margin: 0.5rem 0 0.3rem; color: #94a3b8; font-size: 0.85rem;">'
-            f'{len(manual)} stock(s) added</div>',
+            f"{len(manual)} stock(s) added</div>",
             unsafe_allow_html=True,
         )
         for i, h in enumerate(manual):
@@ -148,7 +161,7 @@ def render_upload_tab() -> Portfolio | None:
         "Upload portfolio CSV",
         type="csv",
         help="Upload a CSV exported from Zerodha, Groww, or any broker. "
-             "Expected columns: ticker/symbol, quantity/qty, avg_price/price.",
+        "Expected columns: ticker/symbol, quantity/qty, avg_price/price.",
     )
 
     csv_portfolio = None
@@ -206,12 +219,14 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
     with st.expander("✎ Edit Holdings", expanded=False):
         data = []
         for h in portfolio.holdings:
-            data.append({
-                "Ticker": h.ticker.replace(".NS", ""),
-                "Name": h.name,
-                "Quantity": h.quantity,
-                "Avg Price": h.avg_price,
-            })
+            data.append(
+                {
+                    "Ticker": h.ticker.replace(".NS", ""),
+                    "Name": h.name,
+                    "Quantity": h.quantity,
+                    "Avg Price": h.avg_price,
+                }
+            )
 
         df = st.data_editor(
             data,
@@ -229,12 +244,16 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
         if st.button("Update from Editor", use_container_width=True):
             new_holdings = []
             for _, row in df.iterrows():
-                new_holdings.append(Holding(
-                    ticker=(row["Ticker"] + ".NS") if not row["Ticker"].endswith(".NS") else row["Ticker"],
-                    name=row.get("Name", row["Ticker"]),
-                    quantity=int(row["Quantity"]),
-                    avg_price=float(row["Avg Price"]),
-                ))
+                new_holdings.append(
+                    Holding(
+                        ticker=(row["Ticker"] + ".NS")
+                        if not row["Ticker"].endswith(".NS")
+                        else row["Ticker"],
+                        name=row.get("Name", row["Ticker"]),
+                        quantity=int(row["Quantity"]),
+                        avg_price=float(row["Avg Price"]),
+                    )
+                )
             portfolio.holdings = new_holdings
             if "manual_holdings" in st.session_state:
                 st.session_state.manual_holdings = []
@@ -256,6 +275,7 @@ def render_save_button(portfolio: Portfolio):
             try:
                 from storage.db import save_portfolio
                 from storage.models import portfolio_to_saved
+
                 saved = portfolio_to_saved(portfolio, name=save_name)
                 p_id = save_portfolio(saved)
                 st.markdown(

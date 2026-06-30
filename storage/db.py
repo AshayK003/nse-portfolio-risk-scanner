@@ -11,14 +11,15 @@ Tables:
   - price_cache: Cross-session price data (TTL-managed)
   - analysis_runs: History of analysis runs for trend tracking
 """
+
 from __future__ import annotations
+
 import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta
-from typing import Optional
 
-from .models import SavedPortfolio, AnalysisRun, CachedPrice
+from .models import AnalysisRun, CachedPrice, SavedPortfolio
 
 # Default database path (relative to project root)
 _DEFAULT_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
@@ -131,6 +132,7 @@ def _ensure_schema(conn: sqlite3.Connection):
 
 # ── Portfolio CRUD ──
 
+
 def save_portfolio(portfolio: SavedPortfolio) -> int:
     """Insert or update a saved portfolio. Returns the portfolio ID."""
     conn = get_connection()
@@ -138,40 +140,53 @@ def save_portfolio(portfolio: SavedPortfolio) -> int:
     portfolio.updated_at = now
 
     if portfolio.id:
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE saved_portfolios
             SET name=?, holdings_json=?, updated_at=?, total_invested=?,
                 total_current=?, total_pnl=?
             WHERE id=?
-        """, (
-            portfolio.name, portfolio.holdings_json, now,
-            portfolio.total_invested, portfolio.total_current, portfolio.total_pnl,
-            portfolio.id,
-        ))
+        """,
+            (
+                portfolio.name,
+                portfolio.holdings_json,
+                now,
+                portfolio.total_invested,
+                portfolio.total_current,
+                portfolio.total_pnl,
+                portfolio.id,
+            ),
+        )
         conn.commit()
         return portfolio.id
     else:
         portfolio.created_at = now
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             INSERT INTO saved_portfolios
                 (name, holdings_json, created_at, updated_at,
                  total_invested, total_current, total_pnl)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            portfolio.name, portfolio.holdings_json, now, now,
-            portfolio.total_invested, portfolio.total_current, portfolio.total_pnl,
-        ))
+        """,
+            (
+                portfolio.name,
+                portfolio.holdings_json,
+                now,
+                now,
+                portfolio.total_invested,
+                portfolio.total_current,
+                portfolio.total_pnl,
+            ),
+        )
         conn.commit()
         portfolio.id = cursor.lastrowid
         return cursor.lastrowid
 
 
-def load_portfolio(portfolio_id: int) -> Optional[SavedPortfolio]:
+def load_portfolio(portfolio_id: int) -> SavedPortfolio | None:
     """Load a saved portfolio by ID."""
     conn = get_connection()
-    row = conn.execute(
-        "SELECT * FROM saved_portfolios WHERE id = ?", (portfolio_id,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM saved_portfolios WHERE id = ?", (portfolio_id,)).fetchone()
     if row is None:
         return None
     return SavedPortfolio(**dict(row))
@@ -180,9 +195,7 @@ def load_portfolio(portfolio_id: int) -> Optional[SavedPortfolio]:
 def list_saved_portfolios() -> list[SavedPortfolio]:
     """List all saved portfolios, newest first."""
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM saved_portfolios ORDER BY updated_at DESC"
-    ).fetchall()
+    rows = conn.execute("SELECT * FROM saved_portfolios ORDER BY updated_at DESC").fetchall()
     return [SavedPortfolio(**dict(r)) for r in rows]
 
 
@@ -196,19 +209,31 @@ def delete_portfolio(portfolio_id: int) -> bool:
 
 # ── Analysis History ──
 
+
 def save_analysis_run(run: AnalysisRun) -> int:
     """Record an analysis run. Returns the run ID."""
     conn = get_connection()
-    cursor = conn.execute("""
+    cursor = conn.execute(
+        """
         INSERT INTO analysis_runs
             (portfolio_name, holding_count, volatility, var_95, max_drawdown,
              sharpe, cagr, beta, diversification_score, benchmark_name, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        run.portfolio_name, run.holding_count, run.volatility, run.var_95,
-        run.max_drawdown, run.sharpe, run.cagr, run.beta,
-        run.diversification_score, run.benchmark_name, run.created_at,
-    ))
+    """,
+        (
+            run.portfolio_name,
+            run.holding_count,
+            run.volatility,
+            run.var_95,
+            run.max_drawdown,
+            run.sharpe,
+            run.cagr,
+            run.beta,
+            run.diversification_score,
+            run.benchmark_name,
+            run.created_at,
+        ),
+    )
     conn.commit()
     return cursor.lastrowid
 
@@ -225,7 +250,8 @@ def list_recent_analyses(limit: int = 10) -> list[AnalysisRun]:
 
 # ── Price Cache ──
 
-def get_cached_prices(ticker: str, max_age_hours: int = 24) -> Optional[list[CachedPrice]]:
+
+def get_cached_prices(ticker: str, max_age_hours: int = 24) -> list[CachedPrice] | None:
     """Get cached price data for a ticker if within TTL."""
     conn = get_connection()
     cutoff = (datetime.now() - timedelta(hours=max_age_hours)).isoformat()

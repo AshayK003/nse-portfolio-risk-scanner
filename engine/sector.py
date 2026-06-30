@@ -4,16 +4,23 @@ NSE sector classification and concentration analysis.
 Uses a static sector mapping file (data/sectors.yaml) for ticker→sector lookups.
 Falls back to yfinance sector info when a ticker isn't in the mapping.
 """
+
 from __future__ import annotations
+
 import os
-from typing import Optional
 
 import numpy as np
 import yaml
-import yfinance as yf
 
 from . import Holding, SectorExposure
 
+# Attempt to import nselib for sector data fallback (optional dep)
+try:
+    from nselib import capital_market
+
+    _NSELIB_AVAILABLE = True
+except ImportError:
+    _NSELIB_AVAILABLE = False
 
 # Default mapping for common NSE stocks
 _DEFAULT_SECTORS: dict[str, str] = {
@@ -93,7 +100,6 @@ _DEFAULT_SECTORS: dict[str, str] = {
     "DIVISLAB": "Pharma",
     "DRREDDY": "Pharma",
     "APOLLOHOSP": "Healthcare",
-    "RELIANCE": "Oil & Gas",
     "GAIL": "Oil & Gas",
     "IOC": "Oil & Gas",
     "HAL": "Defense",
@@ -118,7 +124,6 @@ _DEFAULT_SECTORS: dict[str, str] = {
     "MAXHEALTH": "Healthcare",
     "FORTIS": "Healthcare",
     "PAGEIND": "Textiles",
-    "TRENT": "Retail",
     "TECHM": "IT",
     "LTIM": "IT",
     "MPHASIS": "IT",
@@ -165,19 +170,19 @@ _DEFAULT_SECTORS: dict[str, str] = {
 def load_sector_map(path: str | None = None) -> dict[str, str]:
     """
     Load sector mapping from YAML file, falling back to built-in defaults.
-    
+
     The YAML file should be a flat mapping:
         RELIANCE: Oil & Gas
         TCS: IT
     """
     sectors = dict(_DEFAULT_SECTORS)
-    
+
     if path and os.path.exists(path):
         with open(path) as f:
             yaml_data = yaml.safe_load(f)
             if isinstance(yaml_data, dict):
                 sectors.update(yaml_data)
-    
+
     return sectors
 
 
@@ -187,27 +192,36 @@ def classify_holdings(
 ) -> list[Holding]:
     """
     Assign sector to each holding using the provided mapping.
-    Falls back to yfinance sector info for unknown tickers.
+    Falls back to nselib or yfinance for unknown tickers.
     """
     if sector_map is None:
         sector_map = load_sector_map()
-    
+
     result = []
     for h in holdings:
         clean_ticker = h.ticker.replace(".NS", "")
         sector = sector_map.get(clean_ticker, "")
-        
-        if not sector:
-            # Fallback: try yfinance
+
+        if not sector and _NSELIB_AVAILABLE:
             try:
+                raw = capital_market.price_volume_data(symbol=clean_ticker, period="1d")
+                if raw is not None and not raw.empty and "SECTOR" in raw.columns:
+                    sector = str(raw.iloc[0].get("SECTOR", ""))
+            except Exception:
+                pass
+
+        if not sector:
+            try:
+                import yfinance as yf
+
                 info = yf.Ticker(h.ticker).info
                 sector = info.get("sector", "")
             except Exception:
                 sector = "Unknown"
-        
+
         h.sector = sector or "Unknown"
         result.append(h)
-    
+
     return result
 
 
@@ -224,26 +238,26 @@ def compute_sector_exposure(holdings: list[Holding]) -> SectorExposure:
             diversification_score=0.0,
             herfindahl_index=0.0,
         )
-    
+
     # Aggregate by sector
     sector_values: dict[str, float] = {}
     for h in holdings:
         sec = h.sector or "Unknown"
         sector_values[sec] = sector_values.get(sec, 0) + h.current_value
-    
+
     # Compute percentages
     sector_alloc = {sec: round(val / total_value * 100, 1) for sec, val in sector_values.items()}
     sector_alloc = dict(sorted(sector_alloc.items(), key=lambda x: x[1], reverse=True))
-    
+
     # Concentrated sectors (>20%)
     concentrated = [sec for sec, pct in sector_alloc.items() if pct > 20]
-    
+
     # Diversification score (0-100)
     # Inverse Herfindahl-Hirschman Index normalized
     weights = np.array(list(sector_alloc.values())) / 100
-    hhi = (weights ** 2).sum()
+    hhi = (weights**2).sum()
     div_score = max(0, min(100, (1 - hhi) * 100))
-    
+
     return SectorExposure(
         holdings=holdings,
         sector_allocation=sector_alloc,

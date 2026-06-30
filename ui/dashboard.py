@@ -3,12 +3,18 @@ Risk dashboard — metric cards, tabs, and layout.
 Thin Streamlit presentation that calls engine functions.
 Uses Lucide SVG icons instead of emojis.
 """
+
 from __future__ import annotations
+
 import streamlit as st
-import plotly.graph_objects as go
-from engine import Portfolio, RiskMetrics, SectorExposure, BenchmarkComparison
+
+from engine import BenchmarkComparison, Portfolio, RiskMetrics, SectorExposure
 from ui.icons import (
-    ACTIVITY, PIE_CHART, SEARCH, ARROW_UP_DOWN, icon_html,
+    ACTIVITY,
+    ARROW_UP_DOWN,
+    PIE_CHART,
+    SEARCH,
+    icon_html,
 )
 
 
@@ -42,8 +48,9 @@ def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
 
 def render_risk_cards(risk: RiskMetrics) -> None:
     """Display risk metric cards in a 4-column grid."""
-    st.markdown(f'<div class="section-header">{icon_html(ACTIVITY)} Risk Metrics</div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-header">{icon_html(ACTIVITY)} Risk Metrics</div>', unsafe_allow_html=True
+    )
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -77,8 +84,9 @@ def render_risk_cards(risk: RiskMetrics) -> None:
 
 def render_sector_section(sector: SectorExposure) -> None:
     """Display sector concentration analysis."""
-    st.markdown(f'<div class="section-header">{icon_html(PIE_CHART)} Sector Allocation</div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-header">{icon_html(PIE_CHART)} Sector Allocation</div>', unsafe_allow_html=True
+    )
 
     if sector.concentrated_sectors:
         for sec in sector.concentrated_sectors:
@@ -99,8 +107,7 @@ def render_sector_section(sector: SectorExposure) -> None:
 
 def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
     """Display benchmark comparison."""
-    st.markdown(f'<div class="section-header">{icon_html(SEARCH)} vs Nifty 50</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{icon_html(SEARCH)} vs Nifty 50</div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -125,20 +132,24 @@ def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
 
 def render_stock_table(portfolio: Portfolio) -> None:
     """Display individual holding P&L table."""
-    st.markdown(f'<div class="section-header">{icon_html(ARROW_UP_DOWN)} Holdings Breakdown</div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-header">{icon_html(ARROW_UP_DOWN)} Holdings Breakdown</div>',
+        unsafe_allow_html=True,
+    )
 
     rows = []
     for h in portfolio.holdings:
-        rows.append({
-            "Ticker": h.ticker.replace(".NS", ""),
-            "Name": h.name,
-            "Qty": h.quantity,
-            "Avg Price": f"₹{h.avg_price:,.2f}",
-            "Current": f"₹{h.current_price:,.2f}" if h.current_price else "—",
-            "Invested": f"₹{h.invested_value:,.0f}",
-            "P&L": f"₹{h.pnl:+,.0f}",
-            "P&L %": f"{h.pnl_pct:+.1f}%",
-        })
+        rows.append(
+            {
+                "Ticker": h.ticker.replace(".NS", ""),
+                "Name": h.name,
+                "Qty": h.quantity,
+                "Avg Price": f"₹{h.avg_price:,.2f}",
+                "Current": f"₹{h.current_price:,.2f}" if h.current_price else "—",
+                "Invested": f"₹{h.invested_value:,.0f}",
+                "P&L": f"₹{h.pnl:+,.0f}",
+                "P&L %": f"{h.pnl_pct:+.1f}%",
+            }
+        )
 
     st.dataframe(rows, use_container_width=True, hide_index=True)

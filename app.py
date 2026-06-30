@@ -4,33 +4,40 @@ NSE Portfolio Risk Scanner — Streamlit app entry point.
 Thin orchestration layer: reads CSV -> computes risk -> renders UI.
 Engine has ZERO Streamlit imports. UI has ZERO business logic.
 """
+
 from __future__ import annotations
+
 import pandas as pd
 import streamlit as st
 
-from engine import Portfolio, AnalysisReport
-from engine.portfolio import parse_portfolio_csv, validate_portfolio, portfolio_from_dict
-from engine.risk import compute_risk_metrics, compute_correlation_matrix, rolling_volatility
-from engine.sector import load_sector_map, classify_holdings, compute_sector_exposure
+from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
+from engine import AnalysisReport
+from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.performance import (
-    compute_portfolio_returns, compute_total_return, compute_win_rate,
-    compute_holding_returns, compute_max_drawdown,
+    compute_max_drawdown,
+    compute_portfolio_returns,
 )
-from engine.benchmark import compare_to_benchmark, BENCHMARK_TICKERS
-from data.prices import fetch_prices, fetch_benchmark, fetch_prices_refreshed
-
-from ui.upload import render_upload_tab, render_data_editor, render_save_button, render_sidebar
-from ui.dashboard import (
-    render_metric_row, render_risk_cards, render_sector_section,
-    render_benchmark_section, render_stock_table,
-)
+from engine.portfolio import validate_portfolio
+from engine.risk import compute_correlation_matrix, compute_risk_metrics, rolling_volatility
+from engine.sector import classify_holdings, compute_sector_exposure, load_sector_map
 from ui.charts import (
-    sector_treemap, drawdown_chart, benchmark_chart,
-    correlation_heatmap, volatility_gauge,
+    benchmark_chart,
+    correlation_heatmap,
+    drawdown_chart,
+    sector_treemap,
+    volatility_gauge,
+)
+from ui.dashboard import (
+    render_benchmark_section,
+    render_metric_row,
+    render_risk_cards,
+    render_sector_section,
+    render_stock_table,
 )
 from ui.export import render_export_section
 from ui.icons import BAR_CHART_3, GITHUB, HEART, icon_html
 from ui.styles import inject_css
+from ui.upload import render_data_editor, render_save_button, render_sidebar, render_upload_tab
 
 # Page config
 st.set_page_config(
@@ -91,7 +98,9 @@ benchmark_choice = st.selectbox(
     "Benchmark Index",
     options=list(benchmark_options.keys()),
     format_func=lambda x: benchmark_options[x],
-    index=list(benchmark_options.keys()).index(default_benchmark) if default_benchmark in benchmark_options else 0,
+    index=list(benchmark_options.keys()).index(default_benchmark)
+    if default_benchmark in benchmark_options
+    else 0,
     key="benchmark_selector",
 )
 
@@ -125,11 +134,16 @@ benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_pric
 # Compute all risk metrics
 risk = compute_risk_metrics(prices, weights, benchmark_returns=benchmark_returns)
 sector = compute_sector_exposure(portfolio.holdings)
-benchmark = compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
+benchmark = (
+    compare_to_benchmark(portfolio_returns, benchmark_returns) if benchmark_returns is not None else None
+)
 
 # Store in session
 st.session_state.report = AnalysisReport(
-    portfolio=portfolio, risk=risk, sector=sector, benchmark=benchmark,
+    portfolio=portfolio,
+    risk=risk,
+    sector=sector,
+    benchmark=benchmark,
 )
 
 # ── Step 4: Display ──
@@ -162,20 +176,26 @@ with tabs[2]:
         render_benchmark_section(report.benchmark)
     else:
         st.warning("Benchmark data not available")
-    st.plotly_chart(benchmark_chart(
-        (1 + portfolio_returns).cumprod(),
-        (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float),
-    ), use_container_width=True)
+    st.plotly_chart(
+        benchmark_chart(
+            (1 + portfolio_returns).cumprod(),
+            (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float),
+        ),
+        use_container_width=True,
+    )
 
 with tabs[3]:
     col1, col2 = st.columns(2)
     with col1:
-        dd = compute_max_drawdown((1 + portfolio_returns).cumprod()) if not portfolio_returns.empty else {"max_drawdown": 0.0, "start": "N/A", "end": "N/A"}
+        dd = (
+            compute_max_drawdown((1 + portfolio_returns).cumprod())
+            if not portfolio_returns.empty
+            else {"max_drawdown": 0.0, "start": "N/A", "end": "N/A"}
+        )
         st.plotly_chart(
             drawdown_chart(
-                ((1 + portfolio_returns).cumprod() -
-                 (1 + portfolio_returns).cumprod().cummax()) /
-                (1 + portfolio_returns).cumprod().cummax()
+                ((1 + portfolio_returns).cumprod() - (1 + portfolio_returns).cumprod().cummax())
+                / (1 + portfolio_returns).cumprod().cummax()
             ),
             use_container_width=True,
         )
@@ -193,6 +213,7 @@ with tabs[5]:
 try:
     from storage.db import save_analysis_run
     from storage.models import analysis_from_report
+
     run = analysis_from_report(report)
     save_analysis_run(run)
 except Exception:
@@ -202,8 +223,8 @@ except Exception:
 st.markdown(
     f'<div class="app-footer">'
     f'{icon_html(GITHUB)} Built by <a href="https://github.com/AshayK003">AshayK003</a> · '
-    f'{icon_html(HEART)} '
+    f"{icon_html(HEART)} "
     f'<a href="https://chai4.me/ashaykushwaha003">Support on Chai4Me</a>'
-    f'</div>',
+    f"</div>",
     unsafe_allow_html=True,
 )

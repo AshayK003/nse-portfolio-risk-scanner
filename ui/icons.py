@@ -63,4 +63,4 @@ def icon_html(svg: str, size: int = 16, class_name: str = "") -> str:
 
 def icon_text(icon_svg: str, text: str, size: int = 16) -> str:
     """Combine icon and text into a single HTML span."""
-    return f'{icon_html(icon_svg, size)} {text}'
+    return f"{icon_html(icon_svg, size)} {text}"

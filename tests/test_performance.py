@@ -1,18 +1,19 @@
 """Tests for the performance computation module."""
-import pytest
+
 import numpy as np
 import pandas as pd
+
+from engine import Holding
 from engine.performance import (
-    compute_portfolio_returns,
     compute_cagr,
-    compute_total_return,
+    compute_holding_returns,
+    compute_max_drawdown,
+    compute_portfolio_returns,
     compute_sharpe_ratio,
     compute_sortino_ratio,
-    compute_max_drawdown,
+    compute_total_return,
     compute_win_rate,
-    compute_holding_returns,
 )
-from engine import Holding
 
 
 class TestComputePortfolioReturns:
@@ -166,10 +167,15 @@ class TestComputeWinRate:
 class TestComputeHoldingReturns:
     def test_returns_dataframe(self):
         holdings = [
-            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10,
-                    avg_price=2500, current_price=2600, sector="Oil & Gas"),
-            Holding(ticker="TCS.NS", name="TCS", quantity=5,
-                    avg_price=3500, current_price=3400, sector="IT"),
+            Holding(
+                ticker="RELIANCE.NS",
+                name="RIL",
+                quantity=10,
+                avg_price=2500,
+                current_price=2600,
+                sector="Oil & Gas",
+            ),
+            Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500, current_price=3400, sector="IT"),
         ]
         df = compute_holding_returns(holdings)
         assert isinstance(df, pd.DataFrame)

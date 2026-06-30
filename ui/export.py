@@ -2,10 +2,12 @@
 Report export — CSV download and PDF report generation.
 Uses Lucide SVG icons instead of emojis.
 """
+
 from __future__ import annotations
-import io
-import streamlit as st
+
 import pandas as pd
+import streamlit as st
+
 from engine import Portfolio, RiskMetrics
 from ui.icons import DOWNLOAD, FILE_TEXT, icon_text
 
@@ -24,18 +26,20 @@ def render_export_section(
     # Build data rows
     rows = []
     for h in portfolio.holdings:
-        rows.append({
-            "Ticker": h.ticker.replace(".NS", ""),
-            "Name": h.name,
-            "Quantity": h.quantity,
-            "Avg Price": h.avg_price,
-            "Current Price": h.current_price,
-            "Invested": h.invested_value,
-            "Current Value": h.current_value,
-            "P&L": h.pnl,
-            "P&L %": h.pnl_pct,
-            "Sector": h.sector,
-        })
+        rows.append(
+            {
+                "Ticker": h.ticker.replace(".NS", ""),
+                "Name": h.name,
+                "Quantity": h.quantity,
+                "Avg Price": h.avg_price,
+                "Current Price": h.current_price,
+                "Invested": h.invested_value,
+                "Current Value": h.current_value,
+                "P&L": h.pnl,
+                "P&L %": h.pnl_pct,
+                "Sector": h.sector,
+            }
+        )
 
     df = pd.DataFrame(rows)
 
@@ -88,7 +92,10 @@ def _generate_pdf_report(
     pdf.set_font("Helvetica", "", 10)
     pdf.cell(0, 6, f"Portfolio: {portfolio.name}", new_x="LMARGIN", new_y="NEXT")
     from datetime import datetime
-    pdf.cell(0, 6, f"Generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.cell(
+        0, 6, f"Generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}", new_x="LMARGIN", new_y="NEXT"
+    )
     pdf.ln(4)
 
     # ── Summary Section ──
@@ -101,7 +108,13 @@ def _generate_pdf_report(
     pnl_color = (0, 128, 0) if portfolio.total_pnl >= 0 else (200, 0, 0)
     pdf.set_text_color(*pnl_color)
     pnl_sign = "+" if portfolio.total_pnl >= 0 else ""
-    pdf.cell(0, 6, f"P&L: Rs {pnl_sign}{portfolio.total_pnl:+,.0f} ({pnl_sign}{portfolio.total_pnl_pct:+.2f}%)", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(
+        0,
+        6,
+        f"P&L: Rs {pnl_sign}{portfolio.total_pnl:+,.0f} ({pnl_sign}{portfolio.total_pnl_pct:+.2f}%)",
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )
     pdf.set_text_color(0, 0, 0)
     pdf.ln(4)
 
@@ -140,7 +153,7 @@ def _generate_pdf_report(
     col_widths = [30, 20, 35, 35, 30]
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_fill_color(230, 235, 240)
-    for col_name, w in zip(cols, col_widths):
+    for col_name, w in zip(cols, col_widths, strict=False):
         pdf.cell(w, 7, col_name, border=1, fill=True)
     pdf.ln()
 
@@ -161,7 +174,13 @@ def _generate_pdf_report(
 
     if len(df) > 30:
         pdf.set_font("Helvetica", "I", 9)
-        pdf.cell(0, 6, f"... and {len(df) - 30} more holdings (see CSV for full data)", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(
+            0,
+            6,
+            f"... and {len(df) - 30} more holdings (see CSV for full data)",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
 
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 8)

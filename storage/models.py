@@ -3,21 +3,23 @@ Storage-layer data models.
 These extend the engine dataclasses with persistence-specific fields
 like IDs, timestamps, and serialization helpers.
 """
-from __future__ import annotations
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from typing import Optional
 
-from engine import Portfolio, Holding, RiskMetrics, SectorExposure, BenchmarkComparison, AnalysisReport
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from datetime import datetime
+
+from engine import AnalysisReport, Holding, Portfolio
 
 
 @dataclass
 class SavedPortfolio:
     """A portfolio saved to the SQLite database."""
-    id: Optional[int] = None
+
+    id: int | None = None
     name: str = ""
     holdings_json: str = ""  # JSON-serialized list of holdings
-    created_at: str = ""     # ISO datetime string
+    created_at: str = ""  # ISO datetime string
     updated_at: str = ""
     total_invested: float = 0.0
     total_current: float = 0.0
@@ -27,7 +29,8 @@ class SavedPortfolio:
 @dataclass
 class AnalysisRun:
     """A recorded analysis run for history tracking."""
-    id: Optional[int] = None
+
+    id: int | None = None
     portfolio_name: str = ""
     holding_count: int = 0
     volatility: float = 0.0
@@ -44,6 +47,7 @@ class AnalysisRun:
 @dataclass
 class CachedPrice:
     """A cached price data entry for a single ticker on a single date."""
+
     ticker: str = ""
     date: str = ""
     close: float = 0.0
@@ -51,9 +55,11 @@ class CachedPrice:
 
 # ── Serialization helpers ──
 
+
 def portfolio_to_saved(p: Portfolio, name: str = "") -> SavedPortfolio:
     """Convert an engine Portfolio to a SavedPortfolio for persistence."""
     import json
+
     holdings_data = []
     for h in p.holdings:
         holdings_data.append(asdict(h))
@@ -71,6 +77,7 @@ def portfolio_to_saved(p: Portfolio, name: str = "") -> SavedPortfolio:
 def saved_to_portfolio(sp: SavedPortfolio) -> Portfolio:
     """Reconstruct an engine Portfolio from a SavedPortfolio."""
     import json
+
     holdings_data = json.loads(sp.holdings_json)
     holdings = [
         Holding(
