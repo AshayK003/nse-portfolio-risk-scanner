@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from engine import Portfolio, RiskMetrics
-from ui.icons import DOWNLOAD, FILE_TEXT, icon_text
+from ui.icons import DOWNLOAD, icon_text
 
 
 def render_export_section(
@@ -46,7 +46,7 @@ def render_export_section(
     # ── CSV Download ──
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label=f"{icon_text(DOWNLOAD, 'Download CSV Report')}",
+        label="Download CSV Report",
         data=csv,
         file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.csv",
         mime="text/csv",
@@ -57,7 +57,7 @@ def render_export_section(
     try:
         pdf_bytes = _generate_pdf_report(portfolio, risk, sector_data, df)
         st.download_button(
-            label=f"{icon_text(FILE_TEXT, 'Download PDF Report')}",
+            label="Download PDF Report",
             data=pdf_bytes,
             file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.pdf",
             mime="application/pdf",
