@@ -4,8 +4,9 @@
 
 ### Fixed
 
-- **Production crash: `st.plotly_chart(aria_label=...)`** — `aria_label` is not a valid parameter in Streamlit versions deployed on Streamlit Cloud. Removed from all chart calls to fix `TypeError`.
-- **Production crash: `data_editor` returns `None`** — `st.data_editor` returns `None` when the expander is collapsed on initial load. Added `df is not None` guard before iterating to fix `TypeError: cannot unpack non-iterable NoneType object`.
+- **Production crash: `st.plotly_chart(aria_label=...)`** — removed unsupported `aria_label` kwarg
+- **Production crash: `data_editor` returns `None`** — added `if df is None` guard before `iterrows()`
+- **Manual-only entry bug** — `render_upload_tab()` never assigned manual holdings to the portfolio when no CSV was uploaded. Holdings were collected in `all_holdings` but only merged when CSV existed. Added `elif manual_holdings: portfolio.holdings = manual_holdings`.
 
 ## v0.5.0 (2026-06-30)
 

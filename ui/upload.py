@@ -186,6 +186,8 @@ def render_upload_tab() -> Portfolio | None:
                 portfolio.holdings.append(h)
                 seen.add(h.ticker)
         portfolio.name = f"{csv_portfolio.name} + Manual"
+    elif manual_holdings:
+        portfolio.holdings = manual_holdings
 
     return portfolio
 
@@ -217,25 +219,28 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if st.button("Update from Editor", use_container_width=True) and df is not None:
-            new_holdings = []
-            for _, row in df.iterrows():
-                new_holdings.append(
-                    Holding(
-                        ticker=(row["Ticker"] + ".NS")
-                        if not row["Ticker"].endswith(".NS")
-                        else row["Ticker"],
-                        name=row.get("Name", row["Ticker"]),
-                        quantity=int(row["Quantity"]),
-                        avg_price=float(row["Avg Price"]),
+        if st.button("Update from Editor", use_container_width=True):
+            if df is None:
+                st.warning("Open the expander and click Update again.")
+            else:
+                new_holdings = []
+                for _, row in df.iterrows():
+                    new_holdings.append(
+                        Holding(
+                            ticker=(row["Ticker"] + ".NS")
+                            if not row["Ticker"].endswith(".NS")
+                            else row["Ticker"],
+                            name=row.get("Name", row["Ticker"]),
+                            quantity=int(row["Quantity"]),
+                            avg_price=float(row["Avg Price"]),
+                        )
                     )
-                )
-            portfolio.holdings = new_holdings
-            if "manual_holdings" in st.session_state:
-                st.session_state.manual_holdings = []
-            st.success(f"Updated to {len(new_holdings)} holdings.")
-            st.session_state.portfolio = portfolio
-            st.rerun()
+                portfolio.holdings = new_holdings
+                if "manual_holdings" in st.session_state:
+                    st.session_state.manual_holdings = []
+                st.success(f"Updated to {len(new_holdings)} holdings.")
+                st.session_state.portfolio = portfolio
+                st.rerun()
 
     return portfolio
 
