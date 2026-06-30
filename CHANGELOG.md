@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **UI Makeover with streamlit-facade** — replaced all `st.metric`, `st.expander`, `st.info`/`st.warning`/`st.success`/`st.error`, `st.divider`, `st.progress`, and `st.button` with equivalent `facade` components (Metric, Accordion, Alert, Separator, Progress, Button) for a shadcn-inspired professional look. Applied dark theme preset (`#0c0e13` background, `#3b82f6` accent). Gutted `ui/styles.py` from 218→98 lines (facade handles metric cards, alerts, buttons, badges, and accordion styling). (`app.py`, `ui/dashboard.py`, `ui/upload.py`, `ui/export.py`, `ui/styles.py`)
+
+### Verified
+
+- Executed the complete test suite (268 tests) successfully, verifying the codebase stability and core logic integrity.
+
 ## v0.7.0 (2026-06-30)
 
 ### Added

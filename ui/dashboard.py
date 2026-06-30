@@ -6,6 +6,7 @@ Uses Lucide SVG icons instead of emojis.
 
 from __future__ import annotations
 
+import facade
 import streamlit as st
 
 from engine import (
@@ -25,28 +26,17 @@ def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
     """Display top-level portfolio metric cards."""
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric(
-            "Total Invested",
-            f"Rs {portfolio.total_invested:,.0f}",
-        )
+        facade.Metric(label="Total Invested", value=f"Rs {portfolio.total_invested:,.0f}")
     with col2:
-        st.metric(
-            "Current Value",
-            f"Rs {portfolio.total_current:,.0f}",
-        )
+        facade.Metric(label="Current Value", value=f"Rs {portfolio.total_current:,.0f}")
     with col3:
-        pnl = portfolio.total_pnl
-        st.metric(
-            "P&L",
-            f"Rs {pnl:+,.0f}",
+        facade.Metric(
+            label="P&L",
+            value=f"Rs {portfolio.total_pnl:+,.0f}",
             delta=f"{portfolio.total_pnl_pct:+.2f}%",
-            delta_color="normal",
         )
     with col4:
-        st.metric(
-            "Holdings",
-            str(portfolio.holding_count),
-        )
+        facade.Metric(label="Holdings", value=str(portfolio.holding_count))
 
 
 def render_risk_cards(risk: RiskMetrics) -> None:
@@ -55,31 +45,30 @@ def render_risk_cards(risk: RiskMetrics) -> None:
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Annual Volatility", f"{risk.volatility_annual:.1f}%")
+        facade.Metric(label="Annual Volatility", value=f"{risk.volatility_annual:.1f}%")
         st.caption("Higher = riskier")
     with col2:
-        st.metric("VaR (95%)", f"{risk.var_95:.2f}%")
+        facade.Metric(label="VaR (95%)", value=f"{risk.var_95:.2f}%")
         st.caption("Daily loss at 95% confidence")
     with col3:
-        st.metric("CVaR (95%)", f"{risk.cvar_95:.2f}%")
+        facade.Metric(label="CVaR (95%)", value=f"{risk.cvar_95:.2f}%")
         st.caption("Expected loss beyond VaR")
     with col4:
-        st.metric("Max Drawdown", f"{risk.max_drawdown:.1f}%")
+        facade.Metric(label="Max Drawdown", value=f"{risk.max_drawdown:.1f}%")
         st.caption(f"{risk.max_drawdown_start} to {risk.max_drawdown_end}")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Sharpe Ratio", f"{risk.sharpe:.2f}")
+        facade.Metric(label="Sharpe Ratio", value=f"{risk.sharpe:.2f}")
         st.caption(">1 good, >2 great")
     with col2:
-        st.metric("Sortino Ratio", f"{risk.sortino:.2f}")
+        facade.Metric(label="Sortino Ratio", value=f"{risk.sortino:.2f}")
         st.caption("Downside-adjusted Sharpe")
     with col3:
-        st.metric("CAGR", f"{risk.cagr:.1f}%")
+        facade.Metric(label="CAGR", value=f"{risk.cagr:.1f}%")
         st.caption("Annualized return")
     with col4:
-        delta_color = "normal" if risk.beta <= 1 else "inverse"
-        st.metric("Beta", f"{risk.beta:.2f}", delta_color=delta_color)
+        facade.Metric(label="Beta", value=f"{risk.beta:.2f}")
         st.caption("1.0 = market risk")
 
 
@@ -90,17 +79,14 @@ def render_sector_section(sector: SectorExposure) -> None:
     if sector.concentrated_sectors:
         for sec in sector.concentrated_sectors:
             pct = sector.sector_allocation.get(sec, 0)
-            st.warning(
-                f"**{sec}** is {pct:.0f}% of your portfolio — high concentration risk",
-            )
+            facade.Alert(f"**{sec}** is {pct:.0f}% of your portfolio — high concentration risk", variant="warning")
 
     col1, col2 = st.columns(2)
     with col1:
-        score = sector.diversification_score
-        st.metric("Diversification Score", f"{score:.0f}/100")
+        facade.Metric(label="Diversification Score", value=f"{sector.diversification_score:.0f}/100")
         st.caption("Higher = more diversified")
     with col2:
-        st.metric("Herfindahl Index", f"{sector.herfindahl_index:.3f}")
+        facade.Metric(label="Herfindahl Index", value=f"{sector.herfindahl_index:.3f}")
         st.caption(">0.25 = concentrated")
 
 
@@ -110,22 +96,21 @@ def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Portfolio Return", f"{benchmark.portfolio_return:.1f}%")
+        facade.Metric(label="Portfolio Return", value=f"{benchmark.portfolio_return:.1f}%")
     with col2:
-        st.metric("Benchmark Return", f"{benchmark.benchmark_return:.1f}%")
+        facade.Metric(label="Benchmark Return", value=f"{benchmark.benchmark_return:.1f}%")
     with col3:
-        delta_color = "normal" if benchmark.alpha >= 0 else "inverse"
-        st.metric("Alpha", f"{benchmark.alpha:+.1f}%", delta_color=delta_color)
+        facade.Metric(label="Alpha", value=f"{benchmark.alpha:+.1f}%")
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Tracking Error", f"{benchmark.tracking_error:.1f}%")
+        facade.Metric(label="Tracking Error", value=f"{benchmark.tracking_error:.1f}%")
     with col2:
-        st.metric("Information Ratio", f"{benchmark.information_ratio:.3f}")
+        facade.Metric(label="Information Ratio", value=f"{benchmark.information_ratio:.3f}")
     with col3:
-        st.metric(
-            "Months Beating Benchmark",
-            f"{benchmark.outperformance_months}/{benchmark.total_months}",
+        facade.Metric(
+            label="Months Beating Benchmark",
+            value=f"{benchmark.outperformance_months}/{benchmark.total_months}",
         )
 
 
@@ -156,24 +141,24 @@ def render_optimization_section(opt: OptimizationResult | None, portfolio: Portf
     st.subheader("Portfolio Optimization")
 
     if opt is None or not opt.weights:
-        st.info("Add at least 2 holdings to see optimization suggestions.")
+        facade.Alert("Add at least 2 holdings to see optimization suggestions.", variant="info")
         return
 
     if opt.expected_return:
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Expected Return (Annual)", f"{opt.expected_return:.1f}%")
+            facade.Metric(label="Expected Return (Annual)", value=f"{opt.expected_return:.1f}%")
         with col2:
-            st.metric("Expected Volatility", f"{opt.expected_volatility:.1f}%")
+            facade.Metric(label="Expected Volatility", value=f"{opt.expected_volatility:.1f}%")
         with col3:
-            st.metric("Sharpe Ratio", f"{opt.sharpe:.2f}")
+            facade.Metric(label="Sharpe Ratio", value=f"{opt.sharpe:.2f}")
 
     method_labels = {"hrp": "Hierarchical Risk Parity", "min_volatility": "Minimum Volatility", "max_sharpe": "Maximum Sharpe"}
     method_name = method_labels.get(opt.method, opt.method)
     st.caption(f"Method: {method_name}")
 
     if opt.method == "hrp":
-        with st.expander("How HRP works"):
+        with facade.Accordion("How HRP works"):
             st.markdown(
                 "**Hierarchical Risk Parity** (López de Prado, 2016) builds a diversified "
                 "portfolio in three steps:\n\n"
@@ -242,24 +227,24 @@ def render_monte_carlo_section(mc: MonteCarloResult | None) -> None:
     st.subheader("Monte Carlo Projection")
 
     if mc is None:
-        st.info("Not enough data for Monte Carlo simulation.")
+        facade.Alert("Not enough data for Monte Carlo simulation.", variant="info")
         return
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Expected Return", f"{mc.expected_return:.1f}%")
+        facade.Metric(label="Expected Return", value=f"{mc.expected_return:.1f}%")
     with col2:
-        st.metric("Median Return", f"{mc.median_return:.1f}%")
+        facade.Metric(label="Median Return", value=f"{mc.median_return:.1f}%")
     with col3:
-        st.metric("Probability of Profit", f"{mc.prob_profit:.0f}%")
+        facade.Metric(label="Probability of Profit", value=f"{mc.prob_profit:.0f}%")
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("VaR (95%)", f"{mc.var_95:.1f}%")
+        facade.Metric(label="VaR (95%)", value=f"{mc.var_95:.1f}%")
     with col2:
-        st.metric("CVaR (95%)", f"{mc.cvar_95:.1f}%")
+        facade.Metric(label="CVaR (95%)", value=f"{mc.cvar_95:.1f}%")
     with col3:
-        st.metric("95% CI Range", f"{mc.ci_lower:.1f}% to {mc.ci_upper:.1f}%")
+        facade.Metric(label="95% CI Range", value=f"{mc.ci_lower:.1f}% to {mc.ci_upper:.1f}%")
 
     st.caption(f"Based on {mc.n_simulations:,} simulations over {mc.horizon_days} trading days")
 
@@ -269,7 +254,7 @@ def render_regime_section(regime: RegimeResult | None) -> None:
     st.subheader("Market Regime Analysis")
 
     if regime is None:
-        st.info("Not enough return data for regime detection (need 50+ trading days).")
+        facade.Alert("Not enough return data for regime detection (need 50+ trading days).", variant="info")
         return
 
     # Per-regime stats
@@ -278,12 +263,12 @@ def render_regime_section(regime: RegimeResult | None) -> None:
         with cols[i]:
             color = "green" if stat["label"] in ("Bull", "Strong Bull") else ("red" if stat["label"] in ("Bear", "Crisis") else "orange")
             st.markdown(f"**<span style='color:{color}'>{stat['label']}</span>**", unsafe_allow_html=True)
-            st.metric("Occurrence", f"{stat['pct']}%")
-            st.metric("Mean Return", f"{stat['mean_return']:+.3f}%")
-            st.metric("Annual Vol", f"{stat['annual_vol']:.1f}%")
-            st.metric("Cum Return", f"{stat['cum_return']:+.1f}%")
+            facade.Metric(label="Occurrence", value=f"{stat['pct']}%")
+            facade.Metric(label="Mean Return", value=f"{stat['mean_return']:+.3f}%")
+            facade.Metric(label="Annual Vol", value=f"{stat['annual_vol']:.1f}%")
+            facade.Metric(label="Cum Return", value=f"{stat['cum_return']:+.1f}%")
 
-    with st.expander("Transition Matrix"):
+    with facade.Accordion("Transition Matrix"):
         st.caption("Probability of moving from row state to column state")
         trans = regime.transition_matrix
         trans_rows = []
@@ -296,21 +281,16 @@ def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
     """Display scenario / stress test results."""
     st.subheader("Scenario Analysis")
     if not scenarios:
-        st.info("Scenario analysis requires benchmark data. Select a benchmark index to enable.")
+        facade.Alert("Scenario analysis requires benchmark data. Select a benchmark index to enable.", variant="info")
         return
 
     st.caption("Estimated portfolio impact under different market scenarios, based on each holding's beta.")
     cols = st.columns(len(scenarios))
     for i, s in enumerate(scenarios):
         with cols[i]:
-            delta_color = "normal" if s.portfolio_impact_pct >= 0 else "inverse"
-            st.metric(
-                s.name,
-                f"{s.portfolio_impact_pct:+.1f}%",
-                delta_color=delta_color,
-            )
+            facade.Metric(label=s.name, value=f"{s.portfolio_impact_pct:+.1f}%")
 
-    with st.expander("Per-holding impact details"):
+    with facade.Accordion("Per-holding impact details"):
         for s in scenarios:
             st.markdown(f"**{s.name}**")
             rows = []
@@ -324,19 +304,19 @@ def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
                 })
             if rows:
                 st.dataframe(rows, use_container_width=True, hide_index=True)
-            st.divider()
+            facade.Separator()
 
 
 def render_rebalance_section(rebalance: RebalanceSuggestion | None) -> None:
     """Display portfolio rebalancing suggestions."""
     st.subheader("Rebalancing Suggestions")
     if rebalance is None or not rebalance.trades:
-        st.info("Add holdings to see rebalancing suggestions.")
+        facade.Alert("Add holdings to see rebalancing suggestions.", variant="info")
         return
 
     target_labels = {"equal_weight": "Equal Weight", "current_cap": "Current Cap"}
     st.caption(f"Target: {target_labels.get(rebalance.target_method, rebalance.target_method)}")
-    st.metric("Total Drift", f"{rebalance.total_drift_pct:.1f}%", delta_color="inverse")
+    facade.Metric(label="Total Drift", value=f"{rebalance.total_drift_pct:.1f}%")
 
     rows = []
     for t in rebalance.trades:

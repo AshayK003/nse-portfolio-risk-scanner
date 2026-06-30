@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+import facade
 import pandas as pd
 import streamlit as st
 from loguru import logger
@@ -71,7 +72,17 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Inject premium dark theme CSS
+# Apply facade theme
+facade.theme.apply(
+    preset="default-dark",
+    primary="#3b82f6",
+    background="#0c0e13",
+    secondary_background_color="#161822",
+    text_color="#e2e8f0",
+    radius="md",
+)
+
+# Inject additional custom CSS (facade handles most styling now)
 inject_css()
 
 # Title with Lucide icon
@@ -153,17 +164,17 @@ if _needs_compute:
             else:
                 prices = fetch_prices(portfolio.holdings, period="1y")
         except ValueError as e:
-            st.error(f"Could not fetch price data: {e}")
+            facade.Alert(f"Could not fetch price data: {e}", variant="error")
             st.stop()
         except Exception as e:
             logger.error("Price fetch failed: {e}", e=e)
-            st.error(f"An unexpected error occurred while fetching prices: {e}")
+            facade.Alert(f"An unexpected error occurred while fetching prices: {e}", variant="error")
             st.stop()
 
     # Validate portfolio (now that current_price is set)
     validation_warnings = validate_portfolio(portfolio)
     for w in validation_warnings:
-        st.warning(w)
+        facade.Alert(w, variant="warning")
 
     try:
         # Classify sectors
@@ -292,7 +303,7 @@ if _needs_compute:
 
     except Exception as e:
         logger.error("Analysis computation failed: {e}", e=e)
-        st.error(f"An unexpected error occurred during analysis: {e}")
+        facade.Alert(f"An unexpected error occurred during analysis: {e}", variant="error")
         st.stop()
 
     # Cache everything for skip path
@@ -401,14 +412,14 @@ with tabs[0]:
         if len(rv) > 0:
             st.subheader("Rolling 21-day Volatility")
             st.line_chart(rv)
-    st.divider()
+    facade.Separator()
     render_monte_carlo_section(mc_result)
     if mc_paths is not None:
         st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
 
     # ── Institutional Intelligence (inline) ──
     if institutional_scores:
-        st.divider()
+        facade.Separator()
         st.subheader("Institutional Risk Scores")
         score_cols = st.columns(5)
         score_labels = [
@@ -420,17 +431,17 @@ with tabs[0]:
         ]
         for col, (label, score, _color) in zip(score_cols, score_labels, strict=False):
             with col:
-                st.metric(label, f"{score:.0f}/100")
-                st.progress(min(score / 100, 1.0))
+                facade.Metric(label=label, value=f"{score:.0f}/100")
+                facade.Progress(value=min(score, 100))
 
         if institutional_scores.score_interpretation:
-            st.info(institutional_scores.score_interpretation)
+            facade.Alert(institutional_scores.score_interpretation, variant="info")
 
-        with st.expander("Risk Factor Breakdown", expanded=False):
+        with facade.Accordion("Risk Factor Breakdown"):
             if institutional_scores.risk_factors:
                 for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
-                    with st.expander(
-                        f"**{factor.name}** — Score: {factor.composite:.1f}/100", expanded=factor.composite > 20
+                    with facade.Accordion(
+                        f"**{factor.name}** — Score: {factor.composite:.1f}/100"
                     ):
                         c1, c2, c3 = st.columns(3)
                         c1.metric("Probability", f"{factor.probability:.0%}")
@@ -438,7 +449,7 @@ with tabs[0]:
                         c3.metric("Confidence", f"{factor.confidence:.0%}")
                         st.caption(factor.reasoning)
 
-        with st.expander("Top 5 Actionable Insights", expanded=False):
+        with facade.Accordion("Top 5 Actionable Insights"):
             if institutional_scores.top_5_insights:
                 for i, insight in enumerate(institutional_scores.top_5_insights, 1):
                     severity_color = (
@@ -457,7 +468,7 @@ with tabs[0]:
                     )
 
         if factor_report:
-            with st.expander("Factor Risk Decomposition", expanded=False):
+            with facade.Accordion("Factor Risk Decomposition"):
                 factor_cols = st.columns(2)
                 for i, factor in enumerate(factor_report.factors):
                     col_idx = i % 2
@@ -474,7 +485,7 @@ with tabs[0]:
 
     # ── Early Warnings (inline) ──
     if early_warnings:
-        st.divider()
+        facade.Separator()
         st.subheader("Early Warning Signals")
         level = early_warnings.overall_warning_level
         st.caption(f"Overall level: **{level.upper()}** — {early_warnings.summary}")
@@ -483,17 +494,16 @@ with tabs[0]:
             for sig in early_warnings.signals:
                 sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#3b82f6"}
                 sev_color = sev_colors.get(sig.severity.value, "#6b7280")
-                with st.expander(
+                with facade.Accordion(
                     f"**{sig.name}** — {sig.severity.value.upper()}",
-                    expanded=sig.severity.value == "critical",
                 ):
                     st.markdown(f"**{sig.description}**")
-                    st.info(f"**Why:** {sig.reasoning}")
+                    facade.Alert(f"**Why:** {sig.reasoning}", variant="info")
                     st.caption(f"**Suggested Action:** {sig.suggested_action}")
                     if sig.affected_holdings:
                         st.caption(f"Affected: {', '.join(sig.affected_holdings)}")
         else:
-            st.success("No early-warning signals detected. Portfolio appears stable.")
+            facade.Alert("No early-warning signals detected. Portfolio appears stable.", variant="success")
 
 # ── Tab 1: Sector ──
 with tabs[1]:
@@ -507,7 +517,7 @@ with tabs[2]:
     if benchmark:
         render_benchmark_section(report.benchmark)
     else:
-        st.info("Benchmark data is not available for the selected index.")
+        facade.Alert("Benchmark data is not available for the selected index.", variant="info")
     st.plotly_chart(
         benchmark_chart(portfolio_cum, benchmark_cum),
         use_container_width=True,
@@ -538,7 +548,7 @@ with tabs[3]:
             key="corr_heatmap",
         )
     if denoised_corr is not None and not denoised_corr.empty:
-        with st.expander("Denoised Correlation (Marchenko-Pastur)"):
+        with facade.Accordion("Denoised Correlation (Marchenko-Pastur)"):
             st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True, key="corr_denoised")
 
 # ── Tab 4: Holdings ──
@@ -548,24 +558,17 @@ with tabs[4]:
 # ── Tab 5: Scenarios (merged basic + macro + regime) ──
 with tabs[5]:
     render_scenario_section(scenarios)
-    st.divider()
+    facade.Separator()
     if macro_scenarios:
         st.subheader("Macro-Driven Stress Tests")
         st.caption("Sector-aware scenarios modeling real-world macro events with causal reasoning.")
         for scenario in macro_scenarios:
-            severity_color = {
-                "extreme": "#ef4444",
-                "severe": "#f59e0b",
-                "moderate": "#3b82f6",
-                "mild": "#22c55e",
-            }.get(scenario.severity, "#6b7280")
-            with st.expander(
+            with facade.Accordion(
                 f"**{scenario.name}** — Portfolio Impact: {scenario.portfolio_impact_pct:+.1f}% · "
                 f"Severity: {scenario.severity.upper()} · Probability: {scenario.probability}",
-                expanded=scenario.severity in ("severe", "extreme"),
             ):
                 st.markdown(f"**Description:** {scenario.description}")
-                st.info(f"**Why this matters:** {scenario.reasoning}")
+                facade.Alert(f"**Why this matters:** {scenario.reasoning}", variant="info")
 
                 if scenario.sector_impacts:
                     st.markdown("**Sector Impact Breakdown:**")
@@ -587,9 +590,9 @@ with tabs[5]:
                             f"Est. Loss: ₹{abs(h['impact_rs']):,.0f}"
                         )
     else:
-        st.info("Macro scenarios require beta data.")
+        facade.Alert("Macro scenarios require beta data.", variant="info")
 
-    st.divider()
+    facade.Separator()
     render_regime_section(regime_result)
     if regime_result:
         st.plotly_chart(
@@ -602,7 +605,7 @@ with tabs[5]:
 with tabs[6]:
     render_optimization_section(opt_result, portfolio=report.portfolio)
     render_rebalance_section(rebalance)
-    st.divider()
+    facade.Separator()
     if recommendations:
         st.subheader("Portfolio Action Recommendations")
         st.caption(recommendations.summary)
@@ -630,23 +633,13 @@ with tabs[6]:
                 )
 
         if recommendations.risk_reduction_potential > 0:
-            st.metric("Total Risk Reduction Potential", f"{recommendations.risk_reduction_potential:.1f}%")
+            facade.Metric(label="Total Risk Reduction Potential", value=f"{recommendations.risk_reduction_potential:.1f}%")
 
-        st.divider()
+        facade.Separator()
         st.subheader("All Recommendations")
         for rec in recommendations.recommendations:
-            action_colors = {
-                "reduce": "#ef4444",
-                "hedge": "#f59e0b",
-                "diversify": "#3b82f6",
-                "accumulate": "#22c55e",
-                "monitor": "#6b7280",
-                "rebalance": "#a855f7",
-            }
-            color = action_colors.get(rec.action.value, "#6b7280")
-            with st.expander(
+            with facade.Accordion(
                 f"**{rec.action.value.upper()}** {rec.target} — Urgency: {rec.urgency}",
-                expanded=rec.urgency == "immediate",
             ):
                 st.markdown(f"**Reasoning:** {rec.reasoning}")
                 st.caption(f"**Trade-off:** {rec.trade_off}")
@@ -656,7 +649,7 @@ with tabs[6]:
                     f"Expected risk reduction: {rec.expected_risk_reduction:.1f}% · Confidence: {rec.confidence:.0%}"
                 )
     else:
-        st.info("Recommendations require full analysis.")
+        facade.Alert("Recommendations require full analysis.", variant="info")
 
 # ── Tab 7: Export ──
 with tabs[7]:
