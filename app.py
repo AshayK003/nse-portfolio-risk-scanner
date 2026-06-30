@@ -660,7 +660,15 @@ with tabs[6]:
 
 # ── Tab 7: Export ──
 with tabs[7]:
-    render_export_section(report.portfolio, risk=report.risk, sector_data=report.sector.sector_allocation)
+    render_export_section(
+        report.portfolio,
+        risk=report.risk,
+        sector_data=report.sector.sector_allocation,
+        mc_result=mc_result,
+        portfolio_returns=portfolio_returns,
+        portfolio_cum=portfolio_cum,
+        recommendations=recommendations,
+    )
 
 # ── Step 5: Save analysis run to history (only on fresh computation) ──
 if st.session_state.get("_report_changed", False):
