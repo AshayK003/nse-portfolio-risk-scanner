@@ -191,6 +191,9 @@ def parse_portfolio_csv(
                 if per_share < 10000:
                     price = per_share
 
+            current_price_str = row.get(col_map.get("current_price", ""), "").strip()
+            current_price = _parse_float(current_price_str) if current_price_str else 0.0
+
             name = row.get(col_map.get("name", ""), ticker).strip()
 
             if ticker in seen_tickers:
@@ -204,6 +207,7 @@ def parse_portfolio_csv(
                     name=name,
                     quantity=int(qty),
                     avg_price=round(price, 2),
+                    current_price=round(current_price, 2),
                 )
             )
         except (ValueError, KeyError) as e:
@@ -455,6 +459,8 @@ def _resolve_column_map(
         "quantity": qty_col,
         "price": price_col,
     }
+    if cur_col and cur_col != price_col:
+        col_map["current_price"] = cur_col
     if name_col:
         col_map["name"] = name_col
 
