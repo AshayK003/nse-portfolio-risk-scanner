@@ -290,6 +290,14 @@ try:
 except Exception:
     pass  # non-critical — silently skip on DB error
 
+# ── Disclaimer ──
+st.info(
+    "**Disclaimer:** This tool provides informational analysis only and does not "
+    "constitute financial advice. All data is sourced from public APIs (yfinance, NSE) "
+    "and may be delayed or inaccurate. Past performance is not indicative of future "
+    "results. Consult a SEBI-registered advisor before making investment decisions."
+)
+
 # ── Footer ──
 st.markdown(
     f'<div class="app-footer">'
