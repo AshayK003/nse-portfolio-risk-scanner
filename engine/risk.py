@@ -173,18 +173,14 @@ def compute_stock_risk(stock_returns: pd.Series) -> dict:
     }
 
 
-def compute_stock_risk_attribution(
-    prices: pd.DataFrame,
-    weights: list[float],
-    stock_betas: dict[str, float] | None = None,
-) -> pd.DataFrame:
+def compute_stock_risk_attribution(prices, weights, stock_betas=None):
     """
     Per-stock risk attribution using marginal contribution to risk (MCR).
 
     Standard risk decomposition:
-    - Marginal Risk Contribution (MRC) = (Σw)ᵢ / σₚ
-    - Component Risk Contribution (CRC) = wᵢ × (Σw)ᵢ / σₚ
-    - % Risk Contribution = CRC / σₚ² × 100
+    - Marginal Risk Contribution (MRC) = (Sigma w)_i / sigma_p
+    - Component Risk Contribution (CRC) = w_i x (Sigma w)_i / sigma_p
+    - % Risk Contribution = CRC / sigma_p^2 x 100
 
     Returns a DataFrame with columns:
     Ticker, Weight (%), Beta, Ann. Vol (%), Avg Corr, MRC, Risk Contrib (%), VaR 95%
