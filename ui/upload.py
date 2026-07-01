@@ -70,7 +70,7 @@ def render_manual_entry() -> list[Holding]:
 
     # Form
     with st.form("manual_entry_form", clear_on_submit=True):
-        cols = st.columns([2, 1, 1, 1])
+        cols = st.columns([2, 1, 1])
         with cols[0]:
             ticker = (
                 st.text_input(
@@ -84,15 +84,13 @@ def render_manual_entry() -> list[Holding]:
             qty = st.number_input("Quantity", min_value=1, step=1, placeholder="e.g. 10")
         with cols[2]:
             price = st.number_input(
-                "Average Price (Rs)",
+                "Avg Price (Rs)",
                 min_value=0.01,
                 step=1.0,
                 format="%.2f",
                 placeholder="e.g. 2500.00",
             )
-        with cols[3]:
-            st.write("")
-            submitted = st.form_submit_button("Add Stock", use_container_width=True)
+        submitted = st.form_submit_button("Add Stock", use_container_width=True)
 
         if submitted:
             if not ticker:
@@ -114,15 +112,13 @@ def render_manual_entry() -> list[Holding]:
     if manual:
         st.caption(f"{len(manual)} stock(s) added")
         for i, h in enumerate(manual):
-            col_a, col_b, col_c, col_d = st.columns([2, 1, 1, 1])
+            col_a, col_b, col_c = st.columns([2, 1, 1])
             with col_a:
                 st.markdown(f"**{h.ticker.replace('.NS', '')}**")
             with col_b:
                 st.text(f"{h.quantity} shares")
             with col_c:
-                st.text(f"Rs {h.avg_price:,.2f}")
-            with col_d:
-                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}"):
+                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", use_container_width=True):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 

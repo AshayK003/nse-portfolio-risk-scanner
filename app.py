@@ -93,7 +93,7 @@ st.set_page_config(
     page_title="NSE Portfolio Risk Scanner",
     page_icon=None,
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # Inject premium dark theme CSS

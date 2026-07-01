@@ -378,14 +378,162 @@ div[data-testid="stDataFrame"] tbody tr:hover {
     }
 }
 
-/* ── Responsive metric cards ── */
+/* ── Responsive: Tablet & below (768px) ── */
 @media (max-width: 768px) {
+    .main .block-container {
+        padding-top: 1rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    /* Wrap multi-column layouts into 2 columns */
+    .stHorizontalBlock {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+    .stHorizontalBlock > [data-testid="column"] {
+        min-width: 45% !important;
+        flex: 1 1 calc(50% - 0.5rem) !important;
+    }
+    /* Sidebar: thinner */
+    section[data-testid="stSidebar"] {
+        width: 260px !important;
+    }
+    /* Metric cards: slightly compact */
+    div[data-testid="metric-container"] {
+        padding: 0.9rem 1rem;
+    }
     div[data-testid="metric-container"] div[data-testid="metric-value"],
     .custom-metric-card .card-value {
         font-size: 1.2rem !important;
     }
+}
+
+/* ── Responsive: Phone (480px) ── */
+@media (max-width: 480px) {
     .main .block-container {
-        padding-top: 1rem;
+        padding: 0.5rem 0.5rem;
+    }
+    /* Single-column layout for everything */
+    .stHorizontalBlock {
+        flex-wrap: wrap !important;
+        gap: 0.35rem !important;
+    }
+    .stHorizontalBlock > [data-testid="column"] {
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    /* Metric cards: compact */
+    div[data-testid="metric-container"] {
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.15rem;
+    }
+    div[data-testid="metric-container"]::before {
+        width: 2px;
+    }
+    div[data-testid="metric-container"] div[data-testid="metric-value"],
+    .custom-metric-card .card-value {
+        font-size: 1rem !important;
+    }
+    div[data-testid="metric-container"] label {
+        font-size: 0.6rem !important;
+    }
+    /* Custom metric cards */
+    .custom-metric-card {
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+    }
+    /* Scrollable tabs (don't wrap) */
+    div[data-baseweb="tab-list"] {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 0 !important;
+    }
+    button[data-baseweb="tab"] {
+        font-size: 0.65rem !important;
+        padding: 0.35rem 0.4rem !important;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    /* Typography scale */
+    h1 {
+        font-size: 1.1rem !important;
+    }
+    .stSubheader {
+        font-size: 0.9rem !important;
+    }
+    h2, h3 {
+        font-size: 0.85rem !important;
+    }
+    .stMarkdown p {
+        font-size: 0.8rem;
+    }
+    /* Data table: compact & scrollable */
+    div[data-testid="stDataFrame"] {
+        font-size: 0.7rem;
+        overflow-x: auto;
+    }
+    div[data-testid="stDataFrame"] thead tr th {
+        font-size: 0.6rem !important;
+    }
+    /* File uploader: compact */
+    div[data-testid="stFileUploader"] {
+        padding: 0.75rem;
+    }
+    /* Expander: compact */
+    .streamlit-expanderHeader {
+        font-size: 0.78rem !important;
+        padding: 0.35rem 0.5rem !important;
+    }
+    /* Smaller info/warning/error boxes */
+    .stAlert {
+        font-size: 0.78rem !important;
+    }
+    /* Disclaimer */
+    details {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.5rem;
+    }
+    /* Caption text */
+    .stCaption, .element-container .stCaption {
+        font-size: 0.65rem !important;
+    }
+    /* Button text */
+    .stButton button {
+        font-size: 0.78rem !important;
+    }
+    /* Selectbox / inputs */
+    div[data-baseweb="select"] * {
+        font-size: 0.78rem !important;
+    }
+    input, textarea {
+        font-size: 0.78rem !important;
+    }
+}
+
+/* ── Touch devices: disable sticky hover states ── */
+@media (hover: none) {
+    div[data-testid="metric-container"]:hover {
+        transform: none !important;
+        border-color: #252a45 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+    }
+    .custom-metric-card:hover {
+        transform: none !important;
+        border-color: #252a45 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+    }
+    .stButton button:hover {
+        box-shadow: none !important;
+        transform: none !important;
+    }
+    .streamlit-expanderHeader:hover {
+        border-color: #252a45 !important;
+    }
+    div[data-testid="stFileUploader"]:hover {
+        border-color: #252a45 !important;
+        background: #0a0d1a !important;
     }
 }
 </style>

@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.7.7 (2026-07-01)
+
+### Added
+
+- **Mobile responsiveness** — comprehensive responsive CSS with 3 breakpoint tiers:
+  - **Tablet (≤768px)**: multi-column layouts wrap to 2 columns, sidebar slimmed, metric cards compacted, fonts scaled down.
+  - **Phone (≤480px)**: all columns become single-column stack, tabs scroll horizontally, typography/buttons/inputs/tables/expanders all scale proportionally.
+  - **Touch devices** (`hover: none`): all hover states disabled to prevent sticky-hover on mobile.
+- **Sidebar default collapsed** — saves screen space on mobile; accessible via hamburger icon.
+- **Simplified manual entry form** — 4-column layout reduced to 3-column + full-width button, cleaner on all screen sizes, price label shortened for smaller fields (`ui/upload.py`).
+
+### Changed
+
+- No functional changes; all changes are UI-only (CSS + layout) — 289 tests still pass.
+
 ## v0.7.6 (2026-07-01)
 
 ### Fixed
