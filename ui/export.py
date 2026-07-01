@@ -99,39 +99,39 @@ def _section_header(pdf, title: str) -> None:
 
 def _kpi_card(pdf, label: str, value: str, x: float, y: float, w: float, color: tuple | None = None) -> float:
     """Draw a KPI card at (x, y) and return the bottom y."""
-    card_h = 20
+    card_h = 22
     bg = color or PDF_COLOR_ACCENT
     pdf.set_fill_color(*bg)
     pdf.rect(x, y, w, card_h, style="F")
-    pdf.set_font("Helvetica", "", 6)
+    pdf.set_font("Helvetica", "", 7)
     pdf.set_text_color(80, 80, 80)
     pdf.set_xy(x + 2, y + 1.5)
     pdf.cell(w - 4, 4, label)
-    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(*PDF_COLOR_PRIMARY)
-    pdf.set_xy(x + 2, y + 7)
-    pdf.cell(w - 4, 7, value)
+    pdf.set_xy(x + 2, y + 8)
+    pdf.cell(w - 4, 8, value)
     pdf.set_text_color(0, 0, 0)
-    return y + card_h + 3
+    return y + card_h + 4
 
 
 def _data_table(pdf, headers: list[str], widths: list[int], rows: list[list[str]]) -> None:
     """Draw a table with alternating row colors."""
     pdf.set_fill_color(*PDF_COLOR_PRIMARY)
     pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 7)
+    pdf.set_font("Helvetica", "B", 8)
     for h, w in zip(headers, widths, strict=False):
-        pdf.cell(w, 6, f" {h}", border=1, fill=True)
+        pdf.cell(w, 7, f" {h}", border=1, fill=True)
     pdf.ln()
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", "", 7)
+    pdf.set_font("Helvetica", "", 8)
     for i, row in enumerate(rows):
         if i % 2 == 0:
             pdf.set_fill_color(*PDF_COLOR_ACCENT)
         else:
             pdf.set_fill_color(*PDF_COLOR_WHITE)
         for val, w in zip(row, widths, strict=False):
-            pdf.cell(w, 5.5, f" {val}", border=1, fill=True)
+            pdf.cell(w, 6, f" {val}", border=1, fill=True)
         pdf.ln()
 
 
@@ -165,16 +165,16 @@ def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
         autopct="%1.0f%%",
         startangle=90,
         colors=colors,
-        textprops={"fontsize": 7},
+        textprops={"fontsize": 8},
     )
     ax.legend(
         wedges,
         [f"{lab} ({s:.0f}%)" for lab, s in zip(labels, sizes, strict=False)],
         loc="center left",
         bbox_to_anchor=(1, 0.5),
-        fontsize=6,
+        fontsize=7,
     )
-    ax.set_title("Sector Allocation", fontsize=9, fontweight="bold")
+    ax.set_title("Sector Allocation", fontsize=10, fontweight="bold")
     return _chart_bytes(fig, plt)
 
 
@@ -194,10 +194,10 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
     fig, ax = plt.subplots(figsize=(page_w / 25.4, max(1.5, len(tickers) * 0.3)))
     bars = ax.barh(range(len(tickers)), pnl_values, color=colors, height=0.6)
     ax.set_yticks(range(len(tickers)))
-    ax.set_yticklabels(tickers, fontsize=7)
+    ax.set_yticklabels(tickers, fontsize=8)
     ax.axvline(0, color="black", linewidth=0.5)
-    ax.set_xlabel("P&L %", fontsize=7)
-    ax.tick_params(axis="x", labelsize=6)
+    ax.set_xlabel("P&L %", fontsize=8)
+    ax.tick_params(axis="x", labelsize=7)
     for bar, val in zip(bars, pnl_values, strict=False):
         px = bar.get_width()
         ax.text(
@@ -205,11 +205,11 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
             bar.get_y() + bar.get_height() / 2,
             f"{val:+.1f}%",
             va="center",
-            fontsize=6,
+            fontsize=7,
             ha="left" if px >= 0 else "right",
         )
     ax.margins(x=0.15)
-    ax.set_title("Holdings P&L", fontsize=9, fontweight="bold")
+    ax.set_title("Holdings P&L", fontsize=10, fontweight="bold")
     fig.tight_layout()
     return _chart_bytes(fig, plt)
 
@@ -236,13 +236,13 @@ def _risk_gauge_chart(volatility: float, page_w: float) -> bytes | None:
     val = min(volatility, 80)
     ax.plot([val, val], [0, 0.7], color="#1f2937", linewidth=2, zorder=3)
     ax.plot(val, 0.7, marker="v", color="#1f2937", markersize=5, zorder=3)
-    ax.text(val, -0.25, f"{volatility:.1f}%", ha="center", fontsize=8, fontweight="bold")
+    ax.text(val, -0.25, f"{volatility:.1f}%", ha="center", fontsize=9, fontweight="bold")
 
-    ax.text(7.5, 0.65, "LOW", ha="center", fontsize=5, color="#15803d", fontweight="bold")
-    ax.text(22.5, 0.65, "MOD", ha="center", fontsize=5, color="#a16207", fontweight="bold")
-    ax.text(55, 0.65, "HIGH", ha="center", fontsize=5, color="#dc2626", fontweight="bold")
+    ax.text(7.5, 0.65, "LOW", ha="center", fontsize=6, color="#15803d", fontweight="bold")
+    ax.text(22.5, 0.65, "MOD", ha="center", fontsize=6, color="#a16207", fontweight="bold")
+    ax.text(55, 0.65, "HIGH", ha="center", fontsize=6, color="#dc2626", fontweight="bold")
 
-    ax.set_title("Annual Volatility", fontsize=8, fontweight="bold", pad=6)
+    ax.set_title("Annual Volatility", fontsize=9, fontweight="bold", pad=8)
     fig.tight_layout()
     return _chart_bytes(fig, plt)
 
@@ -264,9 +264,9 @@ def _drawdown_area_chart(portfolio_cum: pd.Series, page_w: float) -> bytes | Non
     ax.fill_between(drawdown.index, drawdown.values, 0, color="#ef4444", alpha=0.25)
     ax.plot(drawdown.index, drawdown.values, color="#dc2626", linewidth=0.8)
     ax.axhline(0, color="black", linewidth=0.3)
-    ax.set_title("Portfolio Drawdown", fontsize=9, fontweight="bold")
-    ax.set_ylabel("Drawdown (%)", fontsize=7)
-    ax.tick_params(axis="both", labelsize=6)
+    ax.set_title("Portfolio Drawdown", fontsize=10, fontweight="bold")
+    ax.set_ylabel("Drawdown (%)", fontsize=8)
+    ax.tick_params(axis="both", labelsize=7)
     fig.tight_layout()
     return _chart_bytes(fig, plt)
 
@@ -307,13 +307,13 @@ def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes 
         0.75,
         f"Expected: {mc_result.expected_return:.1f}%",
         ha="center",
-        fontsize=6,
+        fontsize=7,
         color="#2563eb",
     )
 
     ax.plot(mc_result.var_95, 0.25, "v", color="#ef4444", markersize=4, zorder=3)
     ax.text(
-        mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%", ha="center", fontsize=5, color="#ef4444"
+        mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%", ha="center", fontsize=6, color="#ef4444"
     )
 
     ax.text(
@@ -321,11 +321,11 @@ def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes 
         -0.05,
         f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, {mc_result.horizon_days}d horizon",
         ha="center",
-        fontsize=5.5,
+        fontsize=6.5,
         color="#6b7280",
     )
 
-    ax.set_title("Monte Carlo Projection", fontsize=9, fontweight="bold")
+    ax.set_title("Monte Carlo Projection", fontsize=10, fontweight="bold")
     fig.tight_layout()
     return _chart_bytes(fig, plt)
 
@@ -349,14 +349,14 @@ def _holdings_weight_bar(portfolio: Portfolio, page_w: float) -> bytes | None:
     colors = plt.cm.Set2.colors[: len(tickers)]
     bars = ax.barh(range(len(tickers)), weights, color=colors, height=0.6)
     ax.set_yticks(range(len(tickers)))
-    ax.set_yticklabels(tickers, fontsize=7)
-    ax.set_xlabel("Weight (%)", fontsize=7)
-    ax.tick_params(axis="x", labelsize=6)
+    ax.set_yticklabels(tickers, fontsize=8)
+    ax.set_xlabel("Weight (%)", fontsize=8)
+    ax.tick_params(axis="x", labelsize=7)
     for bar, w in zip(bars, weights, strict=False):
         ax.text(
-            bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2, f"{w:.1f}%", va="center", fontsize=6
+            bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2, f"{w:.1f}%", va="center", fontsize=7
         )
-    ax.set_title("Top Holdings by Weight", fontsize=9, fontweight="bold")
+    ax.set_title("Top Holdings by Weight", fontsize=10, fontweight="bold")
     ax.margins(x=0.15)
     fig.tight_layout()
     return _chart_bytes(fig, plt)
@@ -364,17 +364,17 @@ def _holdings_weight_bar(portfolio: Portfolio, page_w: float) -> bytes | None:
 
 def _metric_badge(pdf, label: str, value: str, x: float, y: float, w: float) -> float:
     """Draw a compact metric badge and return the next y position."""
-    h = 12
+    h = 14
     pdf.set_fill_color(*PDF_COLOR_ACCENT)
     pdf.rect(x, y, w, h, style="F")
-    pdf.set_font("Helvetica", "", 6)
+    pdf.set_font("Helvetica", "", 7)
     pdf.set_text_color(80, 80, 80)
     pdf.set_xy(x + 2, y + 1)
     pdf.cell(w - 4, 4, label)
-    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(*PDF_COLOR_PRIMARY)
-    pdf.set_xy(x + 2, y + 5)
-    pdf.cell(w - 4, 6, value)
+    pdf.set_xy(x + 2, y + 6)
+    pdf.cell(w - 4, 7, value)
     pdf.set_text_color(0, 0, 0)
     return y + h + 3
 
@@ -441,7 +441,7 @@ def _generate_pdf_report(
         card_w,
     )
 
-    y1 = y0 + 23
+    y1 = y0 + 26
     _kpi_card(
         pdf, "P&L", f"{pnl_sign}Rs {portfolio.total_pnl:+,.0f}", pdf.l_margin, y1, card_w, color=pnl_color
     )
@@ -450,7 +450,7 @@ def _generate_pdf_report(
         pdf, "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A", pdf.l_margin + 2 * (card_w + 3), y1, card_w
     )
 
-    pdf.set_y(y1 + 23)
+    pdf.set_y(y1 + 26)
 
     # Risk gauge + metric badges side by side
     gauge_chart = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w)
@@ -458,22 +458,22 @@ def _generate_pdf_report(
         gauge_w = page_w * 0.5
         pdf.image(gauge_chart, x=pdf.l_margin, w=gauge_w)
     if risk:
-        badge_w = (page_w - gauge_w - 4) / 3
-        bx = pdf.l_margin + gauge_w + 4
-        by = pdf.get_y() + 2
+        badge_w = (page_w - gauge_w - 6) / 3
+        bx = pdf.l_margin + gauge_w + 6
+        by = pdf.get_y() + 3
         _metric_badge(pdf, "Sortino", f"{risk.sortino:.2f}", bx, by, badge_w)
-        _metric_badge(pdf, "Beta", f"{risk.beta:.2f}", bx + badge_w + 2, by, badge_w)
-        _metric_badge(pdf, "CAGR", f"{risk.cagr:.1f}%", bx + 2 * (badge_w + 2), by, badge_w)
+        _metric_badge(pdf, "Beta", f"{risk.beta:.2f}", bx + badge_w + 3, by, badge_w)
+        _metric_badge(pdf, "CAGR", f"{risk.cagr:.1f}%", bx + 2 * (badge_w + 3), by, badge_w)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
     # Risk assessment box
     assessment_text, bg_color = _risk_assessment_text(risk)
     pdf.set_fill_color(*bg_color)
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(*PDF_COLOR_DARK)
-    pdf.cell(0, 6, f"  Risk Level: {assessment_text}", fill=True, new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(4)
+    pdf.cell(0, 7, f"  Risk Level: {assessment_text}", fill=True, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(5)
 
     # Sector pie + Holdings weight side by side
     col_w = page_w / 2
@@ -488,7 +488,7 @@ def _generate_pdf_report(
     if weight_chart:
         pdf.image(weight_chart, x=pdf.l_margin + col_w + 2, w=col_w - 2)
 
-    pdf.set_y(max(chart_top + 55, pdf.get_y()))
+    pdf.set_y(max(chart_top + 58, pdf.get_y()))
 
     # ── Page 3: Risk Analysis ──
     pdf.add_page()
@@ -511,18 +511,18 @@ def _generate_pdf_report(
                 val = row[j * 2 + 1]
                 x = pdf.l_margin + j * cw
                 pdf.set_fill_color(*PDF_COLOR_ACCENT)
-                pdf.rect(x, y0, cw - 2, 9, style="F")
-                pdf.set_font("Helvetica", "", 6)
+                pdf.rect(x, y0, cw - 2, 11, style="F")
+                pdf.set_font("Helvetica", "", 7)
                 pdf.set_text_color(80, 80, 80)
                 pdf.set_xy(x + 2, y0 + 0.5)
-                pdf.cell(cw - 4, 3.5, lbl)
-                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(cw - 4, 4, lbl)
+                pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(*PDF_COLOR_PRIMARY)
-                pdf.set_xy(x + 2, y0 + 4)
-                pdf.cell(cw - 4, 4.5, val)
-            pdf.set_y(y0 + 10)
+                pdf.set_xy(x + 2, y0 + 5)
+                pdf.cell(cw - 4, 5.5, val)
+            pdf.set_y(y0 + 13)
             pdf.set_text_color(0, 0, 0)
-        pdf.ln(2)
+        pdf.ln(3)
 
     # Drawdown chart
     if portfolio_cum is not None and not portfolio_cum.empty:
@@ -560,8 +560,8 @@ def _generate_pdf_report(
             pdf.cell(pdf.get_string_width(action_label) + 4, 5, action_label, fill=True)
             pdf.ln(3)
             pdf.set_text_color(*PDF_COLOR_DARK)
-            pdf.set_font("Helvetica", "", 7)
-            pdf.multi_cell(0, 3.5, f"{rec.reasoning}  ({rec.urgency}, confidence: {rec.confidence:.0%})")
+            pdf.set_font("Helvetica", "", 8)
+            pdf.multi_cell(0, 4, f"{rec.reasoning}  ({rec.urgency}, confidence: {rec.confidence:.0%})")
             pdf.ln(1)
 
     # ── Page 4: Holdings Breakdown ──
@@ -582,12 +582,12 @@ def _generate_pdf_report(
 
     pdf.set_fill_color(*PDF_COLOR_PRIMARY)
     pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 7)
+    pdf.set_font("Helvetica", "B", 8)
     for c, w in zip(cols, col_widths, strict=False):
-        pdf.cell(w, 6, f" {c}", border=1, fill=True)
+        pdf.cell(w, 7, f" {c}", border=1, fill=True)
     pdf.ln()
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", "", 7)
+    pdf.set_font("Helvetica", "", 8)
 
     for i, (_, row) in enumerate(df.head(25).iterrows()):
         if i % 2 == 0:
@@ -610,28 +610,28 @@ def _generate_pdf_report(
             else:
                 pdf.set_text_color(0, 0, 0)
             align = "R" if j in _right else "L"
-            pdf.cell(w, 5, f" {v}", border=1, fill=True, align=align)
+            pdf.cell(w, 5.5, f" {v}", border=1, fill=True, align=align)
         pdf.set_text_color(0, 0, 0)
         pdf.ln()
 
     if len(df) > 25:
-        pdf.set_font("Helvetica", "I", 7)
+        pdf.set_font("Helvetica", "I", 8)
         pdf.set_text_color(120, 120, 120)
         pdf.cell(
             0,
-            5,
+            6,
             f"(+{len(df) - 25} more holdings - see CSV export for full data)",
             new_x="LMARGIN",
             new_y="NEXT",
         )
 
     # Disclaimer
-    pdf.ln(3)
-    pdf.set_font("Helvetica", "I", 6)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(140, 140, 140)
     pdf.multi_cell(
         0,
-        2.5,
+        3,
         "Disclaimer: This report is for informational purposes only and does not "
         "constitute financial advice. Data sourced from public APIs (yfinance, NSE) "
         "may be delayed or inaccurate. Past performance is not indicative of future results. "
@@ -640,11 +640,11 @@ def _generate_pdf_report(
     )
 
     # Footer
-    pdf.ln(2)
-    pdf.set_font("Helvetica", "I", 6)
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(160, 160, 160)
-    pdf.cell(0, 3, "Generated by NSE Portfolio Risk Scanner", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 3, f"Page {pdf.page_no()} / {{nb}}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 4, "Generated by NSE Portfolio Risk Scanner", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 4, f"Page {pdf.page_no()} / {{nb}}", align="C", new_x="LMARGIN", new_y="NEXT")
 
     result = pdf.output()
     return bytes(result) if isinstance(result, bytearray) else result
