@@ -5,6 +5,7 @@ Pure dataclasses — no business logic, no dependencies beyond stdlib.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -65,7 +66,8 @@ class Portfolio:
 
     @property
     def total_current(self) -> float:
-        return sum(h.current_value for h in self.holdings)
+        vals = [h.current_value for h in self.holdings]
+        return sum(0.0 if math.isnan(v) else v for v in vals)
 
     @property
     def total_pnl(self) -> float:

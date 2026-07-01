@@ -45,6 +45,15 @@ except ImportError:
 
 from engine import Holding
 
+
+def _isnan(v: float) -> bool:
+    """Check if a value is NaN — works with both float('nan') and np.nan."""
+    try:
+        return v != v
+    except TypeError:
+        return False
+
+
 _DEFAULT_PERIOD = "1y"
 
 _L2_CACHE = None
@@ -246,10 +255,11 @@ def fetch_prices(
         )
 
     prices = pd.DataFrame(all_prices)
-    latest = prices.iloc[-1] if len(prices) > 0 else pd.Series(dtype=float)
+    # Forward-fill so tickers with shorter histories still get their latest price
+    latest = prices.ffill().iloc[-1] if len(prices) > 0 else pd.Series(dtype=float)
 
     for h in holdings:
-        if h.ticker in latest:
+        if h.ticker in latest and not _isnan(latest[h.ticker]):
             h.current_price = round(latest[h.ticker], 2)
             if h.avg_price > 0:
                 h.change_pct = round((h.current_price - h.avg_price) / h.avg_price * 100, 2)

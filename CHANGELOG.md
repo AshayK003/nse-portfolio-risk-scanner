@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- **NaN propagation from prices with mismatched date ranges** — `pd.DataFrame(all_prices)` merged series with different date windows; the last row contained NaN for shorter-history tickers, which spread to `current_price` → `total_current` → all risk metrics. Fixed by forward-filling (`ffill()`) before extracting the latest price, plus a NaN guard in Portfolio.total_current (`data/prices.py:249-255`, `engine/__init__.py:67-69`).
+- **Divide-by-zero when all weights are zero** — `compute_risk_metrics()` divided by `weights_arr.sum()` which was 0 when no holdings had fetched prices, producing NaN. Now guards with `_empty_risk_metrics()` return (`engine/risk.py:81-86`).
 - **Pyproject.toml version frozen at 0.2.0** — bumped to 0.7.4 to match actual release state (`pyproject.toml:7`).
 - **Loguru as hard import blocking test collection** — both `data/prices.py` and `app.py` now guard the loguru import with a fallback to stdlib logging. A wrapper layer handles loguru-style `{var}` keyword formatting so all logger calls work without loguru installed.
 - **`_get_l2_cache()` race condition** — added double-checked locking with `threading.Lock()` to prevent concurrent threads from creating separate cache instances on first parallel access (`data/prices.py:34-35,48-56`).

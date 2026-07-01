@@ -78,8 +78,12 @@ def compute_risk_metrics(
         if returns.empty:
             return _empty_risk_metrics()
         weights_arr = np.array(weights)
-        if abs(weights_arr.sum() - 1.0) > 0.01:
-            weights_arr = weights_arr / weights_arr.sum()
+        w_sum = weights_arr.sum()
+        if abs(w_sum - 1.0) > 0.01:
+            if w_sum > 0:
+                weights_arr = weights_arr / w_sum
+            else:
+                return _empty_risk_metrics()
         portfolio_returns = returns.dot(weights_arr)
 
     # --- Volatility ---
