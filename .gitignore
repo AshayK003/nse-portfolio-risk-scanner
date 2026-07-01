@@ -39,7 +39,6 @@ htmlcov/
 .ruff_cache/
 
 # Internal
-AGENTS.md
-engineering_memory.md
+internals/
 *.db-shm
 *.db-wal
