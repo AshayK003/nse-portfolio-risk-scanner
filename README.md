@@ -1,23 +1,20 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/NSE%20Portfolio%20Risk%20Scanner-v0.7.6-blue?style=flat-square&labelColor=1a1a2e">
-    <img alt="NSE Portfolio Risk Scanner" src="https://img.shields.io/badge/NSE%20Portfolio%20Risk%20Scanner-v0.7.6-blue?style=flat-square">
-  </picture>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=NSE%20Portfolio%20Risk%20Scanner&fontSize=40&fontAlignY=32&desc=Institutional-grade%20risk%20analysis%20for%20Indian%20equity%20portfolios&descAlignY=50&animation=fadeIn" width="100%"/>
 </p>
 
 <p align="center">
-  <a href="https://github.com/AshayK003/nse-portfolio-risk-scanner/actions"><img src="https://img.shields.io/github/actions/workflow/status/AshayK003/nse-portfolio-risk-scanner/ci.yml?branch=master&style=flat-square&label=CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
-  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square"></a>
-  <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-ff4b4b?style=flat-square"></a>
-  <img src="https://img.shields.io/badge/tests-289%20passing-brightgreen?style=flat-square">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat" alt="License"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
+  <img src="https://img.shields.io/badge/tests-289%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
 </p>
 
 ---
 
-**NSE Portfolio Risk Scanner** is a Streamlit application that analyzes Indian equity portfolios for institutional-grade risk metrics — VaR, volatility, sector concentration, benchmark comparison, factor decomposition, Monte Carlo simulation, and more.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, and stress testing. Zero paid APIs. 289 tests.
 
-Ships with a clean three-layer architecture, zero paid API dependencies, and 289 tests.
+---
 
 ## Features
 
@@ -38,38 +35,100 @@ Ships with a clean three-layer architecture, zero paid API dependencies, and 289
 | **Export** | CSV with position-level risk data + PDF report with charts |
 | **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
 
+## Demo
+
+<!-- Replace with a screenshot of the app:
+  ![App Screenshot](assets/demo.png)
+-->
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
+
+## Quick Start
+
+```bash
+# Clone and enter
+git clone https://github.com/AshayK003/nse-portfolio-risk-scanner.git
+cd nse-portfolio-risk-scanner
+
+# Create virtual environment
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+
+# Install (pick extras as needed)
+pip install -e ".[dev,pdf]"             # Minimal — yfinance only
+pip install -e ".[dev,pdf,nse]"         # + nselib for official NSE data
+pip install -e ".[dev,pdf,nse,ml]"      # + hmmlearn for ML regime detection
+
+# Launch
+streamlit run app.py
+```
+
+### Dependency Matrix
+
+| Package | Required | Purpose |
+|---------|----------|---------|
+| streamlit | yes | Web UI framework |
+| plotly | yes | Interactive charts |
+| yfinance | yes | Price data (fallback) |
+| numpy / pandas / scipy | yes | Computation |
+| loguru | yes | Structured logging |
+| diskcache | yes | Price cache |
+| nselib | `[nse]` | Official NSE data |
+| hmmlearn | `[ml]` | HMM regime detection |
+| fpdf2 | `[pdf]` | PDF report export |
+| ruff / pre-commit | dev | Linting / formatting |
+| pytest / vcrpy | dev | Testing |
+
+### Environment Variables
+
+None required. Runs with zero configuration.
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `NSE_RISK_SCANNER_CACHE_DIR` | Override diskcache directory | `./data/__cache__` |
+| `NSE_RISK_SCANNER_DB_PATH` | Override SQLite database path | `./data/nse_risk_scanner.db` |
+
+---
+
 ## Architecture
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  app.py  (thin orchestration, ~200 imperative lines) │
 ├─────────────────────────────────────────────────────┤
 │                    ┌──────────────────┐              │
-│                    │    engine/        │              │
-│                    │  pure functions   │              │
-│                    │  zero Streamlit   │              │
-│                    │  zero I/O         │              │
+│                    │    engine/       │              │
+│                    │  pure functions  │              │
+│                    │  zero Streamlit  │              │
+│                    │  zero I/O        │              │
 │                    └──────────────────┘              │
 │                    ┌──────────────────┐              │
-│                    │    data/          │              │
-│                    │  price fetching   │              │
-│                    │  3-tier cache     │              │
+│                    │    data/         │              │
+│                    │  price fetching  │              │
+│                    │  3-tier cache    │              │
 │                    └──────────────────┘              │
 │                    ┌──────────────────┐              │
-│                    │    ui/            │              │
-│                    │  Streamlit only   │              │
+│                    │    ui/           │              │
+│                    │  Streamlit only  │              │
 │                    │  no business logic│              │
 │                    └──────────────────┘              │
 │                    ┌──────────────────┐              │
-│                    │    storage/       │              │
-│                    │  SQLite history   │              │
+│                    │    storage/      │              │
+│                    │  SQLite history  │              │
 │                    └──────────────────┘              │
 └─────────────────────────────────────────────────────┘
 ```
 
 **The rules are strict:**
 - `engine/` never imports Streamlit. Every function is pure — inputs in, dataclass out.
-- `ui/` never computes math. It calls engine functions and renders the results.
+- `ui/` never computes math. It calls engine functions and renders results.
 - `app.py` is a thin orchestrator: read CSV → compute → render.
 - Every intelligence module is independently guarded — one failure doesn't kill the rest.
 
@@ -110,53 +169,13 @@ Ships with a clean three-layer architecture, zero paid API dependencies, and 289
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
-## Quick Start
-
-```bash
-# Clone and enter the project
-git clone https://github.com/AshayK003/nse-portfolio-risk-scanner.git
-cd nse-portfolio-risk-scanner
-
-# Create a virtual environment
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-
-# Install (pick the extras you need)
-pip install -e ".[dev,pdf]"           # Minimal — yfinance only
-pip install -e ".[dev,pdf,nse]"       # + nselib for official NSE data (recommended)
-pip install -e ".[dev,pdf,nse,ml]"    # + hmmlearn for ML regime detection
-
-# Run
-streamlit run app.py
-```
-
-### Dependency Matrix
-
-| Package | Required | Purpose |
-|---------|----------|---------|
-| streamlit | yes | Web UI framework |
-| plotly | yes | Interactive charts |
-| yfinance | yes | Price data (fallback) |
-| numpy / pandas / scipy | yes | Computation |
-| loguru | yes | Structured logging |
-| diskcache | yes | Price cache |
-| nselib | `[nse]` | Official NSE data |
-| hmmlearn | `[ml]` | HMM regime detection |
-| fpdf2 | `[pdf]` | PDF report export |
-| ruff / pre-commit | dev | Linting / formatting |
-| pytest / vcrpy | dev | Testing |
-
-## Environment Variables
-
-None required. The application runs with zero configuration.
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `NSE_RISK_SCANNER_CACHE_DIR` | Override diskcache directory | `./data/__cache__` |
-| `NSE_RISK_SCANNER_DB_PATH` | Override SQLite database path | `./data/nse_risk_scanner.db` |
+---
 
 ## Local Development
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 ```bash
 # Lint & format
@@ -178,33 +197,38 @@ pre-commit install
 
 ### Code Style
 
-- **Target:** Python 3.10+
-- **Line length:** 110
-- **Linter:** ruff (rules: E, F, I, N, W, UP, B, SIM)
-- **Formatter:** ruff-format
-- **Immutability:** spread/copy on every mutation, never `.append()` or direct assignment on shared state
-- **No comments:** code should be self-documenting. Comments explain *why*, never *what*
+| Rule | Standard |
+|------|----------|
+| **Target** | Python 3.10+ |
+| **Line length** | 110 |
+| **Linter** | ruff (E, F, I, N, W, UP, B, SIM) |
+| **Formatter** | ruff-format |
+| **Immutability** | spread/copy on every mutation, never `.append()` or direct assignment on shared state |
+| **Comments** | explain *why*, never *what* |
 
 ### Commit Convention
 
 ```
 <type>: <short description>
-
 Types: fix, feat, docs, refactor, test, chore
 ```
 
+---
+
 ## Testing
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 289 tests across 21 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
 
 ```bash
-pytest tests/                       # Full suite
-pytest tests/ -v --tb=short         # Verbose, short tracebacks
-pytest tests/test_risk.py -k "monte" # Filter by test name
-pytest tests/ --cov=engine --cov-report=term-missing  # Coverage with missed lines
+pytest tests/                           # Full suite
+pytest tests/ -v --tb=short             # Verbose, short tracebacks
+pytest tests/test_risk.py -k "monte"    # Filter by test name
+pytest tests/ --cov=engine --cov-report=term-missing
 ```
-
-**What's tested:**
 
 | Area | File | Coverage |
 |------|------|----------|
@@ -226,7 +250,13 @@ pytest tests/ --cov=engine --cov-report=term-missing  # Coverage with missed lin
 | Integration | `test_integration.py` | Full pipeline, edge cases |
 | PDF export | `test_pdf_export.py` | Chart generation, report assembly |
 
+---
+
 ## Deployment
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 ### Streamlit Cloud (recommended)
 
@@ -255,7 +285,13 @@ The app binds to `0.0.0.0:8501` by default. Use a reverse proxy (nginx, Caddy) f
 
 **CI** (`.github/workflows/ci.yml`) runs on every push/PR: ruff check → ruff format check → pytest with coverage.
 
+---
+
 ## Common Troubleshooting
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 ### "No data fetched for any holdings"
 **Cause:** yfinance rate limits or network issues. Indian equities require `.NS` suffix — `RELIANCE` becomes `RELIANCE.NS` automatically, but if yfinance fails, no data returns.
@@ -287,7 +323,13 @@ The app binds to `0.0.0.0:8501` by default. Use a reverse proxy (nginx, Caddy) f
 
 **Fix:** Split into sub-portfolios or reduce the limit in `engine/portfolio.py:_MAX_HOLDINGS`.
 
+---
+
 ## Contributing
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
+</p>
 
 ### PR Workflow
 
@@ -314,6 +356,10 @@ Look for issues tagged [`good-first-issue`](https://github.com/AshayK003/nse-por
 ---
 
 <p align="center">
-  Built by <a href="https://github.com/AshayK003">AshayK003</a> ·
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=120&section=footer&text=AshayK003/nse-portfolio-risk-scanner&fontSize=20&fontAlignY=70" width="100%"/>
+</p>
+
+<p align="center">
+  Built by <a href="https://github.com/AshayK003">Ashay Kushwaha</a> ·
   <a href="LICENSE">MIT License</a>
 </p>
