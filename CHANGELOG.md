@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.8.0 (2026-07-01)
+
+### Fixed
+
+- **PDF: `gauge_w` unbound crash** (`ui/export.py:461`) — `gauge_w` was only assigned inside `if gauge_chart:` block but referenced unconditionally below. Crashed with `UnboundLocalError` when matplotlib was unavailable but risk data existed. Fixed by initializing `gauge_w` before the conditional.
+
+### Changed
+
+- **PDF: consolidated matplotlib imports** (`ui/export.py`) — all 7 chart functions previously imported matplotlib independently (~200-400ms each). Now a single `_import_matplotlib()` helper is called once in `_generate_pdf_report()` and `plt` is passed to each chart function. Eliminates 6 redundant imports per PDF generation.
+- **PDF: holdings table supports all sizes** (`ui/export.py:568-615`) — removed the hard cap at 25 holdings. The table now renders all rows with automatic page breaks when content exceeds the page boundary. Header row repeats on continuation pages.
+- **PDF: page overflow guards** (`ui/export.py`) — Risk Analysis page (drawdown chart, Monte Carlo fan, recommendations) now checks `pdf.get_y()` before each section and adds a continuation page if space is insufficient.
+- **PDF: metadata set on output** (`ui/export.py:397-400`) — generated PDF now includes `title`, `author`, and `subject` metadata for better handling in email clients and PDF viewers.
+- **PDF: spinner during generation** (`ui/export.py:73`) — wrapped `_generate_pdf_report()` call in `st.spinner("Generating PDF report...")` for better UX on slow generations.
+- **Removed dead `portfolio_returns` parameter** (`ui/export.py:28`, `app.py:802`) — `render_export_section()` accepted `portfolio_returns` but never used it in `_generate_pdf_report()`. Removed from both function signature and call site.
+- **Chart functions accept `plt` parameter** — `_risk_gauge_chart`, `_sector_pie_chart`, `_pnl_bar_chart`, `_drawdown_area_chart`, `_monte_carlo_fan_chart`, `_holdings_weight_bar` now take `plt` as a required argument instead of importing it internally. Gracefully return `None` when `plt is None`.
+
+### Added
+
+- **1 new test** (`tests/test_pdf_export.py:test_risk_gauge_chart_none_plt`) — verifies chart functions return `None` gracefully when matplotlib is unavailable.
+
+### Metrics
+
+- **360 tests pass** — 360 existing + 1 new, zero regressions.
+- **Lint clean** — ruff E/F/I/N/W/UP/B/SIM all pass.
+
 ## v0.7.9 (2026-07-01)
 
 ### Added

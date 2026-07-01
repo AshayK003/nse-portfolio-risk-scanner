@@ -30,7 +30,6 @@ def render_export_section(
     risk: RiskMetrics | None = None,
     sector_data: dict | None = None,
     mc_result: MonteCarloResult | None = None,
-    portfolio_returns: pd.Series | None = None,
     portfolio_cum: pd.Series | None = None,
     recommendations: RecommendationReport | None = None,
 ) -> None:
@@ -69,9 +68,10 @@ def render_export_section(
     )
 
     try:
-        pdf_bytes = _generate_pdf_report(
-            portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
-        )
+        with st.spinner("Generating PDF report..."):
+            pdf_bytes = _generate_pdf_report(
+                portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
+            )
         st.download_button(
             label="Download PDF Report",
             data=pdf_bytes,
@@ -146,14 +146,22 @@ def _chart_bytes(fig, plt_module) -> bytes:
     return buf.read()
 
 
-def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
-    """Matplotlib pie chart for sector allocation."""
+def _import_matplotlib():
+    """Lazy-import matplotlib with Agg backend. Returns (matplotlib, pyplot) or (None, None)."""
     try:
         import matplotlib
 
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+
+        return matplotlib, plt
     except ImportError:
+        return None, None
+
+
+def _sector_pie_chart(sector_data: dict, page_w: float, plt) -> bytes | None:
+    """Matplotlib pie chart for sector allocation."""
+    if plt is None:
         return None
     labels = list(sector_data.keys())
     sizes = list(sector_data.values())
@@ -178,14 +186,9 @@ def _sector_pie_chart(sector_data: dict, page_w: float) -> bytes | None:
     return _chart_bytes(fig, plt)
 
 
-def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
+def _pnl_bar_chart(df: pd.DataFrame, page_w: float, plt) -> bytes | None:
     """Matplotlib horizontal bar chart of P&L per holding."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
+    if plt is None:
         return None
     top = df.iloc[df["P&L %"].abs().argsort()[::-1][:10]] if "P&L %" in df.columns else df.head(10)
     tickers = [t.replace(".NS", "") for t in top["Ticker"]]
@@ -214,14 +217,9 @@ def _pnl_bar_chart(df: pd.DataFrame, page_w: float) -> bytes | None:
     return _chart_bytes(fig, plt)
 
 
-def _risk_gauge_chart(volatility: float, page_w: float) -> bytes | None:
+def _risk_gauge_chart(volatility: float, page_w: float, plt) -> bytes | None:
     """Horizontal risk bar — green/amber/red zones with volatility marker."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
+    if plt is None:
         return None
 
     fig, ax = plt.subplots(figsize=(page_w / 25.4, 0.9))
@@ -247,14 +245,9 @@ def _risk_gauge_chart(volatility: float, page_w: float) -> bytes | None:
     return _chart_bytes(fig, plt)
 
 
-def _drawdown_area_chart(portfolio_cum: pd.Series, page_w: float) -> bytes | None:
+def _drawdown_area_chart(portfolio_cum: pd.Series, page_w: float, plt) -> bytes | None:
     """Red area chart of portfolio drawdown."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
+    if plt is None:
         return None
 
     running_max = portfolio_cum.cummax()
@@ -271,14 +264,9 @@ def _drawdown_area_chart(portfolio_cum: pd.Series, page_w: float) -> bytes | Non
     return _chart_bytes(fig, plt)
 
 
-def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes | None:
+def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float, plt) -> bytes | None:
     """Monte Carlo confidence interval visualization."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
+    if plt is None:
         return None
 
     fig, ax = plt.subplots(figsize=(page_w / 25.4, 1.2))
@@ -330,14 +318,9 @@ def _monte_carlo_fan_chart(mc_result: MonteCarloResult, page_w: float) -> bytes 
     return _chart_bytes(fig, plt)
 
 
-def _holdings_weight_bar(portfolio: Portfolio, page_w: float) -> bytes | None:
+def _holdings_weight_bar(portfolio: Portfolio, page_w: float, plt) -> bytes | None:
     """Horizontal bar chart of top holdings by weight."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
+    if plt is None:
         return None
 
     holdings = sorted(portfolio.holdings, key=lambda h: h.current_value, reverse=True)[:10]
@@ -405,16 +388,21 @@ def _generate_pdf_report(
     portfolio_cum: pd.Series | None = None,
     recommendations: RecommendationReport | None = None,
 ) -> bytes:
-    """Generate a 3-page professional PDF report using fpdf2."""
+    """Generate a 4-page professional PDF report using fpdf2."""
     from fpdf import FPDF
+
+    _, plt = _import_matplotlib()
 
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=18)
     pdf.alias_nb_pages()
+    pdf.set_title(f"NSE Portfolio Risk Report - {portfolio.name}")
+    pdf.set_author("NSE Portfolio Risk Scanner")
+    pdf.set_subject("Portfolio risk analysis with VaR, Monte Carlo, and recommendations")
 
     # ── Cover Page ──
     pdf.add_page()
-    _add_cover_page(pdf, portfolio, risk)
+    _add_cover_page(pdf, portfolio, risk, plt)
 
     page_w = pdf.w - pdf.l_margin - pdf.r_margin
 
@@ -422,7 +410,7 @@ def _generate_pdf_report(
     pdf.add_page()
     _add_page_header(pdf, "1. Executive Summary")
 
-    # KPI Cards: 2 rows x 3 cols
+    # Risk-focused KPI cards (different from cover page to avoid duplication)
     card_w = (page_w - 6) / 3
     y0 = pdf.get_y()
     pnl_color = PDF_COLOR_GREEN if portfolio.total_pnl >= 0 else PDF_COLOR_RED
@@ -453,9 +441,9 @@ def _generate_pdf_report(
     pdf.set_y(y1 + 26)
 
     # Risk gauge + metric badges side by side
-    gauge_chart = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w)
+    gauge_w = page_w * 0.5  # default; updated if gauge renders
+    gauge_chart = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w, plt)
     if gauge_chart:
-        gauge_w = page_w * 0.5
         pdf.image(gauge_chart, x=pdf.l_margin, w=gauge_w)
     if risk:
         badge_w = (page_w - gauge_w - 6) / 3
@@ -480,8 +468,8 @@ def _generate_pdf_report(
     y_before_charts = pdf.get_y()
     chart_top = y_before_charts
 
-    sector_chart = _sector_pie_chart(sector_data, page_w) if sector_data else None
-    weight_chart = _holdings_weight_bar(portfolio, page_w)
+    sector_chart = _sector_pie_chart(sector_data, page_w, plt) if sector_data else None
+    weight_chart = _holdings_weight_bar(portfolio, page_w, plt)
 
     if sector_chart:
         pdf.image(sector_chart, x=pdf.l_margin, w=col_w - 2)
@@ -524,22 +512,31 @@ def _generate_pdf_report(
             pdf.set_text_color(0, 0, 0)
         pdf.ln(3)
 
-    # Drawdown chart
+    # Drawdown chart — page break if needed
     if portfolio_cum is not None and not portfolio_cum.empty:
-        dd_chart = _drawdown_area_chart(portfolio_cum, page_w)
+        if pdf.get_y() > pdf.h - 40:
+            pdf.add_page()
+            _add_page_header(pdf, "2. Risk Analysis (cont.)")
+        dd_chart = _drawdown_area_chart(portfolio_cum, page_w, plt)
         if dd_chart:
             pdf.image(dd_chart, x=pdf.l_margin, w=page_w)
             pdf.ln(2)
 
-    # Monte Carlo fan
+    # Monte Carlo fan — page break if needed
     if mc_result:
-        mc_chart = _monte_carlo_fan_chart(mc_result, page_w)
+        if pdf.get_y() > pdf.h - 40:
+            pdf.add_page()
+            _add_page_header(pdf, "2. Risk Analysis (cont.)")
+        mc_chart = _monte_carlo_fan_chart(mc_result, page_w, plt)
         if mc_chart:
             pdf.image(mc_chart, x=pdf.l_margin, w=page_w)
             pdf.ln(2)
 
-    # Top 3 recommendations
+    # Top 3 recommendations — page break if needed
     if recommendations and recommendations.priority_actions:
+        if pdf.get_y() > pdf.h - 50:
+            pdf.add_page()
+            _add_page_header(pdf, "2. Risk Analysis (cont.)")
         pdf.ln(1)
         _section_header(pdf, "Top Priority Actions")
         for rec in recommendations.priority_actions[:3]:
@@ -568,28 +565,39 @@ def _generate_pdf_report(
     pdf.add_page()
     _add_page_header(pdf, "3. Holdings Breakdown")
 
-    pnl_chart = _pnl_bar_chart(df, page_w)
+    pnl_chart = _pnl_bar_chart(df, page_w, plt)
     if pnl_chart:
         pdf.image(pnl_chart, x=pdf.l_margin, w=page_w)
         pdf.ln(2)
 
-    # Holdings table
+    # Holdings table with page-break support
     cols = ["Ticker", "Name", "Qty", "Avg Price", "Current", "P&L %", "Sector"]
     col_widths = [24, 44, 14, 24, 24, 18, 22]
     col_widths = [int(w * page_w / sum(col_widths)) for w in col_widths]
-    # right-aligned column indices
     _right = {2, 3, 4, 5}
+    row_h = 5.5
+    header_h = 7
+    page_bottom = pdf.h - pdf.b_margin
 
-    pdf.set_fill_color(*PDF_COLOR_PRIMARY)
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 8)
-    for c, w in zip(cols, col_widths, strict=False):
-        pdf.cell(w, 7, f" {c}", border=1, fill=True)
-    pdf.ln()
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", "", 8)
+    def _draw_holdings_header():
+        pdf.set_fill_color(*PDF_COLOR_PRIMARY)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Helvetica", "B", 8)
+        for c, w in zip(cols, col_widths, strict=False):
+            pdf.cell(w, header_h, f" {c}", border=1, fill=True)
+        pdf.ln()
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Helvetica", "", 8)
 
-    for i, (_, row) in enumerate(df.head(25).iterrows()):
+    _draw_holdings_header()
+
+    for i, (_, row) in enumerate(df.iterrows()):
+        # page break: need room for header + this row + at least 1 more
+        if pdf.get_y() + row_h + header_h > page_bottom:
+            pdf.add_page()
+            _add_page_header(pdf, "3. Holdings Breakdown (cont.)")
+            _draw_holdings_header()
+
         if i % 2 == 0:
             pdf.set_fill_color(*PDF_COLOR_ACCENT)
         else:
@@ -610,20 +618,9 @@ def _generate_pdf_report(
             else:
                 pdf.set_text_color(0, 0, 0)
             align = "R" if j in _right else "L"
-            pdf.cell(w, 5.5, f" {v}", border=1, fill=True, align=align)
+            pdf.cell(w, row_h, f" {v}", border=1, fill=True, align=align)
         pdf.set_text_color(0, 0, 0)
         pdf.ln()
-
-    if len(df) > 25:
-        pdf.set_font("Helvetica", "I", 8)
-        pdf.set_text_color(120, 120, 120)
-        pdf.cell(
-            0,
-            6,
-            f"(+{len(df) - 25} more holdings - see CSV export for full data)",
-            new_x="LMARGIN",
-            new_y="NEXT",
-        )
 
     # Disclaimer
     pdf.ln(4)
@@ -669,7 +666,7 @@ def _add_page_header(pdf, title: str | None = None) -> None:
     pdf.set_text_color(0, 0, 0)
 
 
-def _add_cover_page(pdf, portfolio, risk) -> None:
+def _add_cover_page(pdf, portfolio, risk, plt=None) -> None:
     """Draw a professional cover page with portfolio name, KPI summary, and risk gauge."""
     pdf.set_fill_color(*PDF_COLOR_PRIMARY)
     pdf.rect(0, 0, pdf.w, 55, style="F")
@@ -708,7 +705,7 @@ def _add_cover_page(pdf, portfolio, risk) -> None:
     pdf.set_y(y1 + 28)
 
     # Risk gauge (centered, limited width)
-    gauge = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w)
+    gauge = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w, plt)
     if gauge:
         pdf.image(gauge, x=pdf.l_margin + page_w * 0.12, w=page_w * 0.76)
     pdf.ln(6)

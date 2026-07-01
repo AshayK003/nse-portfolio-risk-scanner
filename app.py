@@ -804,7 +804,6 @@ with tabs[7]:
         risk=report.risk,
         sector_data=report.sector.sector_allocation,
         mc_result=mc_result,
-        portfolio_returns=portfolio_returns,
         portfolio_cum=portfolio_cum,
         recommendations=recommendations,
     )

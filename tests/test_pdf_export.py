@@ -90,8 +90,9 @@ def _sample_export_df(portfolio: Portfolio) -> pd.DataFrame:
 # ── Chart function tests ──
 
 def test_chart_bytes_returns_png():
-    from ui.export import _chart_bytes
     import matplotlib
+
+    from ui.export import _chart_bytes
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -103,9 +104,18 @@ def test_chart_bytes_returns_png():
     assert result[:4] == b"\x89PNG"
 
 
+def _get_plt():
+    """Shared matplotlib import for chart tests."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    return plt
+
+
 def test_risk_gauge_chart():
     from ui.export import _risk_gauge_chart
-    result = _risk_gauge_chart(18.5, 180)
+    plt = _get_plt()
+    result = _risk_gauge_chart(18.5, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert len(result) > 100
@@ -114,22 +124,31 @@ def test_risk_gauge_chart():
 
 def test_risk_gauge_chart_zero_vol():
     from ui.export import _risk_gauge_chart
-    result = _risk_gauge_chart(0, 180)
+    plt = _get_plt()
+    result = _risk_gauge_chart(0, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
 
 
 def test_risk_gauge_chart_high_vol():
     from ui.export import _risk_gauge_chart
-    result = _risk_gauge_chart(90, 180)
+    plt = _get_plt()
+    result = _risk_gauge_chart(90, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
 
 
+def test_risk_gauge_chart_none_plt():
+    from ui.export import _risk_gauge_chart
+    result = _risk_gauge_chart(18.5, 180, None)
+    assert result is None
+
+
 def test_drawdown_area_chart():
     from ui.export import _drawdown_area_chart
+    plt = _get_plt()
     cum = _sample_portfolio_cum()
-    result = _drawdown_area_chart(cum, 180)
+    result = _drawdown_area_chart(cum, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert result[:4] == b"\x89PNG"
@@ -137,8 +156,9 @@ def test_drawdown_area_chart():
 
 def test_monte_carlo_fan_chart():
     from ui.export import _monte_carlo_fan_chart
+    plt = _get_plt()
     mc = _sample_mc_result()
-    result = _monte_carlo_fan_chart(mc, 180)
+    result = _monte_carlo_fan_chart(mc, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert result[:4] == b"\x89PNG"
@@ -146,8 +166,9 @@ def test_monte_carlo_fan_chart():
 
 def test_holdings_weight_bar():
     from ui.export import _holdings_weight_bar
+    plt = _get_plt()
     portfolio = _sample_portfolio()
-    result = _holdings_weight_bar(portfolio, 180)
+    result = _holdings_weight_bar(portfolio, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert result[:4] == b"\x89PNG"
@@ -155,8 +176,9 @@ def test_holdings_weight_bar():
 
 def test_sector_pie_chart():
     from ui.export import _sector_pie_chart
+    plt = _get_plt()
     sector_data = _sample_sector_data()
-    result = _sector_pie_chart(sector_data, 180)
+    result = _sector_pie_chart(sector_data, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert result[:4] == b"\x89PNG"
@@ -164,9 +186,10 @@ def test_sector_pie_chart():
 
 def test_pnl_bar_chart():
     from ui.export import _pnl_bar_chart
+    plt = _get_plt()
     portfolio = _sample_portfolio()
     df = _sample_export_df(portfolio)
-    result = _pnl_bar_chart(df, 180)
+    result = _pnl_bar_chart(df, 180, plt)
     assert result is not None
     assert isinstance(result, bytes)
     assert result[:4] == b"\x89PNG"
@@ -266,8 +289,9 @@ def test_risk_assessment_none():
 
 
 def test_metric_badge():
-    from ui.export import _metric_badge
     from fpdf import FPDF
+
+    from ui.export import _metric_badge
     pdf = FPDF()
     pdf.add_page()
     page_w = pdf.w - pdf.l_margin - pdf.r_margin
