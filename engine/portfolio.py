@@ -145,7 +145,10 @@ def parse_portfolio_csv(
     if len(csv_bytes) > _MAX_CSV_BYTES:
         raise ValueError(f"CSV file exceeds maximum size of {_MAX_CSV_BYTES // (1024*1024)}MB")
 
-    content = csv_bytes.decode("utf-8-sig")
+    try:
+        content = csv_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = csv_bytes.decode("latin-1")
     delim = _detect_delimiter(content)
     reader = csv.DictReader(io.StringIO(content), delimiter=delim)
 
@@ -186,8 +189,8 @@ def parse_portfolio_csv(
 
             # Auto-correct: when the price column is a total-cost/value column,
             # divide by quantity to recover per-share price.
-            if price_role in ("total_cost", "total_value") and qty > 1 and price > 10000:
-                per_share = price / qty
+            if price_role in ("total_cost", "total_value") and price > 10000:
+                per_share = price / qty if qty > 0 else price
                 if per_share < 10000:
                     price = per_share
 
@@ -507,25 +510,29 @@ def _parse_float(s: str) -> float:
         # Handle Indian format: 1,23,456.78 -> 123456.78
         s = s.replace(",", "")
         # Strip currency symbols, percentage signs, and whitespace
-        for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"'):
+        for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"', "$"):
             s = s.replace(sym, "")
         s = s.strip()
-        return float(s) if s else 0.0
+        result = float(s) if s else 0.0
+        import math
+        return 0.0 if (math.isnan(result) or math.isinf(result)) else result
     except (ValueError, TypeError):
         return 0.0
 
 
 def portfolio_from_dict(data: dict) -> Portfolio:
     """Create a Portfolio from a dict (useful for testing / API)."""
-    holdings = [
-        Holding(
-            ticker=normalize_ticker(h.get("ticker", "")),
-            name=h.get("name", h.get("ticker", "")),
+    holdings = []
+    for h in data.get("holdings", []):
+        raw_ticker = h.get("ticker", "").strip()
+        if not raw_ticker:
+            continue
+        holdings.append(Holding(
+            ticker=normalize_ticker(raw_ticker),
+            name=h.get("name", raw_ticker),
             quantity=int(h.get("quantity", 0)),
             avg_price=float(h.get("avg_price", 0)),
-        )
-        for h in data.get("holdings", [])
-    ]
+        ))
     return Portfolio(
         holdings=holdings,
         name=data.get("name", "My Portfolio"),

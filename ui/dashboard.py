@@ -143,7 +143,7 @@ def render_stock_table(portfolio: Portfolio) -> None:
                 "Name": h.name,
                 "Qty": h.quantity,
                 "Avg Price": f"Rs {h.avg_price:,.2f}",
-                "Current": f"Rs {h.current_price:,.2f}" if h.current_price else "\u2014",
+                "Current": f"Rs {h.current_price:,.2f}" if h.current_price > 0 else "\u2014",
                 "Invested": f"Rs {h.invested_value:,.0f}",
                 "P&L": f"Rs {h.pnl:+,.0f}",
                 "P&L %": f"{h.pnl_pct:+.1f}%",
@@ -219,8 +219,8 @@ def render_advanced_section(
             st.metric(f"PELVE (ε={pelve.epsilon})", f"{pelve.pelve:.2f}")
             st.caption(pelve.interpretation)
 
-        if opt_advanced and opt_advanced.get("status") == "ok":
-            w = opt_advanced.get("weights", {})
+        if opt_advanced and isinstance(opt_advanced, dict):
+            w = opt_advanced
             if w:
                 st.dataframe(
                     pd.DataFrame(list(w.items()), columns=["Ticker", "Opt. Weight"]).assign(
@@ -315,7 +315,7 @@ def render_optimization_section(
         st.info("Add at least 2 holdings to see optimization suggestions.")
         return
 
-    if opt.expected_return:
+    if opt.expected_return != 0.0 or opt.expected_volatility != 0.0:
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Expected Return (Annual)", f"{opt.expected_return:.1f}%")
@@ -438,6 +438,9 @@ def render_regime_section(regime: RegimeResult | None) -> None:
         return
 
     # Per-regime stats
+    if not regime.stats:
+        st.info("No regime statistics available.")
+        return
     cols = st.columns(len(regime.stats))
     for i, stat in enumerate(regime.stats):
         with cols[i]:

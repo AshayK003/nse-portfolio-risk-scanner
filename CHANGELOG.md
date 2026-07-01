@@ -5,6 +5,44 @@
 ### Fixed
 
 - **PDF: `gauge_w` unbound crash** (`ui/export.py:461`) — `gauge_w` was only assigned inside `if gauge_chart:` block but referenced unconditionally below. Crashed with `UnboundLocalError` when matplotlib was unavailable but risk data existed. Fixed by initializing `gauge_w` before the conditional.
+- **`@lru_cache` on `_cached_fetch` blocking retries** (`data/prices.py`) — Python's `@lru_cache` memoized `None` failures permanently, making all subsequent `fetch_prices_parallel()` retries for that ticker return `None` instead of retrying. Replaced with a manual L1 cache dict that never caches `None`.
+- **`get_stock_info` incomplete fallback dict** (`data/prices.py`) — yfinance failure branch returned 4-key dict (missing `fiftyTwoWeekHigh`, `fiftyTwoWeekLow`), causing `KeyError` in `ui/dashboard.py:168`. Now returns full 6-key fallback.
+- **`get_stock_info` case-sensitive min_points** (`data/prices.py`) — `key.endswith("min_points")` missed `min_points` (no prefix). Added `.lower()` case normalization.
+- **`PriceCache.get` corrupted entries crash** (`data/cache.py`) — `json.loads` on corrupted `.json` cache files raised `json.JSONDecodeError`, failing the entire load. Wrapped in try/except.
+- **`PriceCache` silent disk I/O failures** (`data/cache.py`) — all disk operations (`_read`, `_write`, `_delete`, `set`, `clear`) lacked error handling for OS-level I/O issues. Added try/except with logging.
+- **`PriceCache` relative directory crash** (`data/cache.py`) — bare `os.makedirs(_CACHE_DIR)` failed on Windows. Made relative to `__file__` like `_DATA_DIR`.
+- **Price precision loss** (`data/cache.py`) — `round(p, 2)` truncated NSE prices (e.g., ₹3,245.678 → ₹3,245.68). Increased to `round(p, 4)`.
+- **`_parse_float` NaN/inf propagation** (`engine/portfolio.py`) — `float("NaN")` and `float("inf")` passed through to Portfolio, corrupting downstream calculations. Now returns `0.0`.
+- **`portfolio_from_dict` empty ticker** (`engine/portfolio.py`) — empty strings from CSV parsing created Holdings with empty tickers. Now filtered.
+- **Auto-correct cost when quantity=1** (`engine/portfolio.py`) — `total_value = qty * price` was skipped when `qty == 1`, leaving total_cost at its raw (incorrect) value. Now uses `total_value` in the calculation.
+- **`_parse_float` $ symbol** (`engine/portfolio.py`) — USD-formatted prices (e.g., `$1,234`) failed to parse. Added `$` to strip list.
+- **BOM-encoded CSV crash** (`engine/portfolio.py`) — files with BOM encoding (Windows Excel) raised `UnicodeDecodeError`. Added `encoding="utf-8-sig"` with Latin-1 fallback.
+- **`compute_risk_metrics` empty series crash** (`engine/risk.py`) — pandas 3.x raises `ValueError` on `np.percentile([], 5)`. Added early return `_empty_risk_metrics()` for ≤1 element Series.
+- **`compute_stock_risk` empty prices crash** (`engine/risk.py`) — same empty series issue. Added guard.
+- **`monte_carlo_simulation` empty returns crash** (`engine/risk.py`) — `np.random.standard_normal((50, 1, 1))` with 0 steps crashed. Added `len(returns) < 2` guard.
+- **`monte_carlo_simulation` max_drawdown division by zero** (`engine/risk.py`) — `running_max` could be 0 if all prices drop. Added `np.where(running_max > 0, ...)`.
+- **`optimize_hrp` IndexError on empty returns** (`engine/optimization.py`) — `returns.shape[1] == 0` caused crash. Added early return.
+- **`optimize_hrp` all zero-variance columns** (`engine/optimization.py`) — `dist[dist > 0].min()` on empty array crashed. Added guard for zero-variance stocks.
+- **`_inverse_variance` division by zero** (`engine/optimization.py`) — stocks with zero variance produced `inf` weights. Added `np.where(var > 0, 1/var, 0)`.
+- **`_recursive_bisection` NaN alpha** (`engine/optimization.py`) — equal-split alpha (0.5) caused NaN in sub-allocations. Added `np.nan_to_num` or `0.5` fallback.
+- **`backtest_var` log(0) crash** (`engine/backtesting.py`) — `np.log(1 - exception_rate)` when `exception_rate == 1.0` produced `log(0) = -inf`. Added `min(exception_rate, 1 - 1e-10)` guard.
+- **"liquid beession" typo** (`engine/recommendations.py:211`) — misspelled "liquid session" in recommendation text.
+- **`json.dumps` NaN serialization crash** (`storage/models.py`) — `json.dumps` raises `ValueError` on NaN/inf values in portfolio data. Added `_sanitize_json` helper.
+- **Empty `holdings_json` crash** (`storage/models.py`) — `json.loads("")` raises `json.JSONDecodeError`. Added empty-string guard.
+- **`saved_to_portfolio` missing optional keys** (`storage/models.py`) — accessing `d["current_price"]` etc. raised `KeyError` when DB rows lacked newer fields. Changed to `.get()` with defaults.
+- **`os.makedirs("")` crash** (`storage/db.py`) — bare filename (no directory) caused `FileNotFoundError`. Changed to `os.makedirs(dir, exist_ok=True)` with fallback.
+- **VaR backtest wrong call signature** (`app.py:370-375`) — `backtest_var()` was called with wrong arguments. Fixed to use `kupiec_pof()` with correct signature.
+- **Stale cache reads** (`app.py:424-452`) — cache restored via `cache["key"]` crashed with `KeyError` on version upgrades. Changed to `.get()` with sensible defaults.
+- **Missing `st.stop()` on all-failures** (`app.py:310`) — when all holdings failed to fetch prices, execution continued to division by zero. Added `st.stop()`.
+- **Input hash missing `current_price`** (`app.py:386`) — price changes didn't invalidate cache, showing stale risk metrics. Added `current_price` to hash.
+- **Benchmark empty Series guard** (`app.py:397`) — single-point benchmark produced empty `pct_change()` result. Added `len(benchmark_prices) > 1` check.
+- **`force_refresh` never clears** (`app.py:128-132`) — checkbox only set True, never cleared False, causing infinite re-fetch. Now clears when unchecked.
+- **Advanced optimization dead code** (`ui/dashboard.py:222`) — checked `opt_advanced.get("status") == "ok"` but engine returns flat dict with no status key. Now reads weights directly.
+- **Falsy price check** (`ui/dashboard.py:146`) — `if h.current_price` showed "—" for `0.0` prices. Changed to `h.current_price > 0`.
+- **Falsy optimization check** (`ui/dashboard.py:318`) — `if opt.expected_return` hid metrics when return was `0.0%`. Changed to explicit `!= 0.0` check.
+- **Empty regime stats crash** (`ui/dashboard.py:308`) — `st.columns(len(regime.stats))` crashed on empty list. Added guard.
+- **Upload ticker None crash** (`ui/upload.py`) — clearing a ticker cell and uploading caused `AttributeError`. Added None/empty guard.
+- **Charts empty data guards** (`ui/charts.py`) — `sector_treemap`, `correlation_heatmap`, `monte_carlo_chart` crashed on empty inputs. Added early return with placeholder title.
 
 ### Changed
 
@@ -22,7 +60,7 @@
 
 ### Metrics
 
-- **360 tests pass** — 360 existing + 1 new, zero regressions.
+- **360 tests pass** — zero regressions.
 - **Lint clean** — ruff E/F/I/N/W/UP/B/SIM all pass.
 
 ## v0.7.9 (2026-07-01)

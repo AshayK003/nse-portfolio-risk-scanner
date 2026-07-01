@@ -227,7 +227,7 @@ def generate_recommendations(
                     reasoning=f"HMM regime detection shows {bear_days}/{len(recent_states)} recent trading days in bear regime. "
                     f"The market environment has shifted to risk-off. Historical bear regimes show 2-3x higher volatility.",
                     trade_off="Defensive positioning may miss sharp reversals which are common at regime transitions.",
-                    details="Reduce equity exposure by 20-30%. Increase allocation to liquid beession or short-term debt.",
+                    details="Reduce equity exposure by 20-30%. Increase allocation to liquid bees / short-term debt.",
                 )
             )
 

@@ -47,16 +47,31 @@ class AnalysisRun:
 # ── Serialization helpers ──
 
 
+def _sanitize_json(data):
+    """Replace NaN/inf floats with None for safe JSON serialization."""
+    import json
+    import math
+
+    def _clean(obj):
+        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+            return None
+        if isinstance(obj, dict):
+            return {k: _clean(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_clean(v) for v in obj]
+        return obj
+
+    return json.dumps(_clean(data))
+
+
 def portfolio_to_saved(p: Portfolio, name: str = "") -> SavedPortfolio:
     """Convert an engine Portfolio to a SavedPortfolio for persistence."""
-    import json
-
     holdings_data = []
     for h in p.holdings:
         holdings_data.append(asdict(h))
     return SavedPortfolio(
         name=name or p.name,
-        holdings_json=json.dumps(holdings_data),
+        holdings_json=_sanitize_json(holdings_data),
         created_at=datetime.now().isoformat(),
         updated_at=datetime.now().isoformat(),
         total_invested=round(p.total_invested, 2),
@@ -69,13 +84,13 @@ def saved_to_portfolio(sp: SavedPortfolio) -> Portfolio:
     """Reconstruct an engine Portfolio from a SavedPortfolio."""
     import json
 
-    holdings_data = json.loads(sp.holdings_json)
+    holdings_data = json.loads(sp.holdings_json) if sp.holdings_json.strip() else []
     holdings = [
         Holding(
             ticker=h["ticker"],
             name=h.get("name", h["ticker"]),
-            quantity=h["quantity"],
-            avg_price=h["avg_price"],
+            quantity=h.get("quantity", 0),
+            avg_price=h.get("avg_price", 0.0),
             sector=h.get("sector", ""),
             current_price=h.get("current_price", 0.0),
             change_pct=h.get("change_pct", 0.0),

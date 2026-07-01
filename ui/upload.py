@@ -221,12 +221,18 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             else:
                 new_holdings = []
                 for _, row in df.iterrows():
+                    ticker_val = row.get("Ticker", "")
+                    if not ticker_val or pd.isna(ticker_val):
+                        continue
+                    ticker_str = str(ticker_val).strip()
+                    if not ticker_str:
+                        continue
                     new_holdings.append(
                         Holding(
-                            ticker=(row["Ticker"] + ".NS")
-                            if not row["Ticker"].endswith(".NS")
-                            else row["Ticker"],
-                            name=row.get("Name", row["Ticker"]),
+                            ticker=(ticker_str + ".NS")
+                            if not ticker_str.endswith(".NS")
+                            else ticker_str,
+                            name=row.get("Name", ticker_str),
                             quantity=int(row["Quantity"]),
                             avg_price=float(row["Avg Price"]),
                         )

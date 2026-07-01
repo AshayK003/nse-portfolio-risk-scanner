@@ -86,6 +86,9 @@ def compute_risk_metrics(
                 return _empty_risk_metrics()
         portfolio_returns = returns.dot(weights_arr)
 
+    if len(portfolio_returns) < 2:
+        return _empty_risk_metrics()
+
     # --- Volatility ---
     daily_vol = portfolio_returns.std()
     annual_vol = daily_vol * np.sqrt(252)
@@ -100,7 +103,8 @@ def compute_risk_metrics(
     # --- Max Drawdown ---
     cum_returns = (1 + portfolio_returns).cumprod()
     running_max = cum_returns.cummax()
-    drawdown = (cum_returns - running_max) / running_max
+    drawdown = np.where(running_max > 0, (cum_returns - running_max) / running_max, 0.0)
+    drawdown = pd.Series(drawdown, index=portfolio_returns.index)
     max_dd = drawdown.min() * 100
 
     # Drawdown period
@@ -161,10 +165,14 @@ def compute_risk_metrics(
 
 def compute_stock_risk(stock_returns: pd.Series) -> dict:
     """Compute risk metrics for a single stock (for the stock-level table)."""
-    daily_vol = stock_returns.std()
+    clean = stock_returns.dropna()
+    if len(clean) < 2:
+        return {"volatility": 0.0, "var_95": 0.0, "max_drawdown": 0.0}
+    daily_vol = clean.std()
     annual_vol = daily_vol * np.sqrt(252)
-    var_95 = np.percentile(stock_returns.dropna(), 5)
-    max_dd = ((1 + stock_returns).cumprod().div((1 + stock_returns).cumprod().cummax()).min() - 1) * 100
+    var_95 = np.percentile(clean, 5)
+    cum = (1 + clean).cumprod()
+    max_dd = ((cum / cum.cummax()).min() - 1) * 100
 
     return {
         "volatility": round(annual_vol * 100, 2),
@@ -294,7 +302,7 @@ def monte_carlo_simulation(
     Returns:
         MonteCarloResult, or (MonteCarloResult, np.ndarray) if return_paths=True
     """
-    if returns.empty:
+    if returns.empty or len(returns) < 2:
         empty_result = MonteCarloResult(
             n_simulations=n_simulations,
             horizon_days=horizon_days,

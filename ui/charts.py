@@ -15,6 +15,10 @@ def sector_treemap(sector_allocation: dict[str, float]) -> go.Figure:
     """Treemap showing sector allocation."""
     labels = list(sector_allocation.keys())
     values = list(sector_allocation.values())
+    if not labels:
+        fig = go.Figure()
+        fig.update_layout(title="Sector Allocation — no data")
+        return fig
 
     fig = px.treemap(
         names=labels,
@@ -92,6 +96,10 @@ def benchmark_chart(
 
 def correlation_heatmap(corr_matrix: pd.DataFrame) -> go.Figure:
     """Heatmap of holding correlations."""
+    if corr_matrix.empty:
+        fig = go.Figure()
+        fig.update_layout(title="Correlation Matrix — no data")
+        return fig
     fig = px.imshow(
         corr_matrix,
         text_auto=".2f",
@@ -138,6 +146,9 @@ def volatility_gauge(volatility: float) -> go.Figure:
 def monte_carlo_chart(paths: np.ndarray, confidence: tuple[float, float]) -> go.Figure:
     """Monte Carlo simulation paths with confidence band."""
     fig = go.Figure()
+    if paths.ndim < 2 or paths.shape[1] == 0 or paths.shape[0] == 0:
+        fig.update_layout(title="Monte Carlo — no data")
+        return fig
     n = min(paths.shape[1], 100)
     for i in range(n):
         fig.add_trace(

@@ -120,15 +120,17 @@ def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
     with zero variance (stale/halted tickers).
     """
     if returns.empty or returns.shape[1] < 2:
-        _weights = {returns.columns[0]: 1.0} if returns.shape[1] == 1 else {}
-        return OptimizationResult(method="hrp", weights=_weights)
+        if returns.shape[1] == 1:
+            return OptimizationResult(method="hrp", weights={returns.columns[0]: 1.0})
+        return OptimizationResult(method="hrp", weights={})
 
     # Drop zero-variance columns (stale/halted tickers)
     std = returns.std()
     good_cols = std[std > 1e-12].index
-    if len(good_cols) < 2:
-        _weights = {good_cols[0]: 1.0} if len(good_cols) == 1 else {}
-        return OptimizationResult(method="hrp", weights=_weights)
+    if len(good_cols) == 0:
+        return OptimizationResult(method="hrp", weights={})
+    if len(good_cols) == 1:
+        return OptimizationResult(method="hrp", weights={good_cols[0]: 1.0})
 
     # Exclude cash-like instruments (annualized vol < 2%) that would
     # dominate risk-parity allocation and produce misleading results
@@ -190,7 +192,7 @@ def _recursive_bisection(cov: np.ndarray) -> list[float]:
     var2 = cluster_var(idx2)
 
     # Weight each cluster proportional to inverse variance
-    alpha = 1 - var1 / (var1 + var2)
+    alpha = 1 - var1 / (var1 + var2) if (var1 + var2) > 1e-12 else 0.5
     alpha = np.clip(alpha, 0.0, 1.0)
 
     w1 = _recursive_bisection(cov[np.ix_(idx1, idx1)])
@@ -201,7 +203,8 @@ def _recursive_bisection(cov: np.ndarray) -> list[float]:
 
 def _inverse_variance(cov: np.ndarray) -> np.ndarray:
     """Inverse-variance weights (diagonal of covariance)."""
-    inv_diag = 1.0 / np.diag(cov)
+    diag = np.diag(cov)
+    inv_diag = np.where(diag > 1e-12, 1.0 / diag, 0.0)
     return inv_diag / inv_diag.sum()
 
 

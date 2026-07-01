@@ -36,7 +36,9 @@ def get_connection(db_path: str | None = None) -> sqlite3.Connection:
     path = db_path or _DEFAULT_DB_PATH
 
     # Ensure directory exists
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    dir_name = os.path.dirname(path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
 
     # Thread-local connection
     conn = getattr(_local, "conn", None)

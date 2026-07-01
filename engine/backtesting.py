@@ -59,6 +59,9 @@ def kupiec_pof(var_forecasts: np.ndarray, realized_returns: np.ndarray,
                             expected_exceptions=0, exception_rate=0.0,
                             lr_stat=0.0, p_value=1.0, passed=True)
 
+    if confidence <= 0 or confidence >= 1:
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+
     actual_rate = x / n
 
     # Kupiec LR: -2 * ln(L_null / L_alt)

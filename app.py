@@ -39,7 +39,6 @@ except ImportError:
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
-from engine.backtesting import backtest_var
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
 from engine.fundamentals import compute_all_zscores
@@ -131,8 +130,6 @@ if "force_refresh_cb" not in st.session_state:
     st.session_state.force_refresh_cb = False
 if "force_refresh" not in st.session_state:
     st.session_state.force_refresh = False
-if "selected_benchmark" not in st.session_state:
-    st.session_state.selected_benchmark = "^NSEI"
 
 # ── Step 1: Upload or use existing portfolio ──
 portfolio = render_upload_tab()
@@ -166,12 +163,14 @@ with refresh_col2:
     )
 if force:
     st.session_state.force_refresh = True
+else:
+    st.session_state.force_refresh = False
 
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
 _input_hash = hashlib.md5(
     json.dumps(
         {
-            "holdings": [(h.ticker, h.quantity, h.avg_price) for h in portfolio.holdings],
+            "holdings": [(h.ticker, h.quantity, h.avg_price, h.current_price) for h in portfolio.holdings],
             "benchmark": benchmark_choice,
         },
         sort_keys=True,
@@ -203,6 +202,10 @@ if _needs_compute:
         portfolio.holdings = [h for h in portfolio.holdings if h.ticker in prices.columns]
         st.warning(f"Could not fetch prices for: {', '.join(failed)}. These holdings are excluded.")
 
+    if not portfolio.holdings:
+        st.error("All holdings failed to fetch. No price data available for analysis.")
+        st.stop()
+
     # Validate portfolio (now that current_price is set)
     validation_warnings = validate_portfolio(portfolio)
     for w in validation_warnings:
@@ -225,7 +228,7 @@ if _needs_compute:
                 logger.warning("Benchmark fetch failed: {e}", e=e)
                 benchmark_prices = pd.Series(dtype=float)
 
-        benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty else None
+        benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty and len(benchmark_prices) > 1 else None
         benchmark_cum = (
             (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
         )
@@ -347,10 +350,13 @@ if _needs_compute:
             var_95 = risk.var_95_daily if hasattr(risk, "var_95_daily") else None
             var_99 = risk.var_99_daily if hasattr(risk, "var_99_daily") else None
             if var_95 is not None and not portfolio_returns.empty:
-                var_backtest = backtest_var(
+                from engine.backtesting import kupiec_pof
+                daily_var_thresholds = np.percentile(portfolio_returns.values.flatten(), 5)
+                var_backtest = {"95%": kupiec_pof(
                     portfolio_returns.values.flatten(),
-                    forecasts={"95%": var_95 * np.ones(len(portfolio_returns))},
-                )
+                    daily_var_thresholds,
+                    confidence=0.95,
+                )}
         except Exception as e:
             logger.warning("VaR backtest failed: {e}", e=e)
 
@@ -416,23 +422,23 @@ if _needs_compute:
     st.session_state._report_changed = True
 else:
     cache = st.session_state._cache
-    prices = cache["prices"]
-    portfolio_returns = cache["portfolio_returns"]
-    portfolio_cum = cache["portfolio_cum"]
-    benchmark_returns = cache["benchmark_returns"]
-    benchmark_cum = cache["benchmark_cum"]
-    raw_corr = cache["raw_corr"]
-    denoised_corr = cache["denoised_corr"]
-    mc_paths = cache["mc_paths"]
-    stock_betas = cache["stock_betas"]
-    scenarios = cache["scenarios"]
-    rebalance = cache["rebalance"]
-    risk = cache["risk"]
-    sector = cache["sector"]
-    benchmark = cache["benchmark"]
-    opt_result = cache["opt_result"]
-    mc_result = cache["mc_result"]
-    regime_result = cache["regime_result"]
+    prices = cache.get("prices", pd.DataFrame())
+    portfolio_returns = cache.get("portfolio_returns", pd.Series(dtype=float))
+    portfolio_cum = cache.get("portfolio_cum", pd.Series(dtype=float))
+    benchmark_returns = cache.get("benchmark_returns")
+    benchmark_cum = cache.get("benchmark_cum", pd.Series(dtype=float))
+    raw_corr = cache.get("raw_corr", pd.DataFrame())
+    denoised_corr = cache.get("denoised_corr")
+    mc_paths = cache.get("mc_paths")
+    stock_betas = cache.get("stock_betas", {})
+    scenarios = cache.get("scenarios", [])
+    rebalance = cache.get("rebalance")
+    risk = cache.get("risk")
+    sector = cache.get("sector")
+    benchmark = cache.get("benchmark")
+    opt_result = cache.get("opt_result")
+    mc_result = cache.get("mc_result")
+    regime_result = cache.get("regime_result")
     factor_report = cache.get("factor_report")
     macro_drivers = cache.get("macro_drivers")
     macro_scenarios = cache.get("macro_scenarios")

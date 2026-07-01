@@ -2,7 +2,7 @@
 Price data acquisition with multi-tier caching.
 
 Cache tiers:
-  L1: @lru_cache (in-memory, per-process)
+  L1: manual dict (in-memory, per-process, no-None policy)
   L2: diskcache   (on-disk, cross-session)
   L3: nselib (primary) / yfinance (fallback)
 
@@ -12,19 +12,17 @@ Benchmark indices and tickers unavailable via nselib fall back to yfinance.
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import lru_cache
 
 import pandas as pd
+
 try:
     from loguru import logger
 except ImportError:
-    import logging
-    import functools
-
     _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
 
     def _loguru_compat(level):
@@ -55,6 +53,8 @@ def _isnan(v: float) -> bool:
 
 
 _DEFAULT_PERIOD = "1y"
+
+_L1_CACHE: dict[tuple[str, str], pd.DataFrame] = {}
 
 _L2_CACHE = None
 _L2_CACHE_LOCK = threading.Lock()
@@ -91,6 +91,7 @@ def _fetch_via_nselib(ticker: str, period: str = "1Y") -> pd.DataFrame | None:
         return None
     try:
         clean = ticker.replace(".NS", "")
+        # TODO: nselib has no timeout param — can block indefinitely under load
         raw = capital_market.price_volume_data(symbol=clean, period=period)
         if raw is None or raw.empty:
             return None
@@ -137,16 +138,19 @@ def _fetch_with_retry(ticker: str, period: str) -> tuple[str, pd.DataFrame | Non
     return ticker, None
 
 
-@lru_cache(maxsize=64)
 def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
     """
-    Low-level cached fetch: L2 cache → nselib → yfinance.
+    Low-level cached fetch: L1 dict → L2 diskcache → nselib → yfinance.
     """
+    cache_key = (ticker, period)
+    if cache_key in _L1_CACHE:
+        return _L1_CACHE[cache_key]
+
     l2 = _get_l2_cache()
     cached_series = l2.get(ticker)
     if cached_series is not None and len(cached_series) > 0:
         min_points = {"1mo": 10, "3mo": 40, "6mo": 80, "1y": 180, "2y": 360}
-        if len(cached_series) >= min_points.get(period, 20):
+        if len(cached_series) >= min_points.get(period.lower(), 20):
             df = pd.DataFrame({"Close": cached_series})
             return df
         logger.debug(
@@ -176,6 +180,7 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
     if "Close" in df.columns:
         l2.set(ticker, df["Close"])
 
+    _L1_CACHE[cache_key] = df
     return df
 
 
@@ -210,7 +215,7 @@ def fetch_prices(
         return pd.DataFrame()
 
     if force_refresh:
-        _cached_fetch.cache_clear()
+        _L1_CACHE.clear()
         _get_l2_cache().clear_all()
         logger.info("Cache cleared (forced refresh)")
 
@@ -358,7 +363,7 @@ def get_stock_info(ticker: str) -> dict:
             "dividend_yield": info.get("dividendYield", 0),
         }
     except Exception:
-        return {"name": ticker, "sector": "Unknown"}
+        return {"name": ticker, "sector": "Unknown", "industry": "", "market_cap": 0, "pe_ratio": 0, "dividend_yield": 0}
 
 
 def list_available_benchmarks() -> dict[str, str]:
@@ -370,10 +375,9 @@ def list_available_benchmarks() -> dict[str, str]:
 
 def get_cache_stats() -> dict:
     """Get cache usage statistics."""
-    l1_info = _cached_fetch.cache_info()
     return {
-        "l1_hits": l1_info.hits,
-        "l1_misses": l1_info.misses,
-        "l1_currsize": l1_info.currsize,
-        "l1_maxsize": l1_info.maxsize,
+        "l1_hits": 0,
+        "l1_misses": 0,
+        "l1_currsize": len(_L1_CACHE),
+        "l1_maxsize": "manual (no max)",
     }
