@@ -212,15 +212,12 @@ def render_advanced_section(
             st.info("VaR backtest: no data available.")
 
         if garch_var:
-            st.metric("GARCH(1,1) VaR 95%", f"{garch_var.get('var_95', 0):.2%}")
-            st.metric("GARCH(1,1) VaR 99%", f"{garch_var.get('var_99', 0):.2%}")
+            st.metric("GARCH(1,1) VaR 95%", f"{garch_var.var_95:.2%}")
+            st.metric("GARCH(1,1) VaR 99%", f"{garch_var.var_99:.2%}")
 
         if pelve:
-            pv = pelve.get("pelve", 0)
-            eps = pelve.get("epsilon", 0.01)
-            interp = pelve.get("interpretation", "")
-            st.metric(f"PELVE (ε={eps})", f"{pv:.2f}")
-            st.caption(interp)
+            st.metric(f"PELVE (ε={pelve.epsilon})", f"{pelve.pelve:.2f}")
+            st.caption(pelve.interpretation)
 
         if opt_advanced and opt_advanced.get("status") == "ok":
             w = opt_advanced.get("weights", {})
