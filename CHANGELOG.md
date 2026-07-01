@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.10.0 (2026-07-01)
+
+### Fixed
+
+- **Column/weight ordering misalignment** (`data/prices.py`) — `fetch_prices()` built the price DataFrame from `as_completed()` dict order, which is arbitrary (completion order of parallel fetches). The `weight` property returns weights in holdings order. All downstream consumers (`compute_portfolio_returns`, `compute_stock_risk_attribution`, `compute_risk_metrics`) aligned weights by position with prices columns, producing silently wrong portfolio returns and risk attribution. Fixed by reindexing prices columns to match input holdings order after construction.
+- **`rolling_volatility` NaN series** (`engine/risk.py`) — when `portfolio_returns` had fewer data points than the rolling window (21), returned an all-NaN Series that rendered as an empty chart with no indication. Now returns an empty Series for insufficient data.
+- **`cvar_95` NaN propagation** (`engine/risk.py`) — `mean()` on an empty mask slice (all returns NaN) propagated NaN into all downstream displays. Now returns `0.0` for empty tails.
+- **`_cache` missing on fresh session** (`app.py`) — St.session_state key `_cache` was not initialized in the session-state block. If the very first compute cycle crashed before writing the cache dict, the subsequent (or parallel) access on the cache-hit path would raise `AttributeError`. Now initialized to `None`.
+- **Redundant `compute_correlation_matrix` on cache-hit path** (`app.py`) — when `raw_corr` was empty but `prices` had data, the fallback called `compute_correlation_matrix` on every render, even though it was already computed once. Now avoids the call when `prices` is also empty.
+
 ## v0.9.0 (2026-07-01)
 
 ### Changed

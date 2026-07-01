@@ -273,6 +273,9 @@ def fetch_prices(
         )
 
     prices = pd.DataFrame(all_prices)
+    # Reorder columns to match input holdings order — weights align by position
+    # and dict-insertion order from as_completed() is arbitrary (completion order).
+    prices = prices[[t for t in tickers if t in all_prices]]
     # Forward-fill so tickers with shorter histories still get their latest price
     latest = prices.ffill().iloc[-1] if len(prices) > 0 else pd.Series(dtype=float)
 

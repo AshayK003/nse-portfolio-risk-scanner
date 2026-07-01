@@ -109,6 +109,8 @@ if "force_refresh_cb" not in st.session_state:
     st.session_state.force_refresh_cb = False
 if "force_refresh" not in st.session_state:
     st.session_state.force_refresh = False
+if "_cache" not in st.session_state:
+    st.session_state._cache = None
 
 # ── Step 1: Upload or use existing portfolio ──
 portfolio = render_upload_tab()
@@ -626,7 +628,9 @@ with tabs[3]:
             key="drawdown_chart",
         )
     with col2:
-        corr = raw_corr if not raw_corr.empty else compute_correlation_matrix(prices)
+        corr = raw_corr if not raw_corr.empty else (
+            compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
+        )
         st.plotly_chart(
             correlation_heatmap(corr),
             use_container_width=True,

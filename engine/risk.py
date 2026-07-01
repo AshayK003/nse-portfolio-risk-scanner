@@ -98,7 +98,8 @@ def compute_risk_metrics(
     var_99 = np.percentile(portfolio_returns, 1) * 100
 
     # --- Conditional VaR (Expected Shortfall) ---
-    cvar_95 = portfolio_returns[portfolio_returns <= np.percentile(portfolio_returns, 5)].mean() * 100
+    tail = portfolio_returns[portfolio_returns <= np.percentile(portfolio_returns, 5)]
+    cvar_95 = tail.mean() * 100 if len(tail) > 0 else 0.0
 
     # --- Max Drawdown ---
     cum_returns = (1 + portfolio_returns).cumprod()
@@ -251,7 +252,9 @@ def compute_correlation_matrix(prices: pd.DataFrame) -> pd.DataFrame:
 
 
 def rolling_volatility(returns: pd.Series, window: int = 21) -> pd.Series:
-    """21-day rolling annualized volatility."""
+    """21-day rolling annualized volatility. Returns empty Series if insufficient data."""
+    if len(returns) < window:
+        return pd.Series(dtype=float)
     return returns.rolling(window).std() * np.sqrt(252) * 100
 
 
