@@ -61,13 +61,21 @@ def generate_recommendations(
     macro_drivers=None,
     corr_matrix=None,
     regime_result=None,
+    profile=None,
 ) -> RecommendationReport:
     """
     Generate actionable portfolio recommendations based on the full analysis.
 
     Uses causal reasoning: each recommendation traces back to a specific
     risk factor and explains why the action helps and what trade-off it entails.
+
+    Args:
+        profile: Risk appetite profile controlling recommendation thresholds.
     """
+    from engine.__init__ import MODERATE, RiskProfile
+
+    if profile is None:
+        profile = MODERATE
     recs = []
 
     # ── Concentration risk → Diversify / Reduce ──
@@ -76,9 +84,9 @@ def generate_recommendations(
             sec_pct = sector.sector_allocation.get(sec, 0)
             recs.append(
                 Recommendation(
-                    action=ActionType.REDUCE if sec_pct > 35 else ActionType.DIVERSIFY,
+                    action=ActionType.REDUCE if sec_pct > profile.concentration_threshold else ActionType.DIVERSIFY,
                     target=sec,
-                    urgency="immediate" if sec_pct > 40 else "near-term",
+                    urgency="immediate" if sec_pct > profile.concentration_threshold * 1.15 else "near-term",
                     confidence=0.85,
                     expected_risk_reduction=round(sec_pct * 0.08, 1),
                     reasoning=f"{sec} occupies {sec_pct:.1f}% of your portfolio, well above the 20% prudent limit. "
@@ -92,7 +100,7 @@ def generate_recommendations(
             )
 
     # ── High beta → Hedge / Reduce ──
-    if risk.beta > 1.3:
+    if risk.beta > profile.beta_threshold:
         recs.append(
             Recommendation(
                 action=ActionType.HEDGE,
@@ -123,7 +131,7 @@ def generate_recommendations(
         )
 
     # ── Poor risk-adjusted returns → Rebalance ──
-    if risk.sharpe < 0.5:
+    if risk.sharpe < profile.sharpe_threshold:
         recs.append(
             Recommendation(
                 action=ActionType.REBALANCE,
@@ -141,12 +149,12 @@ def generate_recommendations(
         )
 
     # ── Deep drawdown → Monitor / Hedge ──
-    if abs(risk.max_drawdown) > 20:
+    if abs(risk.max_drawdown) > profile.drawdown_threshold:
         recs.append(
             Recommendation(
                 action=ActionType.MONITOR,
                 target="PORTFOLIO",
-                urgency="immediate" if abs(risk.max_drawdown) > 30 else "near-term",
+                urgency="immediate" if abs(risk.max_drawdown) > profile.drawdown_threshold * 1.5 else "near-term",
                 confidence=0.9,
                 expected_risk_reduction=0.0,
                 reasoning=f"Maximum drawdown of {risk.max_drawdown:.1f}% ({risk.max_drawdown_start} to {risk.max_drawdown_end}) "
@@ -158,7 +166,7 @@ def generate_recommendations(
         )
 
     # ── High tail risk → Hedge ──
-    if abs(risk.cvar_95) > 0.03:
+    if abs(risk.cvar_95) > profile.cvar_threshold:
         recs.append(
             Recommendation(
                 action=ActionType.HEDGE,
@@ -235,12 +243,12 @@ def generate_recommendations(
     if portfolio.holdings:
         max_weight = max(portfolio.weight)
         max_holding = max(portfolio.holdings, key=lambda h: h.current_value)
-        if max_weight > 0.25:
+        if max_weight > profile.max_single_weight:
             recs.append(
                 Recommendation(
                     action=ActionType.REDUCE,
                     target=max_holding.ticker.replace(".NS", ""),
-                    urgency="near-term" if max_weight > 0.35 else "monitor",
+                    urgency="near-term" if max_weight > profile.max_single_weight * 1.4 else "monitor",
                     confidence=0.8,
                     expected_risk_reduction=round(max_weight * 4, 1),
                     reasoning=f"{max_holding.ticker.replace('.NS', '')} constitutes {max_weight * 100:.1f}% of the portfolio. "
@@ -262,7 +270,7 @@ def generate_recommendations(
 
     summary_parts = []
     if recs:
-        summary_parts.append(f"Portfolio analysis identified {len(recs)} actionable recommendations.")
+        summary_parts.append(f"Portfolio analysis identified {len(recs)} actionable recommendations based on a **{profile.name}** risk profile.")
         if priority:
             summary_parts.append(
                 f"{len(priority)} require immediate attention: "

@@ -18,6 +18,7 @@ from engine._log import logger
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
+from engine.__init__ import RISK_PROFILES
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
 from engine.fundamentals import compute_all_zscores
@@ -148,11 +149,14 @@ else:
     st.session_state.force_refresh = False
 
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
+risk_profile_key = st.session_state.get("risk_profile", "moderate")
+profile = RISK_PROFILES[risk_profile_key]
 _input_hash = hashlib.sha256(
     json.dumps(
         {
             "holdings": [(h.ticker, h.quantity, h.avg_price, h.current_price) for h in portfolio.holdings],
             "benchmark": benchmark_choice,
+            "risk_profile": risk_profile_key,
         },
         sort_keys=True,
     ).encode(),
@@ -232,7 +236,7 @@ if _needs_compute:
         raw_corr = compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
 
         # HRP Optimization
-        opt_result = optimize_hrp(prices.pct_change().dropna()) if len(weights) >= 2 else None
+        opt_result = optimize_hrp(prices.pct_change().dropna(), max_single_weight=profile.max_single_weight) if len(weights) >= 2 else None
 
         # Monte Carlo simulation (stats + chart paths from single run)
         mc_data = (
@@ -265,7 +269,7 @@ if _needs_compute:
                 stock_betas = {c: 1.0 for c in rets.columns}
 
         scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
-        rebalance = suggest_rebalance(portfolio.holdings) if portfolio.holding_count >= 1 else None
+        rebalance = suggest_rebalance(portfolio.holdings, profile=profile) if portfolio.holding_count >= 1 else None
 
         # ── v0.7.0 Intelligence modules (each guarded so one failure doesn't kill the rest) ──
 
@@ -313,6 +317,7 @@ if _needs_compute:
                 macro_drivers=macro_drivers,
                 corr_matrix=raw_corr,
                 regime_result=regime_result,
+                profile=profile,
             )
         except Exception as e:
             logger.warning("Recommendations failed: {e}", e=e)

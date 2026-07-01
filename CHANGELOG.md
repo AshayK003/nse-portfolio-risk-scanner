@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.11.0 (2026-07-01)
+
+### Added
+
+- **Risk Profile selector** (sidebar) — choose Conservative, Moderate, or Aggressive. The profile controls 7 thresholds that affect optimization, recommendations, and rebalancing: max single-stock weight, beta threshold, Sharpe ratio threshold, drawdown threshold, CVaR threshold, and concentration threshold. Changing profile recalculates all downstream metrics automatically.
+- **Conservative** profile — uses Minimum Volatility optimization, caps holdings at 25%, triggers sector REDUCE at 25% concentration, aims for Sharpe > 0.8 and beta < 1.0
+- **Moderate** profile — uses HRP optimization, caps holdings at 35%, triggers sector REDUCE at 35% concentration (default)
+- **Aggressive** profile — uses Maximum Sharpe optimization, caps holdings at 50%, triggers sector REDUCE at 50% concentration, tolerates beta up to 1.8
+- **Profile-aware recommendations** — `generate_recommendations()` now accepts a `RiskProfile` parameter that replaces all 6 hardcoded thresholds with the profile's values
+- **Profile-aware optimization** — `optimize_hrp()`, `optimize_min_volatility()`, `optimize_max_sharpe()` accept `max_single_weight`; `suggest_rebalance()` accepts a `profile`
+- **4 profile-specific tests** — verify Conservative triggers REDUCE sooner, Moderate uses DIVERSIFY at medium concentration, Aggressive tolerates higher beta, and profile name appears in summary text
+
 ## v0.10.0 (2026-07-01)
 
 ### Fixed

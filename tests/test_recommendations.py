@@ -1,6 +1,7 @@
 """Tests for the portfolio recommendations engine."""
 
 from engine import BenchmarkComparison, Holding, Portfolio, RiskMetrics, SectorExposure
+from engine.__init__ import AGGRESSIVE, CONSERVATIVE, MODERATE
 from engine.recommendations import (
     ActionType,
     RecommendationReport,
@@ -79,6 +80,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         assert isinstance(result, RecommendationReport)
 
@@ -88,6 +90,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         assert len(result.recommendations) > 0
 
@@ -97,6 +100,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(concentrated=["Banking"]),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         banking_recs = [r for r in result.recommendations if r.target == "Banking"]
         assert len(banking_recs) > 0
@@ -108,6 +112,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(concentrated=[]),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         hedge_recs = [r for r in result.recommendations if r.action == ActionType.HEDGE]
         assert len(hedge_recs) > 0
@@ -118,6 +123,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(concentrated=[]),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         rebal_recs = [r for r in result.recommendations if r.action == ActionType.REBALANCE]
         assert len(rebal_recs) > 0
@@ -128,6 +134,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         for rec in result.recommendations:
             assert len(rec.trade_off) > 0
@@ -139,6 +146,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(concentrated=["Banking"]),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         assert len(result.priority_actions) > 0
 
@@ -148,6 +156,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         assert len(result.summary) > 0
 
@@ -157,6 +166,7 @@ class TestGenerateRecommendations:
             sector=self._make_sector(),
             benchmark=self._make_benchmark(),
             portfolio=self._make_portfolio(),
+            profile=MODERATE,
         )
         assert result.risk_reduction_potential >= 0
 
@@ -167,3 +177,66 @@ class TestGenerateRecommendations:
         assert ActionType.ACCUMULATE.value == "accumulate"
         assert ActionType.MONITOR.value == "monitor"
         assert ActionType.REBALANCE.value == "rebalance"
+
+    # ── Risk Profile specific tests ──
+
+    def test_conservative_triggers_reduce_sooner(self):
+        """Conservative threshold is 25%, so Banking at 30% triggers REDUCE."""
+        sector = self._make_sector(concentrated=["Banking"])
+        sector.sector_allocation = {"Banking": 30.0, "IT": 35.0, "Oil & Gas": 35.0}
+        result = generate_recommendations(
+            risk=self._make_risk(),
+            sector=sector,
+            benchmark=self._make_benchmark(),
+            portfolio=self._make_portfolio(),
+            profile=CONSERVATIVE,
+        )
+        banking_recs = [r for r in result.recommendations if r.target == "Banking"]
+        assert len(banking_recs) > 0
+        assert banking_recs[0].action == ActionType.REDUCE
+
+    def test_moderate_does_not_reduce_30pct(self):
+        """Moderate threshold is 35%, so Banking at 30% should DIVERSIFY not REDUCE."""
+        sector = self._make_sector(concentrated=["Banking"])
+        sector.sector_allocation = {"Banking": 30.0, "IT": 35.0, "Oil & Gas": 35.0}
+        result = generate_recommendations(
+            risk=self._make_risk(),
+            sector=sector,
+            benchmark=self._make_benchmark(),
+            portfolio=self._make_portfolio(),
+            profile=MODERATE,
+        )
+        banking_recs = [r for r in result.recommendations if r.target == "Banking"]
+        assert len(banking_recs) > 0
+        assert banking_recs[0].action == ActionType.DIVERSIFY
+
+    def test_aggressive_skips_hedge_at_beta_1_5(self):
+        """Aggressive beta_threshold is 1.8, so beta=1.5 should NOT trigger HEDGE."""
+        result = generate_recommendations(
+            risk=self._make_risk(beta=1.5),
+            sector=self._make_sector(concentrated=[]),
+            benchmark=self._make_benchmark(),
+            portfolio=self._make_portfolio(),
+            profile=AGGRESSIVE,
+        )
+        hedge_recs = [r for r in result.recommendations if r.action == ActionType.HEDGE]
+        assert len(hedge_recs) == 0
+
+    def test_profile_appears_in_summary(self):
+        """Summary should mention the selected profile name."""
+        result = generate_recommendations(
+            risk=self._make_risk(),
+            sector=self._make_sector(),
+            benchmark=self._make_benchmark(),
+            portfolio=self._make_portfolio(),
+            profile=CONSERVATIVE,
+        )
+        assert "Conservative" in result.summary
+        result = generate_recommendations(
+            risk=self._make_risk(),
+            sector=self._make_sector(),
+            benchmark=self._make_benchmark(),
+            portfolio=self._make_portfolio(),
+            profile=AGGRESSIVE,
+        )
+        assert "Aggressive" in result.summary

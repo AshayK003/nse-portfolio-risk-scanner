@@ -108,7 +108,7 @@ def _ledoit_wolf_cov(values: np.ndarray) -> np.ndarray:
     return delta * target + (1.0 - delta) * sample
 
 
-def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
+def optimize_hrp(returns: pd.DataFrame, max_single_weight: float = 0.35) -> OptimizationResult:
     """
     Hierarchical Risk Parity (Lopez de Prado 2016).
 
@@ -160,7 +160,7 @@ def optimize_hrp(returns: pd.DataFrame) -> OptimizationResult:
     ordered = returns.values[:, _order]
     cov = _ledoit_wolf_cov(ordered)
     weights = _recursive_bisection(cov)
-    weights = _cap_max_weight(weights)
+    weights = _cap_max_weight(weights, max_single_weight)
 
     result = dict(zip(ordered_tickers, weights, strict=False))
     return OptimizationResult(method="hrp", weights=result)
@@ -208,7 +208,7 @@ def _inverse_variance(cov: np.ndarray) -> np.ndarray:
     return inv_diag / inv_diag.sum()
 
 
-def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065) -> OptimizationResult:
+def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35) -> OptimizationResult:
     """Minimum volatility portfolio (SciPy constrained optimization)."""
     from scipy.optimize import minimize
 
@@ -227,7 +227,7 @@ def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065
     result = minimize(portfolio_vol, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
-    w = _cap_max_weight(w.tolist())
+    w = _cap_max_weight(w.tolist(), max_single_weight)
     w = np.array(w) / sum(w)
     port_ret = w @ (returns.mean().values * 252)
     port_vol = portfolio_vol(w)
@@ -242,7 +242,7 @@ def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065
     )
 
 
-def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065) -> OptimizationResult:
+def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35) -> OptimizationResult:
     """Maximum Sharpe ratio portfolio."""
     from scipy.optimize import minimize
 
@@ -265,7 +265,7 @@ def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065) ->
     result = minimize(neg_sharpe, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
-    w = _cap_max_weight(w.tolist())
+    w = _cap_max_weight(w.tolist(), max_single_weight)
     w = np.array(w) / sum(w)
     port_ret = w @ mu
     port_vol = np.sqrt(w @ cov @ w)
@@ -291,12 +291,14 @@ def suggest_rebalance(
     holdings: list,
     target_method: str = "equal_weight",
     custom_targets: dict[str, float] | None = None,
+    profile=None,
 ) -> RebalanceSuggestion:
     """
     Suggest trades to reach target allocation.
 
     target_method: "equal_weight" splits evenly, "current_cap" keeps current weights.
     custom_targets: mapping of ticker -> target weight fraction.
+    profile: RiskProfile for drift tolerance.
     """
     total_value = sum(h.current_value for h in holdings)
     if total_value <= 0:

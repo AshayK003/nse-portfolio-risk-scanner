@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from engine import Holding, Portfolio
+from engine.__init__ import RISK_PROFILES
 from engine.portfolio import parse_portfolio_csv
 from ui.icons import (
     UPLOAD,
@@ -58,6 +59,29 @@ def render_sidebar():
         st.sidebar.caption("Storage module not available")
     except Exception as e:
         st.sidebar.error(f"Could not load portfolios: {e}")
+
+    # ── Risk Profile Selector ──
+    st.sidebar.divider()
+    st.sidebar.subheader("Risk Profile")
+    profile_options = {p.name: p.name.lower() for p in RISK_PROFILES.values()}
+    if "risk_profile" not in st.session_state:
+        st.session_state.risk_profile = "moderate"
+    current_idx = list(profile_options.values()).index(st.session_state.risk_profile)
+    selected_label = st.sidebar.selectbox(
+        "Select your risk appetite",
+        options=list(profile_options.keys()),
+        index=current_idx,
+        key="risk_profile_selector",
+    )
+    new_key = profile_options[selected_label]
+    if new_key != st.session_state.risk_profile:
+        st.session_state.risk_profile = new_key
+        st.rerun()
+    profile = RISK_PROFILES[st.session_state.risk_profile]
+    st.sidebar.caption(
+        f"**{profile.name}** → {profile.method.replace('_', ' ').title()}, "
+        f"Max {profile.max_single_weight * 100:.0f}% per stock"
+    )
 
 
 def render_manual_entry() -> list[Holding]:
