@@ -500,16 +500,19 @@ def _build_column_map(fieldnames: list[str]) -> tuple[dict[str, str], dict[str, 
 
 def _parse_float(s: str) -> float:
     """Parse a float from a string, handling Indian number format and common symbols."""
-    s = s.strip().lstrip("+")
-    if not s:
+    try:
+        s = s.strip().lstrip("+")
+        if not s:
+            return 0.0
+        # Handle Indian format: 1,23,456.78 -> 123456.78
+        s = s.replace(",", "")
+        # Strip currency symbols, percentage signs, and whitespace
+        for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"'):
+            s = s.replace(sym, "")
+        s = s.strip()
+        return float(s) if s else 0.0
+    except (ValueError, TypeError):
         return 0.0
-    # Handle Indian format: 1,23,456.78 -> 123456.78
-    s = s.replace(",", "")
-    # Strip currency symbols, percentage signs, and whitespace
-    for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"'):
-        s = s.replace(sym, "")
-    s = s.strip()
-    return float(s) if s else 0.0
 
 
 def portfolio_from_dict(data: dict) -> Portfolio:

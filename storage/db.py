@@ -8,7 +8,6 @@ Schema Management:
 
 Tables:
   - saved_portfolios: Named portfolio snapshots
-  - price_cache: Cross-session price data (TTL-managed)
   - analysis_runs: History of analysis runs for trend tracking
 """
 
@@ -17,9 +16,9 @@ from __future__ import annotations
 import os
 import sqlite3
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from .models import AnalysisRun, CachedPrice, SavedPortfolio
+from .models import AnalysisRun, SavedPortfolio
 
 # Default database path (relative to project root)
 _DEFAULT_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
@@ -92,17 +91,6 @@ def _ensure_schema(conn: sqlite3.Connection):
             total_current REAL DEFAULT 0,
             total_pnl REAL DEFAULT 0
         );
-
-        CREATE TABLE IF NOT EXISTS price_cache (
-            ticker TEXT NOT NULL,
-            date TEXT NOT NULL,
-            close REAL NOT NULL,
-            fetched_at TEXT NOT NULL,
-            PRIMARY KEY (ticker, date)
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_price_cache_ticker ON price_cache(ticker);
-        CREATE INDEX IF NOT EXISTS idx_price_cache_fetched ON price_cache(fetched_at);
 
         CREATE TABLE IF NOT EXISTS analysis_runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -247,52 +235,3 @@ def list_recent_analyses(limit: int = 10) -> list[AnalysisRun]:
     ).fetchall()
     return [AnalysisRun(**dict(r)) for r in rows]
 
-
-# ── Price Cache ──
-
-
-def get_cached_prices(ticker: str, max_age_hours: int = 24) -> list[CachedPrice] | None:
-    """Get cached price data for a ticker if within TTL."""
-    conn = get_connection()
-    cutoff = (datetime.now() - timedelta(hours=max_age_hours)).isoformat()
-    rows = conn.execute(
-        "SELECT ticker, date, close FROM price_cache WHERE ticker = ? AND fetched_at > ? ORDER BY date",
-        (ticker, cutoff),
-    ).fetchall()
-    if not rows:
-        return None
-    return [CachedPrice(**dict(r)) for r in rows]
-
-
-def save_cached_prices(ticker: str, prices: list[CachedPrice]):
-    """Save price data for a ticker (upsert)."""
-    conn = get_connection()
-    now = datetime.now().isoformat()
-    conn.executemany(
-        """INSERT OR REPLACE INTO price_cache (ticker, date, close, fetched_at)
-           VALUES (?, ?, ?, ?)""",
-        [(p.ticker, p.date, p.close, now) for p in prices],
-    )
-    conn.commit()
-
-
-def clear_stale_cache(max_age_hours: int = 48):
-    """Remove cached entries older than max_age_hours."""
-    conn = get_connection()
-    cutoff = (datetime.now() - timedelta(hours=max_age_hours)).isoformat()
-    conn.execute("DELETE FROM price_cache WHERE fetched_at < ?", (cutoff,))
-    conn.commit()
-
-
-def clear_ticker_cache(ticker: str):
-    """Remove cached prices for a specific ticker (force refresh)."""
-    conn = get_connection()
-    conn.execute("DELETE FROM price_cache WHERE ticker = ?", (ticker,))
-    conn.commit()
-
-
-def clear_all_cache():
-    """Remove all cached price data."""
-    conn = get_connection()
-    conn.execute("DELETE FROM price_cache")
-    conn.commit()

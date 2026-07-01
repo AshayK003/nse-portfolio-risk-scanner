@@ -13,7 +13,29 @@ import json
 import numpy as np
 import pandas as pd
 import streamlit as st
-from loguru import logger
+try:
+    from loguru import logger
+except ImportError:
+    import logging
+    import functools
+
+    _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
+
+    def _loguru_compat(level):
+        """Wrapper to handle loguru-style {var} kwargs in stdlib logging."""
+
+        def wrapper(msg, *args, **kwargs):
+            if kwargs:
+                msg = msg.format(**kwargs)
+            _FALLBACK_LOGGER.log(level, msg, *args)
+
+        return wrapper
+
+    logger = logging.getLogger("nse_risk_scanner")
+    logger.info = _loguru_compat(logging.INFO)
+    logger.warning = _loguru_compat(logging.WARNING)
+    logger.debug = _loguru_compat(logging.DEBUG)
+    logger.error = _loguru_compat(logging.ERROR)
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport

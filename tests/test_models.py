@@ -148,11 +148,3 @@ class TestSavedPortfolioDefaults:
         assert sp.name == ""
         assert sp.holdings_json == ""
         assert sp.total_invested == 0.0
-
-    def test_cached_price_defaults(self):
-        from storage.models import CachedPrice
-
-        cp = CachedPrice()
-        assert cp.ticker == ""
-        assert cp.date == ""
-        assert cp.close == 0.0

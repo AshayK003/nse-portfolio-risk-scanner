@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.7.4 (2026-07-01)
+
+### Fixed
+
+- **Pyproject.toml version frozen at 0.2.0** — bumped to 0.7.4 to match actual release state (`pyproject.toml:7`).
+- **Loguru as hard import blocking test collection** — both `data/prices.py` and `app.py` now guard the loguru import with a fallback to stdlib logging. A wrapper layer handles loguru-style `{var}` keyword formatting so all logger calls work without loguru installed.
+- **`_get_l2_cache()` race condition** — added double-checked locking with `threading.Lock()` to prevent concurrent threads from creating separate cache instances on first parallel access (`data/prices.py:34-35,48-56`).
+- **`_parse_float()` crash on unexpected CSV input** — wrapped `float(s)` in `try/except (ValueError, TypeError)` returning `0.0` on unparseable values (`engine/portfolio.py:501-516`).
+- **Streamlit Cloud deployment missing config** — added `.streamlit/config.toml` with `headless=true`.
+
+### Removed
+
+- **Dead SQLite `price_cache` table** — the `storage/db.py` schema, CRUD functions, and `CachedPrice` model were never called by the production data fetcher (which uses the diskcache-based L2 cache). Removed the table from `_ensure_schema()`, deleted `get_cached_prices()` / `save_cached_prices()` / `clear_stale_cache()` / `clear_ticker_cache()` / `clear_all_cache()`, and removed the `CachedPrice` dataclass. Corresponding `TestPriceCache` tests removed. 43 lines of dead code eliminated.
+
+### Chores
+
+- **Added `.ruff_cache/` to `.gitignore`** — prevents accidental commits of ruff's cache directory.
+- **Added docstring to `ui/__init__.py`** — empty file now has a one-line description, consistent with other package init files.
+- **Created `engineering_memory.md`** — internal reference for architecture decisions, cache hierarchy, bug-fix patterns, and trade-offs (gitignored, never committed).
+
 ## v0.7.3 (2026-06-30)
 
 ### Fixed

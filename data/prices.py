@@ -12,19 +12,43 @@ Benchmark indices and tickers unavailable via nselib fall back to yfinance.
 
 from __future__ import annotations
 
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 
 import pandas as pd
-from loguru import logger
+try:
+    from loguru import logger
+except ImportError:
+    import logging
+    import functools
+
+    _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
+
+    def _loguru_compat(level):
+        """Wrapper to handle loguru-style {var} kwargs in stdlib logging."""
+
+        def wrapper(msg, *args, **kwargs):
+            if kwargs:
+                msg = msg.format(**kwargs)
+            _FALLBACK_LOGGER.log(level, msg, *args)
+
+        return wrapper
+
+    logger = logging.getLogger("nse_risk_scanner")
+    logger.info = _loguru_compat(logging.INFO)
+    logger.warning = _loguru_compat(logging.WARNING)
+    logger.debug = _loguru_compat(logging.DEBUG)
+    logger.error = _loguru_compat(logging.ERROR)
 
 from engine import Holding
 
 _DEFAULT_PERIOD = "1y"
 
 _L2_CACHE = None
+_L2_CACHE_LOCK = threading.Lock()
 
 # Attempt to import nselib — optional dependency (install via `pip install nse-risk-scanner[nse]`)
 try:
@@ -40,9 +64,11 @@ except ImportError:
 def _get_l2_cache():
     global _L2_CACHE
     if _L2_CACHE is None:
-        from data.cache import PriceCache
+        with _L2_CACHE_LOCK:
+            if _L2_CACHE is None:
+                from data.cache import PriceCache
 
-        _L2_CACHE = PriceCache(ttl_hours=24)
+                _L2_CACHE = PriceCache(ttl_hours=24)
     return _L2_CACHE
 
 

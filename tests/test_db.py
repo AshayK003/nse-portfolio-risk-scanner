@@ -8,21 +8,16 @@ from __future__ import annotations
 import pytest
 
 from storage.db import (
-    clear_all_cache,
-    clear_stale_cache,
-    clear_ticker_cache,
     close_connection,
     delete_portfolio,
-    get_cached_prices,
     get_connection,
     list_recent_analyses,
     list_saved_portfolios,
     load_portfolio,
     save_analysis_run,
-    save_cached_prices,
     save_portfolio,
 )
-from storage.models import AnalysisRun, CachedPrice, SavedPortfolio
+from storage.models import AnalysisRun, SavedPortfolio
 
 
 @pytest.fixture(autouse=True)
@@ -51,7 +46,6 @@ class TestSchemaCreation:
         ).fetchall()
         table_names = {t["name"] for t in tables}
         assert "saved_portfolios" in table_names
-        assert "price_cache" in table_names
         assert "analysis_runs" in table_names
         assert "schema_version" in table_names
 
@@ -146,57 +140,3 @@ class TestAnalysisHistory:
         runs = list_recent_analyses(limit=3)
         assert len(runs) == 3
 
-
-class TestPriceCache:
-    def test_save_and_get(self, tmp_db):
-        prices = [
-            CachedPrice(ticker="RELIANCE.NS", date="2024-01-01", close=2500.0),
-            CachedPrice(ticker="RELIANCE.NS", date="2024-01-02", close=2510.0),
-        ]
-        save_cached_prices("RELIANCE.NS", prices)
-
-        result = get_cached_prices("RELIANCE.NS", max_age_hours=24)
-        assert result is not None
-        assert len(result) == 2
-        assert result[0].close == 2500.0
-
-    def test_get_expired_returns_none(self, tmp_db):
-        prices = [CachedPrice(ticker="OLD.NS", date="2024-01-01", close=100.0)]
-        save_cached_prices("OLD.NS", prices)
-
-        # max_age_hours=0 means everything is stale
-        result = get_cached_prices("OLD.NS", max_age_hours=0)
-        assert result is None
-
-    def test_clear_ticker_cache(self, tmp_db):
-        save_cached_prices("A.NS", [CachedPrice(ticker="A.NS", date="2024-01-01", close=100.0)])
-        save_cached_prices("B.NS", [CachedPrice(ticker="B.NS", date="2024-01-01", close=200.0)])
-
-        clear_ticker_cache("A.NS")
-
-        assert get_cached_prices("A.NS") is None
-        assert get_cached_prices("B.NS") is not None
-
-    def test_clear_all_cache(self, tmp_db):
-        save_cached_prices("A.NS", [CachedPrice(ticker="A.NS", date="2024-01-01", close=100.0)])
-        save_cached_prices("B.NS", [CachedPrice(ticker="B.NS", date="2024-01-01", close=200.0)])
-
-        clear_all_cache()
-
-        assert get_cached_prices("A.NS") is None
-        assert get_cached_prices("B.NS") is None
-
-    def test_upsert_behavior(self, tmp_db):
-        """Saving same ticker+date twice should upsert, not duplicate."""
-        save_cached_prices("X.NS", [CachedPrice(ticker="X.NS", date="2024-01-01", close=100.0)])
-        save_cached_prices("X.NS", [CachedPrice(ticker="X.NS", date="2024-01-01", close=150.0)])
-
-        result = get_cached_prices("X.NS")
-        assert result is not None
-        assert len(result) == 1
-        assert result[0].close == 150.0
-
-    def test_clear_stale_cache(self, tmp_db):
-        save_cached_prices("OLD.NS", [CachedPrice(ticker="OLD.NS", date="2024-01-01", close=100.0)])
-        clear_stale_cache(max_age_hours=0)  # everything is stale
-        assert get_cached_prices("OLD.NS") is None

@@ -44,15 +44,6 @@ class AnalysisRun:
     created_at: str = ""  # ISO datetime string
 
 
-@dataclass
-class CachedPrice:
-    """A cached price data entry for a single ticker on a single date."""
-
-    ticker: str = ""
-    date: str = ""
-    close: float = 0.0
-
-
 # ── Serialization helpers ──
 
 
