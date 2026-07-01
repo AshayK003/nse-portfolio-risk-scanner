@@ -52,6 +52,7 @@ from engine.regime import detect_regimes
 from engine.risk import (
     compute_correlation_matrix,
     compute_risk_metrics,
+    compute_stock_risk_attribution,
     denoise_correlation,
     monte_carlo_simulation,
     rolling_volatility,
@@ -79,6 +80,7 @@ from ui.dashboard import (
     render_risk_cards,
     render_scenario_section,
     render_sector_section,
+    render_stock_risk_table,
     render_stock_table,
 )
 from ui.export import render_export_section
@@ -432,101 +434,103 @@ with tabs[0]:
     with col2:
         rv = rolling_volatility(portfolio_returns)
         if len(rv) > 0:
-            st.subheader("Rolling 21-day Volatility")
-            st.line_chart(rv)
-    st.divider()
-    render_monte_carlo_section(mc_result)
-    if mc_paths is not None:
-        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
+            with st.expander("Rolling 21-day Volatility", expanded=False):
+                st.line_chart(rv)
 
-    # ── Institutional Intelligence (inline) ──
+    # ── Institutional Intelligence (collapsible) ──
     if institutional_scores:
         st.divider()
-        st.subheader("Institutional Risk Scores")
-        score_cols = st.columns(5)
-        score_labels = [
-            ("Overall Risk", institutional_scores.overall_risk_score, "#ef4444"),
-            ("Conviction", institutional_scores.conviction_score, "#22c55e"),
-            ("Stress", institutional_scores.portfolio_stress_score, "#f59e0b"),
-            ("Hidden Corr.", institutional_scores.hidden_correlation_score, "#a855f7"),
-            ("Tail Risk", institutional_scores.tail_risk_score, "#ec4899"),
-        ]
-        for col, (label, score, _color) in zip(score_cols, score_labels, strict=False):
-            with col:
-                st.metric(label, f"{score:.0f}/100")
-                st.progress(min(score / 100, 1.0))
+        with st.expander("Institutional Risk Scores & Factor Analysis", expanded=False):
+            score_cols = st.columns(5)
+            score_labels = [
+                ("Overall Risk", institutional_scores.overall_risk_score, "#ef4444"),
+                ("Conviction", institutional_scores.conviction_score, "#22c55e"),
+                ("Stress", institutional_scores.portfolio_stress_score, "#f59e0b"),
+                ("Hidden Corr.", institutional_scores.hidden_correlation_score, "#a855f7"),
+                ("Tail Risk", institutional_scores.tail_risk_score, "#ec4899"),
+            ]
+            for col, (label, score, _color) in zip(score_cols, score_labels, strict=False):
+                with col:
+                    st.metric(label, f"{score:.0f}/100")
+                    st.progress(min(score / 100, 1.0))
 
-        if institutional_scores.score_interpretation:
-            st.info(institutional_scores.score_interpretation)
+            if institutional_scores.score_interpretation:
+                st.info(institutional_scores.score_interpretation)
 
-        with st.expander("Risk Factor Breakdown", expanded=False):
-            if institutional_scores.risk_factors:
-                for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
-                    with st.expander(
-                        f"**{factor.name}** — Score: {factor.composite:.1f}/100", expanded=factor.composite > 20
-                    ):
-                        c1, c2, c3 = st.columns(3)
-                        c1.metric("Probability", f"{factor.probability:.0%}")
-                        c2.metric("Impact", f"{factor.impact:.0%}")
-                        c3.metric("Confidence", f"{factor.confidence:.0%}")
-                        st.caption(factor.reasoning)
+            with st.expander("Risk Factor Breakdown", expanded=False):
+                if institutional_scores.risk_factors:
+                    for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
+                        with st.expander(
+                            f"**{factor.name}** \u2014 Score: {factor.composite:.1f}/100",
+                            expanded=factor.composite > 20,
+                        ):
+                            c1, c2, c3 = st.columns(3)
+                            c1.metric("Probability", f"{factor.probability:.0%}")
+                            c2.metric("Impact", f"{factor.impact:.0%}")
+                            c3.metric("Confidence", f"{factor.confidence:.0%}")
+                            st.caption(factor.reasoning)
 
-        with st.expander("Top 5 Actionable Insights", expanded=False):
-            if institutional_scores.top_5_insights:
-                for i, insight in enumerate(institutional_scores.top_5_insights, 1):
-                    severity_color = (
-                        "#ef4444"
-                        if insight.composite > 30
-                        else "#f59e0b"
-                        if insight.composite > 15
-                        else "#22c55e"
-                    )
-                    st.markdown(
-                        f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {severity_color};"
-                        f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
-                        f"<strong>{i}. {insight.name}</strong> (Score: {insight.composite:.1f})<br/>"
-                        f"<span style='color:#9ca3af;font-size:0.85rem;'>{insight.reasoning}</span></div>",
-                        unsafe_allow_html=True,
-                    )
-
-        if factor_report:
-            with st.expander("Factor Risk Decomposition", expanded=False):
-                factor_cols = st.columns(2)
-                for i, factor in enumerate(factor_report.factors):
-                    col_idx = i % 2
-                    with factor_cols[col_idx]:
-                        st.metric(
-                            factor.name,
-                            f"{factor.risk_contribution_pct:.1f}%",
-                            help=f"Exposure: {factor.exposure:.3f}",
+            with st.expander("Top 5 Actionable Insights", expanded=False):
+                if institutional_scores.top_5_insights:
+                    for i, insight in enumerate(institutional_scores.top_5_insights, 1):
+                        severity_color = (
+                            "#ef4444"
+                            if insight.composite > 30
+                            else "#f59e0b"
+                            if insight.composite > 15
+                            else "#22c55e"
                         )
-                        st.caption(factor.description)
-                st.caption(
-                    f"Factor-explained risk: {factor_report.total_factor_risk_pct:.1f}% · Idiosyncratic: {factor_report.idiosyncratic_risk_pct:.1f}% · Dominant: {factor_report.dominant_factor}"
-                )
+                        st.markdown(
+                            f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {severity_color};"
+                            f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
+                            f"<strong>{i}. {insight.name}</strong> (Score: {insight.composite:.1f})<br/>"
+                            f"<span style='color:#9ca3af;font-size:0.85rem;'>{insight.reasoning}</span></div>",
+                            unsafe_allow_html=True,
+                        )
 
-    # ── Early Warnings (inline) ──
+            if factor_report:
+                with st.expander("Factor Risk Decomposition", expanded=False):
+                    factor_cols = st.columns(2)
+                    for i, factor in enumerate(factor_report.factors):
+                        col_idx = i % 2
+                        with factor_cols[col_idx]:
+                            st.metric(
+                                factor.name,
+                                f"{factor.risk_contribution_pct:.1f}%",
+                                help=f"Exposure: {factor.exposure:.3f}",
+                            )
+                            st.caption(factor.description)
+                    st.caption(
+                        f"Factor-explained risk: {factor_report.total_factor_risk_pct:.1f}% \u00b7 "
+                        f"Idiosyncratic: {factor_report.idiosyncratic_risk_pct:.1f}% \u00b7 "
+                        f"Dominant: {factor_report.dominant_factor}"
+                    )
+
+    # ── Early Warnings (collapsible) ──
     if early_warnings:
         st.divider()
-        st.subheader("Early Warning Signals")
-        level = early_warnings.overall_warning_level
-        st.caption(f"Overall level: **{level.upper()}** — {early_warnings.summary}")
+        with st.expander(
+            "Early Warning Signals",
+            expanded=early_warnings.overall_warning_level == "critical",
+        ):
+            level = early_warnings.overall_warning_level
+            st.caption(f"Overall level: **{level.upper()}** \u2014 {early_warnings.summary}")
 
-        if early_warnings.signals:
-            for sig in early_warnings.signals:
-                sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#3b82f6"}
-                sev_color = sev_colors.get(sig.severity.value, "#6b7280")
-                with st.expander(
-                    f"**{sig.name}** — {sig.severity.value.upper()}",
-                    expanded=sig.severity.value == "critical",
-                ):
-                    st.markdown(f"**{sig.description}**")
-                    st.info(f"**Why:** {sig.reasoning}")
-                    st.caption(f"**Suggested Action:** {sig.suggested_action}")
-                    if sig.affected_holdings:
-                        st.caption(f"Affected: {', '.join(sig.affected_holdings)}")
-        else:
-            st.success("No early-warning signals detected. Portfolio appears stable.")
+            if early_warnings.signals:
+                for sig in early_warnings.signals:
+                    sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#3b82f6"}
+                    sev_color = sev_colors.get(sig.severity.value, "#6b7280")
+                    with st.expander(
+                        f"**{sig.name}** \u2014 {sig.severity.value.upper()}",
+                        expanded=sig.severity.value == "critical",
+                    ):
+                        st.markdown(f"**{sig.description}**")
+                        st.info(f"**Why:** {sig.reasoning}")
+                        st.caption(f"**Suggested Action:** {sig.suggested_action}")
+                        if sig.affected_holdings:
+                            st.caption(f"Affected: {', '.join(sig.affected_holdings)}")
+            else:
+                st.success("No early-warning signals detected. Portfolio appears stable.")
 
 # ── Tab 1: Sector ──
 with tabs[1]:
@@ -574,9 +578,18 @@ with tabs[3]:
         with st.expander("Denoised Correlation (Marchenko-Pastur)"):
             st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True, key="corr_denoised")
 
+    st.divider()
+    render_monte_carlo_section(mc_result)
+    if mc_paths is not None:
+        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
+
 # ── Tab 4: Holdings ──
 with tabs[4]:
     render_stock_table(report.portfolio)
+    st.divider()
+    risk_attribution = compute_stock_risk_attribution(prices, weights, stock_betas)
+    if not risk_attribution.empty:
+        render_stock_risk_table(risk_attribution)
 
 # ── Tab 5: Scenarios (merged basic + macro + regime) ──
 with tabs[5]:

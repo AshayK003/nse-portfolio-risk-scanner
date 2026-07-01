@@ -235,3 +235,49 @@ class TestDenoiseCorrelation:
         corr = pd.DataFrame({"A": [1.0]})
         result = denoise_correlation(corr, 100)
         assert abs(result.iloc[0, 0] - 1.0) < 0.01
+
+
+class TestStockRiskAttribution:
+    def test_returns_correct_columns(self, sample_prices):
+        from engine.risk import compute_stock_risk_attribution
+
+        weights = [0.4, 0.3, 0.3]
+        df = compute_stock_risk_attribution(sample_prices, weights)
+        assert not df.empty
+        expected = {"Ticker", "Weight (%)", "Beta", "Ann. Vol (%)", "Avg Corr", "MRC", "Risk Contrib (%)", "VaR 95%"}
+        assert set(df.columns) >= expected
+        assert len(df) == 3
+
+    def test_weights_normalised(self, sample_prices):
+        from engine.risk import compute_stock_risk_attribution
+
+        weights = [40, 30, 30]  # not normalised
+        df = compute_stock_risk_attribution(sample_prices, weights)
+        assert not df.empty
+        total_weight = df["Weight (%)"].sum()
+        assert abs(total_weight - 100.0) < 1.0
+
+    def test_risk_contributions_sum_to_100(self, sample_prices):
+        from engine.risk import compute_stock_risk_attribution
+
+        weights = [0.4, 0.3, 0.3]
+        df = compute_stock_risk_attribution(sample_prices, weights)
+        assert not df.empty
+        total = df["Risk Contrib (%)"].sum()
+        assert abs(total - 100.0) < 1.0
+
+    def test_empty_returns_empty(self):
+        from engine.risk import compute_stock_risk_attribution
+
+        df = compute_stock_risk_attribution(pd.DataFrame(), [])
+        assert df.empty
+
+    def test_with_betas(self, sample_prices):
+        from engine.risk import compute_stock_risk_attribution
+
+        tickers = sample_prices.columns.tolist()
+        weights = [0.4, 0.3, 0.3]
+        betas = {t: 1.2 for t in tickers}
+        df = compute_stock_risk_attribution(sample_prices, weights, stock_betas=betas)
+        assert not df.empty
+        assert all(df["Beta"] == 1.2)

@@ -141,7 +141,7 @@ def render_stock_table(portfolio: Portfolio) -> None:
                 "Name": h.name,
                 "Qty": h.quantity,
                 "Avg Price": f"Rs {h.avg_price:,.2f}",
-                "Current": f"Rs {h.current_price:,.2f}" if h.current_price else "—",
+                "Current": f"Rs {h.current_price:,.2f}" if h.current_price else "\u2014",
                 "Invested": f"Rs {h.invested_value:,.0f}",
                 "P&L": f"Rs {h.pnl:+,.0f}",
                 "P&L %": f"{h.pnl_pct:+.1f}%",
@@ -149,6 +149,32 @@ def render_stock_table(portfolio: Portfolio) -> None:
         )
 
     st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+def render_stock_risk_table(risk_df: pd.DataFrame) -> None:
+    """Display per-stock risk attribution table."""
+    st.subheader("Stock Risk Attribution")
+    if risk_df.empty:
+        st.info("Risk attribution requires price data.")
+        return
+
+    def _highlight_risk(val: float) -> str:
+        if val > 25:
+            return "color: #ef4444; font-weight: 700"
+        if val > 15:
+            return "color: #f59e0b; font-weight: 600"
+        if val < 5:
+            return "color: #29c76a"
+        return ""
+
+    styled = risk_df.style.map(_highlight_risk, subset=["Risk Contrib (%)"])
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+
+    st.caption(
+        "**Risk Contrib %** \u2014 share of total portfolio risk attributed to each holding. "
+        "Higher means the stock contributes more to portfolio volatility. "
+        "**MRC** (Marginal Risk Contribution) \u2014 change in portfolio risk for a 1% point increase in weight."
+    )
 
 
 def _opt_reason(

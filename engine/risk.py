@@ -173,6 +173,74 @@ def compute_stock_risk(stock_returns: pd.Series) -> dict:
     }
 
 
+def compute_stock_risk_attribution(
+    prices: pd.DataFrame,
+    weights: list[float],
+    stock_betas: dict[str, float] | None = None,
+) -> pd.DataFrame:
+    """
+    Per-stock risk attribution using marginal contribution to risk (MCR).
+
+    Standard risk decomposition:
+    - Marginal Risk Contribution (MRC) = (Σw)ᵢ / σₚ
+    - Component Risk Contribution (CRC) = wᵢ × (Σw)ᵢ / σₚ
+    - % Risk Contribution = CRC / σₚ² × 100
+
+    Returns a DataFrame with columns:
+    Ticker, Weight (%), Beta, Ann. Vol (%), Avg Corr, MRC, Risk Contrib (%), VaR 95%
+    """
+    if prices.empty or not weights or len(prices.columns) != len(weights):
+        return pd.DataFrame()
+
+    returns = prices.pct_change().dropna()
+    if returns.empty or len(returns) < 5:
+        return pd.DataFrame()
+
+    w = np.array(weights, dtype=float)
+    if abs(w.sum() - 1.0) > 0.01 and w.sum() > 0:
+        w = w / w.sum()
+    elif w.sum() <= 0:
+        return pd.DataFrame()
+
+    tickers = prices.columns.tolist()
+    n = len(tickers)
+
+    # Annualised covariance matrix
+    cov = returns.cov() * 252
+    port_var = float(w @ cov @ w)
+    port_vol = np.sqrt(port_var) if port_var > 0 else 1e-10
+
+    # Marginal & component risk contribution
+    sigma_w = cov.values @ w
+    mrc = sigma_w / port_vol
+    crc = w * mrc
+    crc_pct = crc / crc.sum() * 100 if crc.sum() != 0 else np.zeros(n)
+
+    # Per-stock annualised volatility
+    ann_vol = returns.std() * np.sqrt(252) * 100
+
+    # Average pairwise correlation
+    corr_vals = returns.corr().values
+    avg_corr = np.array([(corr_vals[i, :].sum() - 1.0) / max(n - 1, 1) for i in range(n)])
+
+    # Per-stock daily VaR
+    var_95_vals = np.array([float(np.percentile(returns.iloc[:, i], 5)) * 100 for i in range(n)])
+
+    rows = []
+    for i, t in enumerate(tickers):
+        rows.append({
+            "Ticker": t.replace(".NS", ""),
+            "Weight (%)": round(w[i] * 100, 1),
+            "Beta": round(stock_betas.get(t, 1.0), 2) if stock_betas else 1.0,
+            "Ann. Vol (%)": round(float(ann_vol.iloc[i]) if hasattr(ann_vol, "iloc") else ann_vol[i], 1),
+            "Avg Corr": round(float(avg_corr[i]), 2),
+            "MRC": round(float(mrc[i]), 3),
+            "Risk Contrib (%)": round(float(crc_pct[i]), 1),
+            "VaR 95%": round(float(var_95_vals[i]), 2),
+        })
+    return pd.DataFrame(rows)
+
+
 def compute_correlation_matrix(prices: pd.DataFrame) -> pd.DataFrame:
     """Compute the correlation matrix of all holdings."""
     return prices.pct_change().dropna().corr()

@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.7.5 (2026-07-01)
+
+### Added
+
+- **Per-stock risk attribution table** — new `compute_stock_risk_attribution()` in `engine/risk.py` decomposes portfolio risk using marginal contribution to risk (MCR). Each holding shows: weight, beta, annualized volatility, average pairwise correlation, MRC, VaR 95% (daily), and percentage risk contribution. Displayed in the Holdings tab below the P&L table. Risk contributions are color-coded (red >25%, amber >15%, green <5%). 5 new tests (`tests/test_risk.py`).
+
+### Changed
+
+- **Risk Metrics tab decluttered** — Monte Carlo projection moved to the Charts tab where it belongs alongside other visualizations. Institutional Risk Scores & Factor Analysis collapsed inside a single expander (closed by default). Early Warning Signals collapsed inside an expander (auto-opens only when critical signals present). Rolling volatility chart collapsed by default. The first tab now shows risk cards + volatility gauge at a glance, with all deeper analysis one click away.
+- **Parallel data fetch optimized** — `max_workers` raised from 3 to 8, with a `Semaphore(5)` rate-limiter around actual network calls. Cache hits bypass the semaphore entirely. Portfolio load times should improve 2-3x on fresh fetches (`data/prices.py`).
+
+### Removed
+
+- **Dead import `engine.scores`** — `engine/__init__.py` referenced `engine.scores` (file is `engine/scoring.py`). This blocked test collection silently. Fixed to `engine.scoring`.
+
 ## v0.7.4 (2026-07-01)
 
 ### Fixed
