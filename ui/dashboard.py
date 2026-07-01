@@ -19,6 +19,7 @@ from engine import (
     ScenarioResult,
     SectorExposure,
 )
+from engine.narrative import NarrativeReport
 
 
 def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
@@ -149,6 +150,34 @@ def render_stock_table(portfolio: Portfolio) -> None:
         )
 
     st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+def render_narrative_section(narrative: NarrativeReport) -> None:
+    """Display plain-English portfolio analysis narrative."""
+    st.subheader("AI Insights")
+
+    if narrative.overall_verdict:
+        st.markdown(f"### {narrative.overall_verdict}")
+
+    with st.expander("Portfolio Summary", expanded=True):
+        st.markdown(narrative.summary)
+
+    if narrative.risk_assessment:
+        with st.expander("Risk Assessment", expanded=False):
+            st.markdown(narrative.risk_assessment)
+
+    if narrative.concentration:
+        with st.expander("Concentration Analysis", expanded=False):
+            st.markdown(narrative.concentration)
+
+    if narrative.benchmark_context:
+        with st.expander("Benchmark Context", expanded=False):
+            st.markdown(narrative.benchmark_context)
+
+    if narrative.key_concerns:
+        with st.expander("Key Concerns", expanded=len(narrative.key_concerns) > 0):
+            for concern in narrative.key_concerns:
+                st.warning(concern)
 
 
 def render_stock_risk_table(risk_df: pd.DataFrame) -> None:

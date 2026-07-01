@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.7.8 (2026-07-01)
+
+### Added
+
+- **Rule-based narrative engine** (`engine/narrative.py`) — generates plain-English portfolio explanations from computed risk metrics without any LLM or API call. Six narrative sections: executive summary, risk assessment (volatility, VaR, Sharpe, drawdown), concentration analysis, benchmark context (alpha, beta, win rate), key concerns (top 5 ranked by severity), and overall verdict (Low/Moderate/Higher risk). All thresholds calibrated for Indian equity context.
+- **32 new tests** (`tests/test_narrative.py`) — threshold boundaries (low/moderate/high volatility, poor/good/excellent Sharpe, concentration, drawdown, VaR, beta), benchmark edge cases (outperformance/underperformance, missing benchmark), empty portfolio, zero values, single-stock concentration, concern capping, overall verdict scoring.
+
+### Changed
+
+- **UI: AI Insights section** — new collapsible expander block at the top of the Risk Metrics tab. Portfolio Summary expanded by default; Risk Assessment, Concentration, Benchmark Context, and Key Concerns expandable on click. No functional changes to existing sections.
+- **321 tests pass** — 289 original + 32 new narrative tests, zero regressions.
+
+### Architecture
+
+- `engine/narrative.py` — pure functions, zero Streamlit imports, zero IO, no new dependencies. Uses only threshold-based string templates (if/elif chains). Composable: each section builder (`_build_summary`, `_build_risk_assessment`, `_build_concentration`, `_build_benchmark_context`, `_build_key_concerns`, `_build_overall_verdict`) is independently unit-testable.
+- Hooks into `app.py:414` — `generate_narrative(report)` called after report assembly, rendered via `render_narrative_section()` in the first tab.
+
 ## v0.7.7 (2026-07-01)
 
 ### Added

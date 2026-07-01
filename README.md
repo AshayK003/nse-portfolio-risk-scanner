@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-289%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-321%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, and stress testing. Zero paid APIs. 289 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, and stress testing. Zero paid APIs. 321 tests.
 
 ---
 
@@ -33,6 +33,7 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Institutional Scoring** | P×I×C framework — Overall Risk, Conviction, Stress, Hidden Correlation, and Tail Risk scores |
 | **Early Warnings** | MA crossover, RSI extremes, volatility regime shifts, correlation breakdowns, momentum divergences |
 | **Recommendations** | Actionable suggestions (reduce/hedge/diversify/accumulate) with expected risk reduction and trade-off analysis |
+| **AI Narratives** | Rule-based plain-English explanations — volatility, VaR, Sharpe, drawdown, concentration, benchmark alpha/beta, key concerns, overall verdict. No LLM, no API calls |
 | **Export** | CSV with position-level risk data + PDF report with charts |
 | **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
 
@@ -149,6 +150,7 @@ None required. Runs with zero configuration.
 │   ├── scenario.py           # Basic + macro stress tests
 │   ├── factors.py            # Factor decomposition + macro sensitivities
 │   ├── scoring.py            # Institutional risk scoring (P×I×C)
+│   ├── narrative.py          # Rule-based narrative generation (zero LLM)
 │   ├── recommendations.py    # Portfolio recommendations engine
 │   ├── warnings.py           # Early warning signal detection
 │   └── delivery.py           # NSE delivery analysis (optional nselib)
@@ -165,7 +167,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 289 tests
+├── tests/                    # 321 tests
 ├── .github/workflows/ci.yml  # CI pipeline
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
@@ -222,7 +224,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-289 tests across 21 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
+321 tests across 22 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
 
 ```bash
 pytest tests/                           # Full suite
@@ -244,6 +246,7 @@ pytest tests/ --cov=engine --cov-report=term-missing
 | Factors | `test_factors.py` | Factor exposures, macro drivers |
 | Scoring | `test_scoring.py` | P×I×C scores, risk factors, interpretation |
 | Recommendations | `test_recommendations.py` | Action generation, trade-offs, priority |
+| Narrative | `test_narrative.py` | Threshold boundaries, edge cases, benchmark none |
 | Warnings | `test_warnings.py` | MA crossover, RSI, vol shifts, correlation breakdown |
 | Price fetching | `test_prices.py` | Retry, backoff, parallel fetch, error handling |
 | Cache | `test_cache.py` | TTL, eviction, clear, round-trip |

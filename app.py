@@ -39,6 +39,7 @@ except ImportError:
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
+from engine.narrative import generate_narrative
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
 from engine.optimization import optimize_hrp, suggest_rebalance
@@ -74,6 +75,7 @@ from ui.dashboard import (
     render_benchmark_section,
     render_metric_row,
     render_monte_carlo_section,
+    render_narrative_section,
     render_optimization_section,
     render_rebalance_section,
     render_regime_section,
@@ -411,6 +413,9 @@ report = st.session_state.report
 # Summary metrics
 render_metric_row(report.portfolio, report.risk)
 
+# Generate narrative (always available — pure functions, no IO)
+narrative = generate_narrative(report)
+
 # Tabs
 tab_names = [
     "Risk Metrics",
@@ -425,6 +430,7 @@ tab_names = [
 tabs = st.tabs(tab_names)
 
 with tabs[0]:
+    render_narrative_section(narrative)
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
     with col1:
