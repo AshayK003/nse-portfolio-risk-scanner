@@ -46,7 +46,7 @@
 
 - **Added `.ruff_cache/` to `.gitignore`** — prevents accidental commits of ruff's cache directory.
 - **Added docstring to `ui/__init__.py`** — empty file now has a one-line description, consistent with other package init files.
-- **Created `engineering_memory.md`** — internal reference for architecture decisions, cache hierarchy, bug-fix patterns, and trade-offs (gitignored, never committed).
+- **Internal project notes created** — architectural decisions and trade-off documentation (gitignored, never committed).
 
 ## v0.7.3 (2026-06-30)
 
