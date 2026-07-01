@@ -59,6 +59,10 @@ _DEFAULT_PERIOD = "1y"
 _L2_CACHE = None
 _L2_CACHE_LOCK = threading.Lock()
 
+# Max concurrent network requests to yfinance/nselib — prevents rate limiting
+# while keeping enough parallelism for fast portfolio loads
+_FETCH_SEMAPHORE = threading.Semaphore(5)
+
 # Attempt to import nselib — optional dependency (install via `pip install nse-risk-scanner[nse]`)
 try:
     from nselib import capital_market
@@ -151,21 +155,23 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
 
     df = None
     if not ticker.startswith("^"):
-        df = _fetch_via_nselib(ticker, period)
+        with _FETCH_SEMAPHORE:
+            df = _fetch_via_nselib(ticker, period)
 
     if df is None:
-        try:
-            import yfinance as yf
+        with _FETCH_SEMAPHORE:
+            try:
+                import yfinance as yf
 
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period=period)
-            if hist is None or hist.empty:
-                logger.warning("yfinance returned no data for {t}", t=ticker)
+                stock = yf.Ticker(ticker)
+                hist = stock.history(period=period)
+                if hist is None or hist.empty:
+                    logger.warning("yfinance returned no data for {t}", t=ticker)
+                    return None
+                df = hist
+            except Exception as exc:
+                logger.warning("yfinance fetch failed for {t}: {e}", t=ticker, e=exc)
                 return None
-            df = hist
-        except Exception as exc:
-            logger.warning("yfinance fetch failed for {t}: {e}", t=ticker, e=exc)
-            return None
 
     if "Close" in df.columns:
         l2.set(ticker, df["Close"])
@@ -212,7 +218,7 @@ def fetch_prices(
     errors: list[str] = []
     completed = 0
 
-    max_workers = min(len(tickers), 3)
+    max_workers = min(len(tickers), 8)
 
     if progress_callback:
         progress_callback(f"Fetching prices for {len(tickers)} stocks...")

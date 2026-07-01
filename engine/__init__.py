@@ -39,7 +39,8 @@ class Holding:
 
     @property
     def current_value(self) -> float:
-        return self.quantity * self.current_price
+        val = self.quantity * self.current_price
+        return 0.0 if math.isnan(val) else val
 
     @property
     def pnl(self) -> float:
