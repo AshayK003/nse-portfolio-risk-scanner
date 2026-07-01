@@ -13,11 +13,11 @@ import json
 import numpy as np
 import pandas as pd
 import streamlit as st
+
 try:
     from loguru import logger
 except ImportError:
     import logging
-    import functools
 
     _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
 
@@ -39,10 +39,15 @@ except ImportError:
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
-from engine.narrative import generate_narrative
+from engine.backtesting import backtest_var
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
+from engine.fundamentals import compute_all_zscores
+from engine.garch_var import estimate_garch_var
+from engine.narrative import generate_narrative
 from engine.optimization import optimize_hrp, suggest_rebalance
+from engine.optimization_advanced import optimize_advanced
+from engine.pelve import compute_pelve
 from engine.performance import (
     compute_max_drawdown,
     compute_portfolio_returns,
@@ -72,6 +77,7 @@ from ui.charts import (
     volatility_gauge,
 )
 from ui.dashboard import (
+    render_advanced_section,
     render_benchmark_section,
     render_metric_row,
     render_monte_carlo_section,
@@ -327,6 +333,49 @@ if _needs_compute:
         except Exception as e:
             logger.warning("Recommendations failed: {e}", e=e)
 
+        # ── v0.7.9 Advanced modules ──
+
+        zscore = None
+        try:
+            ticker_list = list(prices.columns)
+            zscore = compute_all_zscores(ticker_list) if len(ticker_list) > 0 else []
+        except Exception as e:
+            logger.warning("Altman Z-Score failed: {e}", e=e)
+
+        var_backtest = None
+        try:
+            var_95 = risk.var_95_daily if hasattr(risk, "var_95_daily") else None
+            var_99 = risk.var_99_daily if hasattr(risk, "var_99_daily") else None
+            if var_95 is not None and not portfolio_returns.empty:
+                var_backtest = backtest_var(
+                    portfolio_returns.values.flatten(),
+                    forecasts={"95%": var_95 * np.ones(len(portfolio_returns))},
+                )
+        except Exception as e:
+            logger.warning("VaR backtest failed: {e}", e=e)
+
+        garch_var = None
+        try:
+            if not portfolio_returns.empty:
+                garch_var = estimate_garch_var(portfolio_returns.values.flatten())
+        except Exception as e:
+            logger.warning("GARCH VaR failed: {e}", e=e)
+
+        pelve = None
+        try:
+            if not portfolio_returns.empty:
+                rets = portfolio_returns.values.flatten()
+                pelve = compute_pelve(rets, epsilon=0.01)
+        except Exception as e:
+            logger.warning("PELVE failed: {e}", e=e)
+
+        opt_advanced = None
+        try:
+            if not prices.empty and len(weights) >= 2:
+                opt_advanced = optimize_advanced(prices, weights)
+        except Exception as e:
+            logger.warning("Advanced optimization failed: {e}", e=e)
+
     except Exception as e:
         logger.error("Analysis computation failed: {e}", e=e)
         st.error(f"An unexpected error occurred during analysis: {e}")
@@ -357,6 +406,11 @@ if _needs_compute:
         "institutional_scores": institutional_scores,
         "early_warnings": early_warnings,
         "recommendations": recommendations,
+        "zscore": zscore,
+        "var_backtest": var_backtest,
+        "garch_var": garch_var,
+        "pelve": pelve,
+        "opt_advanced": opt_advanced,
     }
     st.session_state._last_input_hash = _input_hash
     st.session_state._report_changed = True
@@ -385,6 +439,11 @@ else:
     institutional_scores = cache.get("institutional_scores")
     early_warnings = cache.get("early_warnings")
     recommendations = cache.get("recommendations")
+    zscore = cache.get("zscore")
+    var_backtest = cache.get("var_backtest")
+    garch_var = cache.get("garch_var")
+    pelve = cache.get("pelve")
+    opt_advanced = cache.get("opt_advanced")
     st.session_state._report_changed = False
 
 # Always needed for rendering
@@ -405,6 +464,11 @@ st.session_state.report = AnalysisReport(
     macro_scenarios=macro_scenarios,
     recommendations=recommendations,
     warnings=early_warnings,
+    zscore=zscore,
+    var_backtest=var_backtest,
+    garch_var=garch_var,
+    pelve=pelve,
+    optimization_advanced=opt_advanced,
 )
 
 # ── Step 4: Display ──
@@ -431,6 +495,9 @@ tabs = st.tabs(tab_names)
 
 with tabs[0]:
     render_narrative_section(narrative)
+    render_advanced_section(
+        report.zscore, report.var_backtest, report.garch_var, report.pelve, report.optimization_advanced,
+    )
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
     with col1:

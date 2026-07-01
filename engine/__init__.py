@@ -139,3 +139,9 @@ class AnalysisReport:
     macro_scenarios: list[MacroScenarioResult] | None = None
     recommendations: RecommendationReport | None = None
     warnings: WarningReport | None = None
+    # v0.7.9 advanced modules
+    zscore: list | None = None
+    var_backtest: dict | None = None
+    garch_var: dict | None = None
+    pelve: dict | None = None
+    optimization_advanced: dict | None = None

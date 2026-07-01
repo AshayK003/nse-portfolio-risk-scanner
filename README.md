@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-321%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-360%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, and stress testing. Zero paid APIs. 321 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 360 tests.
 
 ---
 
@@ -148,6 +148,11 @@ None required. Runs with zero configuration.
 │   ├── optimization.py       # HRP, min-vol, max-Sharpe, rebalancing
 │   ├── regime.py             # HMM regime detection (optional hmmlearn)
 │   ├── scenario.py           # Basic + macro stress tests
+│   ├── backtesting.py         # VaR backtesting (Kupiec POF)
+│   ├── fundamentals.py        # Altman Z-Score
+│   ├── garch_var.py           # GARCH(1,1)-t VaR
+│   ├── optimization_advanced.py # Riskfolio-Lib wrapper
+│   ├── pelve.py               # PELVE ratio
 │   ├── factors.py            # Factor decomposition + macro sensitivities
 │   ├── scoring.py            # Institutional risk scoring (P×I×C)
 │   ├── narrative.py          # Rule-based narrative generation (zero LLM)
@@ -167,7 +172,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 321 tests
+├── tests/                    # 360 tests
 ├── .github/workflows/ci.yml  # CI pipeline
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
@@ -224,7 +229,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-321 tests across 22 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
+360 tests across 26 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
 
 ```bash
 pytest tests/                           # Full suite
@@ -247,6 +252,10 @@ pytest tests/ --cov=engine --cov-report=term-missing
 | Scoring | `test_scoring.py` | P×I×C scores, risk factors, interpretation |
 | Recommendations | `test_recommendations.py` | Action generation, trade-offs, priority |
 | Narrative | `test_narrative.py` | Threshold boundaries, edge cases, benchmark none |
+| Fundamentals | `test_fundamentals.py` | Altman Z-Score, zone classification, missing data |
+| Backtesting | `test_backtesting.py` | Kupiec POF, exception rates, multiple confidences |
+| GARCH VaR | `test_garch_var.py` | GARCH(1,1)-t VaR, insufficient data, arch fallback |
+| PELVE | `test_pelve.py` | PELVE ratio, epsilon param, zero vol, fat tails |
 | Warnings | `test_warnings.py` | MA crossover, RSI, vol shifts, correlation breakdown |
 | Price fetching | `test_prices.py` | Retry, backoff, parallel fetch, error handling |
 | Cache | `test_cache.py` | TTL, eviction, clear, round-trip |

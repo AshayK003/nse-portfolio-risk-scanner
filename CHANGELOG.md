@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.7.9 (2026-07-01)
+
+### Added
+
+- **Altman Z-Score** (`engine/fundamentals.py`) — computes Original and Modified Z-Score for each holding using balance sheet data fetched via yfinance. Results classified into Safe (≥3.0 / ≥2.9), Grey Zone (1.8–2.99 / 1.1–2.89), Distress (<1.8 / <1.1) zones. Adopted from `vdamov/financial-risk-analyzer`.
+- **VaR Backtesting (Kupiec POF)** (`engine/backtesting.py`) — binomial likelihood-ratio test for VaR model accuracy. Computes exception count, LR statistic, and p-value at multiple confidence levels simultaneously. Pure numpy/scipy, zero new deps. Adopted from `market-risk-engine`.
+- **GARCH(1,1)-t VaR** (`engine/garch_var.py`) — time-varying volatility model using the `arch` package. Falls back to static normal VaR when `arch` not installed. Adopted from `kshitijbhandari/Multi-Asset-Portfolio-Risk-Engine`.
+- **PELVE Ratio** (`engine/pelve.py`) — Portfolio Equal-Loss Value-at-Risk Equivalent. Solves for the multiplier `c` such that ES(1-cε) = VaR(1-ε) under parametric normal. Pure numpy/scipy. Adopted from `ibaris/VaR`.
+- **Advanced Portfolio Optimization** (`engine/optimization_advanced.py`) — optional Riskfolio-Lib wrapper providing CVaR optimization, Black-Litterman, EVaR, and CDaR. Graceful fallback when Riskfolio-Lib not installed.
+- **39 new tests** — `tests/test_fundamentals.py` (15), `tests/test_backtesting.py` (8), `tests/test_garch_var.py` (5), `tests/test_pelve.py` (10). Cover boundary values, edge cases (empty/missing data, zero div, mismatched lengths), and fallback behavior.
+
+### Changed
+
+- **UI: Advanced Analytics section** — collapsible expander at the top of Risk Metrics tab (closed by default) showing Z-Score summary cards, VaR backtest pass/fail, GARCH VaR metrics, PELVE interpretation, and Riskfolio-Lib optimal weights.
+- **pyproject.toml** — new `[advanced]` optional-dependencies group: `arch>=5.0`, `riskfolio-lib>=1.4.0`.
+- **360 tests pass** — 321 existing + 39 new, zero regressions.
+
+### Fixed
+
+- **GARCH VaR formula sign error** — both the fallback (`garch_var.py:89`) and GARCH-t (`garch_var.py:67`) VaR formulas used `+ mu` instead of `- mu` for the positive-loss VaR convention. When mean daily return is positive, this overestimated VaR by 2× the mean. Fixed to `-mu + sigma * quantile`.
+
+### Architecture
+
+- All new modules are pure functions with zero Streamlit, zero IO, zero new mandatory dependencies.
+- Each new module is independently tested with mocked network calls (yfinance) and optional-dependency guards (`ARCH_AVAILABLE`, `RISKFOLIO_AVAILABLE`).
+- v0.7.9 fields added to `AnalysisReport` dataclass (`engine/__init__.py`): `zscore`, `var_backtest`, `garch_var`, `pelve`, `optimization_advanced`.
+
 ## v0.7.8 (2026-07-01)
 
 ### Added

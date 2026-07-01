@@ -6,6 +6,7 @@ Uses Lucide SVG icons instead of emojis.
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from engine import (
@@ -178,6 +179,58 @@ def render_narrative_section(narrative: NarrativeReport) -> None:
         with st.expander("Key Concerns", expanded=len(narrative.key_concerns) > 0):
             for concern in narrative.key_concerns:
                 st.warning(concern)
+
+
+def render_advanced_section(
+    zscore: list | None,
+    var_backtest: dict | None,
+    garch_var: dict | None,
+    pelve: dict | None,
+    opt_advanced: dict | None,
+) -> None:
+    """Collapsible advanced analytics section."""
+    with st.expander("Advanced Analytics (v0.7.9)", expanded=False):
+        if zscore:
+            safe = sum(1 for z in zscore if z and z.zone == "Safe")
+            grey = sum(1 for z in zscore if z and z.zone == "Grey Zone")
+            distress = sum(1 for z in zscore if z and z.zone == "Distress")
+            st.metric("Altman Z-Score Coverage", f"{safe + grey + distress} tickers")
+            with st.container():
+                cols = st.columns(4)
+                cols[0].metric("Safe", safe, border=True)
+                cols[1].metric("Grey Zone", grey, border=True)
+                cols[2].metric("Distress", distress, border=True)
+
+        if var_backtest:
+            row = var_backtest.get("95%", {})
+            exc = row.get("exceptions", 0)
+            total = row.get("observations", 0)
+            pv = row.get("p_value", float("nan"))
+            passed = pv > 0.05
+            st.metric("VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}")
+        elif var_backtest is not None:
+            st.info("VaR backtest: no data available.")
+
+        if garch_var:
+            st.metric("GARCH(1,1) VaR 95%", f"{garch_var.get('var_95', 0):.2%}")
+            st.metric("GARCH(1,1) VaR 99%", f"{garch_var.get('var_99', 0):.2%}")
+
+        if pelve:
+            pv = pelve.get("pelve", 0)
+            eps = pelve.get("epsilon", 0.01)
+            interp = pelve.get("interpretation", "")
+            st.metric(f"PELVE (ε={eps})", f"{pv:.2f}")
+            st.caption(interp)
+
+        if opt_advanced and opt_advanced.get("status") == "ok":
+            w = opt_advanced.get("weights", {})
+            if w:
+                st.dataframe(
+                    pd.DataFrame(list(w.items()), columns=["Ticker", "Opt. Weight"]).assign(
+                        **{"Opt. Weight %": lambda df: df["Opt. Weight"] * 100}
+                    ).drop(columns=["Opt. Weight"]).style.format({"Opt. Weight %": "{:.1f}%"}),
+                    use_container_width=True, hide_index=True,
+                )
 
 
 def render_stock_risk_table(risk_df: pd.DataFrame) -> None:
