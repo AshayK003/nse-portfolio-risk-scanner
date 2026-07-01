@@ -9,7 +9,7 @@
 - **Moderate** profile — uses HRP optimization, caps holdings at 35%, triggers sector REDUCE at 35% concentration (default)
 - **Aggressive** profile — uses Maximum Sharpe optimization, caps holdings at 50%, triggers sector REDUCE at 50% concentration, tolerates beta up to 1.8
 - **Profile-aware recommendations** — `generate_recommendations()` now accepts a `RiskProfile` parameter that replaces all 6 hardcoded thresholds with the profile's values
-- **Profile-aware optimization** — `optimize_hrp()`, `optimize_min_volatility()`, `optimize_max_sharpe()` accept `max_single_weight`; `suggest_rebalance()` accepts a `profile`
+- **Profile-aware optimization** — `optimize_hrp()`, `optimize_min_volatility()`, `optimize_max_sharpe()` accept `max_single_weight`; `suggest_rebalance()` accepts a `profile`. The optimizer now dispatches to the profile's configured method (HRP / Min Vol / Max Sharpe) instead of always running HRP |
 - **4 profile-specific tests** — verify Conservative triggers REDUCE sooner, Moderate uses DIVERSIFY at medium concentration, Aggressive tolerates higher beta, and profile name appears in summary text
 
 ## v0.10.0 (2026-07-01)

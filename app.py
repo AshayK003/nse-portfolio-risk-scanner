@@ -24,7 +24,7 @@ from engine.factors import compute_factor_exposures, estimate_macro_sensitivitie
 from engine.fundamentals import compute_all_zscores
 from engine.garch_var import estimate_garch_var
 from engine.narrative import generate_narrative
-from engine.optimization import optimize_hrp, suggest_rebalance
+from engine.optimization import optimize_hrp, optimize_max_sharpe, optimize_min_volatility, suggest_rebalance
 from engine.optimization_advanced import optimize_advanced
 from engine.pelve import compute_pelve
 from engine.performance import (
@@ -235,8 +235,17 @@ if _needs_compute:
         # Correlation matrix (needed for denoising)
         raw_corr = compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
 
-        # HRP Optimization
-        opt_result = optimize_hrp(prices.pct_change().dropna(), max_single_weight=profile.max_single_weight) if len(weights) >= 2 else None
+        # Portfolio Optimization (method selected by risk profile)
+        opt_result = None
+        if len(weights) >= 2:
+            rets = prices.pct_change().dropna()
+            method_map = {
+                "min_volatility": lambda: optimize_min_volatility(rets, max_single_weight=profile.max_single_weight),
+                "hrp": lambda: optimize_hrp(rets, max_single_weight=profile.max_single_weight),
+                "max_sharpe": lambda: optimize_max_sharpe(rets, max_single_weight=profile.max_single_weight),
+            }
+            opt_fn = method_map.get(profile.method, method_map["hrp"])
+            opt_result = opt_fn()
 
         # Monte Carlo simulation (stats + chart paths from single run)
         mc_data = (
@@ -729,7 +738,7 @@ if sector:
 
 # ── Tab 6: Recommendations ──
 with tabs[6]:
-    render_optimization_section(opt_result, portfolio=report.portfolio, risk_data=risk_data)
+    render_optimization_section(opt_result, portfolio=report.portfolio, risk_data=risk_data, max_single_weight=profile.max_single_weight)
     render_rebalance_section(rebalance, risk_data=risk_data)
     st.divider()
     if recommendations:

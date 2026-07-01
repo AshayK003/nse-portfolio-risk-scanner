@@ -307,6 +307,7 @@ def render_optimization_section(
     opt: OptimizationResult | None,
     portfolio: Portfolio | None = None,
     risk_data: dict | None = None,
+    max_single_weight: float = 0.35,
 ) -> None:
     """Display portfolio optimization results."""
     st.subheader("Portfolio Optimization")
@@ -384,13 +385,12 @@ def render_optimization_section(
             })
         st.dataframe(comparison, use_container_width=True, hide_index=True)
 
-        # Warn if optimization concentrates >25% in any single holding
+        # Warn if optimization concentrates above profile's single-holding limit
         max_opt_w = max(opt.weights.values())
-        if max_opt_w > 0.25:
+        if max_opt_w > max_single_weight:
             st.caption(
-                ":warning: Risk-parity optimization is purely risk-based and may "
-                "overweight low-volatility holdings. This may not be appropriate "
-                "for return-seeking investors."
+                f":warning: Optimization concentrates {max_opt_w * 100:.0f}% in a single holding (limit: {max_single_weight * 100:.0f}%). "
+                "The weight cap may be binding — review for unintended concentration."
             )
     else:
         rows = []
