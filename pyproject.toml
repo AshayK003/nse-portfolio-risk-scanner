@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nse-risk-scanner"
-version = "0.8.0"
+version = "0.9.0"
 description = "Analyze your NSE portfolio for risk metrics"
 requires-python = ">=3.10"
 dependencies = [
     "streamlit>=1.35,<2",
-    "plotly>=5.20,<6",
+    "plotly>=5.20,<7",
     "yfinance>=0.2.40,<1",
     "numpy>=1.26,<2",
     "pandas>=2.2,<3",
@@ -28,6 +28,7 @@ dev = [
 ]
 pdf = [
     "fpdf2>=2.7",
+    "matplotlib>=3.8",
 ]
 nse = [
     "nselib>=2.5.0",

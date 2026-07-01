@@ -490,17 +490,6 @@ def _resolve_column_map(
     return col_map, warnings
 
 
-def _build_column_map(fieldnames: list[str]) -> tuple[dict[str, str], dict[str, str]]:
-    """Legacy alias: kept for backward compatibility.
-
-    Returns (col_map, matched_alias) — matched_alias is now a stub
-    since resolution is handled by _resolve_column_map.
-    """
-    col_map, _ = _resolve_column_map(fieldnames, [])
-    # Stub matched_alias for backward compat (callers don't use it)
-    return col_map, {}
-
-
 def _parse_float(s: str) -> float:
     """Parse a float from a string, handling Indian number format and common symbols."""
     try:

@@ -14,28 +14,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-try:
-    from loguru import logger
-except ImportError:
-    import logging
-
-    _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
-
-    def _loguru_compat(level):
-        """Wrapper to handle loguru-style {var} kwargs in stdlib logging."""
-
-        def wrapper(msg, *args, **kwargs):
-            if kwargs:
-                msg = msg.format(**kwargs)
-            _FALLBACK_LOGGER.log(level, msg, *args)
-
-        return wrapper
-
-    logger = logging.getLogger("nse_risk_scanner")
-    logger.info = _loguru_compat(logging.INFO)
-    logger.warning = _loguru_compat(logging.WARNING)
-    logger.debug = _loguru_compat(logging.DEBUG)
-    logger.error = _loguru_compat(logging.ERROR)
+from engine._log import logger
 
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
@@ -167,7 +146,7 @@ else:
     st.session_state.force_refresh = False
 
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
-_input_hash = hashlib.md5(
+_input_hash = hashlib.sha256(
     json.dumps(
         {
             "holdings": [(h.ticker, h.quantity, h.avg_price, h.current_price) for h in portfolio.holdings],
@@ -175,7 +154,7 @@ _input_hash = hashlib.md5(
         },
         sort_keys=True,
     ).encode(),
-).hexdigest()
+).hexdigest()[:16]
 
 _needs_compute = st.session_state.force_refresh or st.session_state.get("_last_input_hash") != _input_hash
 

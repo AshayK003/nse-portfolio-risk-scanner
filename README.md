@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/tests-360%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
+  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AshayK003/nse-portfolio-risk-scanner/ci.yml?branch=master&label=CI&style=flat&logo=githubactions" alt="CI"></a>
 </p>
 
 ---

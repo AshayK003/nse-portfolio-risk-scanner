@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.9.0 (2026-07-01)
+
+### Changed
+
+- **Split `ui/export.py` into `ui/charts_pdf.py` + `ui/export.py`** — chart/render functions moved to a pure module with zero Streamlit imports. `export.py` is now a thin Streamlit wrapper (only `render_export_section()`). Tests import directly from `charts_pdf.py`, making them pass even when Streamlit is unavailable.
+- **Shared loguru compat module** (`engine/_log.py`) — both `app.py` and `data/prices.py` had identical loguru-compat wrappers. Consolidated into one source of truth. Inline compat wrappers removed from both files.
+- **L1 cache bounded LRU** (`data/prices.py`) — replaced unbounded dict with `OrderedDict`-based LRU (max 128 entries). Prevents RAM growth when scanning many tickers across periods.
+- **`NSE_RISK_SCANNER_*` env var support** — `NSE_RISK_SCANNER_CACHE_DIR` for diskcache directory, `NSE_RISK_SCANNER_DB_PATH` for SQLite path. Both default to project-local values when unset.
+- **`PriceCache.get` stale-eviction guard** (`data/cache.py`) — calls `diskcache.Cache.expire()` before each lookup, so expired entries are cleaned up automatically.
+- **Transaction rollback** (`storage/db.py`) — `save_portfolio()` and `save_analysis_run()` now wrap writes in `try/except sqlite3.Error` with explicit `conn.rollback()`.
+- **MD5 → SHA256** (`app.py`) — input hash for recomputation guard uses SHA256 (truncated to 16 hex chars) instead of MD5.
+- **Widened plotly constraint** (`pyproject.toml`) — `plotly<7` instead of `<6` to allow plotly 6.x.
+- **`matplotlib` moved to `[pdf]` optional deps** — reduces core dependency footprint.
+- **Removed dead `_build_column_map` stub** (`engine/portfolio.py`) — legacy wrapper with no callers.
+
 ## v0.8.0 (2026-07-01)
 
 ### Fixed

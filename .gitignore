@@ -39,6 +39,19 @@ htmlcov/
 .ruff_cache/
 
 # Internal
+engineering_memory.md
 internals/
 *.db-shm
 *.db-wal
+
+# Research / design docs
+research/
+
+# Broker exports
+portfolio_*.csv
+
+# Egg info
+*.egg-info/
+
+# Cache directory
+data/.price_cache/

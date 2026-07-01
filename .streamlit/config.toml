@@ -1,5 +1,12 @@
 [server]
 headless = true
+maxUploadSize = 5
 
 [theme]
 base = "dark"
+
+[runner]
+fastReruns = true
+
+[browser]
+gatherUsageStats = false

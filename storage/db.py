@@ -23,6 +23,7 @@ from .models import AnalysisRun, SavedPortfolio
 # Default database path (relative to project root)
 _DEFAULT_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 _DEFAULT_DB_PATH = os.path.join(_DEFAULT_DB_DIR, "nse_risk_scanner.db")
+_DB_PATH = os.environ.get("NSE_RISK_SCANNER_DB_PATH", _DEFAULT_DB_PATH)
 
 # Current schema version — bump on schema changes
 _SCHEMA_VERSION = 1
@@ -33,7 +34,7 @@ _local = threading.local()
 
 def get_connection(db_path: str | None = None) -> sqlite3.Connection:
     """Get a thread-local SQLite connection with WAL mode."""
-    path = db_path or _DEFAULT_DB_PATH
+    path = db_path or _DB_PATH
 
     # Ensure directory exists
     dir_name = os.path.dirname(path)
@@ -129,48 +130,52 @@ def save_portfolio(portfolio: SavedPortfolio) -> int:
     now = datetime.now().isoformat()
     portfolio.updated_at = now
 
-    if portfolio.id:
-        conn.execute(
-            """
-            UPDATE saved_portfolios
-            SET name=?, holdings_json=?, updated_at=?, total_invested=?,
-                total_current=?, total_pnl=?
-            WHERE id=?
-        """,
-            (
-                portfolio.name,
-                portfolio.holdings_json,
-                now,
-                portfolio.total_invested,
-                portfolio.total_current,
-                portfolio.total_pnl,
-                portfolio.id,
-            ),
-        )
-        conn.commit()
-        return portfolio.id
-    else:
-        portfolio.created_at = now
-        cursor = conn.execute(
-            """
-            INSERT INTO saved_portfolios
-                (name, holdings_json, created_at, updated_at,
-                 total_invested, total_current, total_pnl)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                portfolio.name,
-                portfolio.holdings_json,
-                now,
-                now,
-                portfolio.total_invested,
-                portfolio.total_current,
-                portfolio.total_pnl,
-            ),
-        )
-        conn.commit()
-        portfolio.id = cursor.lastrowid
-        return cursor.lastrowid
+    try:
+        if portfolio.id:
+            conn.execute(
+                """
+                UPDATE saved_portfolios
+                SET name=?, holdings_json=?, updated_at=?, total_invested=?,
+                    total_current=?, total_pnl=?
+                WHERE id=?
+            """,
+                (
+                    portfolio.name,
+                    portfolio.holdings_json,
+                    now,
+                    portfolio.total_invested,
+                    portfolio.total_current,
+                    portfolio.total_pnl,
+                    portfolio.id,
+                ),
+            )
+            conn.commit()
+            return portfolio.id
+        else:
+            portfolio.created_at = now
+            cursor = conn.execute(
+                """
+                INSERT INTO saved_portfolios
+                    (name, holdings_json, created_at, updated_at,
+                     total_invested, total_current, total_pnl)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    portfolio.name,
+                    portfolio.holdings_json,
+                    now,
+                    now,
+                    portfolio.total_invested,
+                    portfolio.total_current,
+                    portfolio.total_pnl,
+                ),
+            )
+            conn.commit()
+            portfolio.id = cursor.lastrowid
+            return cursor.lastrowid
+    except sqlite3.Error:
+        conn.rollback()
+        raise
 
 
 def load_portfolio(portfolio_id: int) -> SavedPortfolio | None:
@@ -203,29 +208,33 @@ def delete_portfolio(portfolio_id: int) -> bool:
 def save_analysis_run(run: AnalysisRun) -> int:
     """Record an analysis run. Returns the run ID."""
     conn = get_connection()
-    cursor = conn.execute(
-        """
-        INSERT INTO analysis_runs
-            (portfolio_name, holding_count, volatility, var_95, max_drawdown,
-             sharpe, cagr, beta, diversification_score, benchmark_name, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
-        (
-            run.portfolio_name,
-            run.holding_count,
-            run.volatility,
-            run.var_95,
-            run.max_drawdown,
-            run.sharpe,
-            run.cagr,
-            run.beta,
-            run.diversification_score,
-            run.benchmark_name,
-            run.created_at,
-        ),
-    )
-    conn.commit()
-    return cursor.lastrowid
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO analysis_runs
+                (portfolio_name, holding_count, volatility, var_95, max_drawdown,
+                 sharpe, cagr, beta, diversification_score, benchmark_name, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                run.portfolio_name,
+                run.holding_count,
+                run.volatility,
+                run.var_95,
+                run.max_drawdown,
+                run.sharpe,
+                run.cagr,
+                run.beta,
+                run.diversification_score,
+                run.benchmark_name,
+                run.created_at,
+            ),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    except sqlite3.Error:
+        conn.rollback()
+        raise
 
 
 def list_recent_analyses(limit: int = 10) -> list[AnalysisRun]:

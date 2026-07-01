@@ -30,7 +30,9 @@ try:
 except ImportError:
     _Cache = None
 
-_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".price_cache")
+_DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".price_cache")
+
+_CACHE_DIR = os.environ.get("NSE_RISK_SCANNER_CACHE_DIR", _DEFAULT_CACHE_DIR)
 
 
 class PriceCache:
@@ -47,6 +49,7 @@ class PriceCache:
         if self._cache is None:
             return None
         try:
+            self._cache.expire()  # evict stale entries before lookup
             raw = self._cache.get(ticker)
             if raw is None:
                 return None

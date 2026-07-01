@@ -92,7 +92,7 @@ def _sample_export_df(portfolio: Portfolio) -> pd.DataFrame:
 def test_chart_bytes_returns_png():
     import matplotlib
 
-    from ui.export import _chart_bytes
+    from ui.charts_pdf import _chart_bytes
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -113,7 +113,7 @@ def _get_plt():
 
 
 def test_risk_gauge_chart():
-    from ui.export import _risk_gauge_chart
+    from ui.charts_pdf import _risk_gauge_chart
     plt = _get_plt()
     result = _risk_gauge_chart(18.5, 180, plt)
     assert result is not None
@@ -123,7 +123,7 @@ def test_risk_gauge_chart():
 
 
 def test_risk_gauge_chart_zero_vol():
-    from ui.export import _risk_gauge_chart
+    from ui.charts_pdf import _risk_gauge_chart
     plt = _get_plt()
     result = _risk_gauge_chart(0, 180, plt)
     assert result is not None
@@ -131,7 +131,7 @@ def test_risk_gauge_chart_zero_vol():
 
 
 def test_risk_gauge_chart_high_vol():
-    from ui.export import _risk_gauge_chart
+    from ui.charts_pdf import _risk_gauge_chart
     plt = _get_plt()
     result = _risk_gauge_chart(90, 180, plt)
     assert result is not None
@@ -139,13 +139,13 @@ def test_risk_gauge_chart_high_vol():
 
 
 def test_risk_gauge_chart_none_plt():
-    from ui.export import _risk_gauge_chart
+    from ui.charts_pdf import _risk_gauge_chart
     result = _risk_gauge_chart(18.5, 180, None)
     assert result is None
 
 
 def test_drawdown_area_chart():
-    from ui.export import _drawdown_area_chart
+    from ui.charts_pdf import _drawdown_area_chart
     plt = _get_plt()
     cum = _sample_portfolio_cum()
     result = _drawdown_area_chart(cum, 180, plt)
@@ -155,7 +155,7 @@ def test_drawdown_area_chart():
 
 
 def test_monte_carlo_fan_chart():
-    from ui.export import _monte_carlo_fan_chart
+    from ui.charts_pdf import _monte_carlo_fan_chart
     plt = _get_plt()
     mc = _sample_mc_result()
     result = _monte_carlo_fan_chart(mc, 180, plt)
@@ -165,7 +165,7 @@ def test_monte_carlo_fan_chart():
 
 
 def test_holdings_weight_bar():
-    from ui.export import _holdings_weight_bar
+    from ui.charts_pdf import _holdings_weight_bar
     plt = _get_plt()
     portfolio = _sample_portfolio()
     result = _holdings_weight_bar(portfolio, 180, plt)
@@ -175,7 +175,7 @@ def test_holdings_weight_bar():
 
 
 def test_sector_pie_chart():
-    from ui.export import _sector_pie_chart
+    from ui.charts_pdf import _sector_pie_chart
     plt = _get_plt()
     sector_data = _sample_sector_data()
     result = _sector_pie_chart(sector_data, 180, plt)
@@ -185,7 +185,7 @@ def test_sector_pie_chart():
 
 
 def test_pnl_bar_chart():
-    from ui.export import _pnl_bar_chart
+    from ui.charts_pdf import _pnl_bar_chart
     plt = _get_plt()
     portfolio = _sample_portfolio()
     df = _sample_export_df(portfolio)
@@ -199,7 +199,7 @@ def test_pnl_bar_chart():
 
 def test_generate_pdf_report_full():
     """Generate a full PDF with all sections."""
-    from ui.export import _generate_pdf_report
+    from ui.charts_pdf import _generate_pdf_report
     portfolio = _sample_portfolio()
     risk = _sample_risk_metrics()
     sector_data = _sample_sector_data()
@@ -222,7 +222,7 @@ def test_generate_pdf_report_full():
 
 def test_generate_pdf_report_minimal():
     """Generate PDF with no optional data (risk=None, sector=None, etc.)."""
-    from ui.export import _generate_pdf_report
+    from ui.charts_pdf import _generate_pdf_report
     portfolio = _sample_portfolio()
     df = _sample_export_df(portfolio)
 
@@ -239,7 +239,7 @@ def test_generate_pdf_report_minimal():
 
 def test_generate_pdf_report_three_pages():
     """Verify the PDF has at least 3 pages by checking the page count marker."""
-    from ui.export import _generate_pdf_report
+    from ui.charts_pdf import _generate_pdf_report
     portfolio = _sample_portfolio()
     risk = _sample_risk_metrics()
     sector_data = _sample_sector_data()
@@ -263,7 +263,7 @@ def test_generate_pdf_report_three_pages():
 # ── Utility function tests ──
 
 def test_risk_assessment_low_vol():
-    from ui.export import _risk_assessment_text
+    from ui.charts_pdf import _risk_assessment_text
     risk = _sample_risk_metrics()
     risk.volatility_annual = 12.0
     risk.sharpe = 1.5
@@ -273,7 +273,7 @@ def test_risk_assessment_low_vol():
 
 
 def test_risk_assessment_high_vol():
-    from ui.export import _risk_assessment_text
+    from ui.charts_pdf import _risk_assessment_text
     risk = _sample_risk_metrics()
     risk.volatility_annual = 35.0
     risk.sharpe = 0.3
@@ -283,7 +283,7 @@ def test_risk_assessment_high_vol():
 
 
 def test_risk_assessment_none():
-    from ui.export import _risk_assessment_text
+    from ui.charts_pdf import _risk_assessment_text
     text, color = _risk_assessment_text(None)
     assert "not available" in text
 
@@ -291,7 +291,7 @@ def test_risk_assessment_none():
 def test_metric_badge():
     from fpdf import FPDF
 
-    from ui.export import _metric_badge
+    from ui.charts_pdf import _metric_badge
     pdf = FPDF()
     pdf.add_page()
     page_w = pdf.w - pdf.l_margin - pdf.r_margin

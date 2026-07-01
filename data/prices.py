@@ -12,34 +12,15 @@ Benchmark indices and tickers unavailable via nselib fall back to yfinance.
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
+from collections import OrderedDict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-try:
-    from loguru import logger
-except ImportError:
-    _FALLBACK_LOGGER = logging.getLogger("nse_risk_scanner")
-
-    def _loguru_compat(level):
-        """Wrapper to handle loguru-style {var} kwargs in stdlib logging."""
-
-        def wrapper(msg, *args, **kwargs):
-            if kwargs:
-                msg = msg.format(**kwargs)
-            _FALLBACK_LOGGER.log(level, msg, *args)
-
-        return wrapper
-
-    logger = logging.getLogger("nse_risk_scanner")
-    logger.info = _loguru_compat(logging.INFO)
-    logger.warning = _loguru_compat(logging.WARNING)
-    logger.debug = _loguru_compat(logging.DEBUG)
-    logger.error = _loguru_compat(logging.ERROR)
+from engine._log import logger
 
 from engine import Holding
 
@@ -54,7 +35,33 @@ def _isnan(v: float) -> bool:
 
 _DEFAULT_PERIOD = "1y"
 
-_L1_CACHE: dict[tuple[str, str], pd.DataFrame] = {}
+class _LRUCache:
+    """Simple LRU cache with bounded size — evicts oldest entries."""
+
+    def __init__(self, maxsize: int = 128):
+        self._data: OrderedDict = OrderedDict()
+        self._maxsize = maxsize
+
+    def __contains__(self, key: tuple[str, str]) -> bool:
+        return key in self._data
+
+    def __getitem__(self, key: tuple[str, str]) -> pd.DataFrame:
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def __setitem__(self, key: tuple[str, str], value: pd.DataFrame) -> None:
+        self._data[key] = value
+        if len(self._data) > self._maxsize:
+            self._data.popitem(last=False)
+
+    def clear(self) -> None:
+        self._data.clear()
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+
+_L1_CACHE: _LRUCache = _LRUCache(maxsize=128)
 
 _L2_CACHE = None
 _L2_CACHE_LOCK = threading.Lock()
@@ -379,5 +386,5 @@ def get_cache_stats() -> dict:
         "l1_hits": 0,
         "l1_misses": 0,
         "l1_currsize": len(_L1_CACHE),
-        "l1_maxsize": "manual (no max)",
+        "l1_maxsize": _L1_CACHE._maxsize,
     }
