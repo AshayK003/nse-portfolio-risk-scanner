@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.7.6 (2026-07-01)
+
+### Fixed
+
+- **Bear regime recommendation never generated** — `recommendations.py:218` compared string labels (`"Bear"`) to integer `2` using `s == 2`, which is always `False`. The HMM-based bear market defensive recommendation was dead code. Fixed to `s == "Bear"` (`engine/recommendations.py:218`).
+- **Single-stock concentration risk severely underestimated** — `scoring.py:119` computed `max_stock / 30` where `max_stock` is a decimal weight (e.g. 0.35 for 35%). A 35% holding scored 0.0117 instead of ~1.17, rendering single-stock concentration nearly invisible in the institutional risk scoring. Fixed to `max_stock / 0.30` to align with the percentage-based `max_sector / 40` comparison (`engine/scoring.py:119`).
+
+### Changed
+
+- No functional changes; both bugs were in pure computation modules covered by existing tests.
+
 ## v0.7.5 (2026-07-01)
 
 ### Added

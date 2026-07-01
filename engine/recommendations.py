@@ -215,7 +215,7 @@ def generate_recommendations(
             if len(regime_result.state_sequence) >= 20
             else regime_result.state_sequence
         )
-        bear_days = sum(1 for s in recent_states if s == 2)  # state 2 = bear
+        bear_days = sum(1 for s in recent_states if s == "Bear")
         if bear_days > len(recent_states) * 0.5:
             recs.append(
                 Recommendation(
