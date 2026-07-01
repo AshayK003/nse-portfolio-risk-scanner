@@ -21,6 +21,16 @@
 
 - **GARCH VaR formula sign error** — both the fallback (`garch_var.py:89`) and GARCH-t (`garch_var.py:67`) VaR formulas used `+ mu` instead of `- mu` for the positive-loss VaR convention. When mean daily return is positive, this overestimated VaR by 2× the mean. Fixed to `-mu + sigma * quantile`.
 
+### Changed
+
+- **PDF report redesigned** (`ui/export.py`) — 4 pages instead of 3:
+  - **Cover page** — dark navy header with portfolio name + date, 6-KPI grid (holdings, invested, value, P&L, P&L%, Sharpe), risk gauge chart, and risk level badge. Centered layout with generous whitespace.
+  - **Section numbering** — page headers now show "1. Executive Summary", "2. Risk Analysis", "3. Holdings Breakdown".
+  - **Compact risk metrics** — replaced 2-column vertical metric pairs with a denser 4-column grid (3 rows × 4 metrics). Uses smaller font for labels, larger for values.
+  - **Right-aligned numbers** — Qty, Avg Price, Current, P&L% columns in holdings table are right-aligned for easier vertical scan.
+  - **Page X of Y footer** — `{nb}` alias via `pdf.alias_nb_pages()` shows total page count.
+- **16 PDF export tests still pass** — no changes to test assertions, layout only.
+
 ### Architecture
 
 - All new modules are pure functions with zero Streamlit, zero IO, zero new mandatory dependencies.

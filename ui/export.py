@@ -5,6 +5,8 @@ Report export — CSV download and PDF report generation.
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 import streamlit as st
 
@@ -404,18 +406,21 @@ def _generate_pdf_report(
     recommendations: RecommendationReport | None = None,
 ) -> bytes:
     """Generate a 3-page professional PDF report using fpdf2."""
-    from datetime import datetime
-
     from fpdf import FPDF
 
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.alias_nb_pages()
+
+    # ── Cover Page ──
     pdf.add_page()
+    _add_cover_page(pdf, portfolio, risk)
 
     page_w = pdf.w - pdf.l_margin - pdf.r_margin
 
-    # ── Page 1: Executive Summary ──
-    _add_page_header(pdf, "Executive Summary")
+    # ── Page 2: Executive Summary ──
+    pdf.add_page()
+    _add_page_header(pdf, "1. Executive Summary")
 
     # KPI Cards: 2 rows x 3 cols
     card_w = (page_w - 6) / 3
@@ -485,51 +490,39 @@ def _generate_pdf_report(
 
     pdf.set_y(max(chart_top + 55, pdf.get_y()))
 
-    # Info line: date generated
-    pdf.set_font("Helvetica", "I", 7)
-    pdf.set_text_color(*PDF_COLOR_GRAY)
-    pdf.cell(
-        0,
-        4,
-        f"Report generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
-
-    # ── Page 2: Risk Analysis ──
+    # ── Page 3: Risk Analysis ──
     pdf.add_page()
-    _add_page_header(pdf, "Risk Analysis")
+    _add_page_header(pdf, "2. Risk Analysis")
 
     if risk:
         metrics = [
-            ("VaR (95%)", f"{risk.var_95:.2f}%", "CAGR", f"{risk.cagr:.1f}%"),
-            ("CVaR (95%)", f"{risk.cvar_95:.2f}%", "Total Return", f"{risk.total_return:.1f}%"),
-            ("Max Drawdown", f"{risk.max_drawdown:.1f}%", "Volatility", f"{risk.volatility_annual:.1f}%"),
-            ("Correlation to Bmk", f"{risk.correlation_to_benchmark:.2f}", "Beta", f"{risk.beta:.2f}"),
+            ("VaR (95%)", f"{risk.var_95:.2f}%", "CVaR (95%)", f"{risk.cvar_95:.2f}%",
+             "Volatility", f"{risk.volatility_annual:.1f}%", "CAGR", f"{risk.cagr:.1f}%"),
+            ("Max Drawdown", f"{risk.max_drawdown:.1f}%", "Total Return", f"{risk.total_return:.1f}%",
+             "Sortino", f"{risk.sortino:.2f}", "Beta", f"{risk.beta:.2f}"),
+            ("VaR (99%)", f"{risk.var_99:.2f}%", "Correlation", f"{risk.correlation_to_benchmark:.2f}",
+             "Stock Count", str(portfolio.holding_count), "Sharpe", f"{risk.sharpe:.2f}"),
         ]
-        col_w = page_w / 2
-        y_start = pdf.get_y()
-        for i, (lbl1, val1, lbl2, val2) in enumerate(metrics):
-            y = y_start + i * 6
-            pdf.set_fill_color(*PDF_COLOR_ACCENT)
-            pdf.rect(pdf.l_margin, y, col_w - 2, 5, style="F")
-            pdf.set_font("Helvetica", "", 7)
-            pdf.set_xy(pdf.l_margin + 2, y + 0.5)
-            pdf.cell(col_w - 4, 5, lbl1)
-            pdf.set_font("Helvetica", "B", 8)
-            pdf.set_xy(pdf.l_margin + col_w / 2, y + 0.5)
-            pdf.cell(col_w / 2 - 4, 5, val1)
-
-            pdf.set_fill_color(*PDF_COLOR_ACCENT)
-            pdf.rect(pdf.l_margin + col_w + 2, y, col_w - 2, 5, style="F")
-            pdf.set_font("Helvetica", "", 7)
-            pdf.set_xy(pdf.l_margin + col_w + 4, y + 0.5)
-            pdf.cell(col_w - 4, 5, lbl2)
-            pdf.set_font("Helvetica", "B", 8)
-            pdf.set_xy(pdf.l_margin + col_w + 2 + col_w / 2, y + 0.5)
-            pdf.cell(col_w / 2 - 4, 5, val2)
-
-        pdf.set_y(y_start + len(metrics) * 6 + 4)
+        cw = page_w / 4
+        for row in metrics:
+            y0 = pdf.get_y()
+            for j in range(4):
+                lbl = row[j * 2]
+                val = row[j * 2 + 1]
+                x = pdf.l_margin + j * cw
+                pdf.set_fill_color(*PDF_COLOR_ACCENT)
+                pdf.rect(x, y0, cw - 2, 9, style="F")
+                pdf.set_font("Helvetica", "", 6)
+                pdf.set_text_color(80, 80, 80)
+                pdf.set_xy(x + 2, y0 + 0.5)
+                pdf.cell(cw - 4, 3.5, lbl)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*PDF_COLOR_PRIMARY)
+                pdf.set_xy(x + 2, y0 + 4)
+                pdf.cell(cw - 4, 4.5, val)
+            pdf.set_y(y0 + 10)
+            pdf.set_text_color(0, 0, 0)
+        pdf.ln(2)
 
     # Drawdown chart
     if portfolio_cum is not None and not portfolio_cum.empty:
@@ -571,9 +564,9 @@ def _generate_pdf_report(
             pdf.multi_cell(0, 3.5, f"{rec.reasoning}  ({rec.urgency}, confidence: {rec.confidence:.0%})")
             pdf.ln(1)
 
-    # ── Page 3: Holdings Breakdown ──
+    # ── Page 4: Holdings Breakdown ──
     pdf.add_page()
-    _add_page_header(pdf, "Holdings Breakdown")
+    _add_page_header(pdf, "3. Holdings Breakdown")
 
     pnl_chart = _pnl_bar_chart(df, page_w)
     if pnl_chart:
@@ -584,6 +577,8 @@ def _generate_pdf_report(
     cols = ["Ticker", "Name", "Qty", "Avg Price", "Current", "P&L %", "Sector"]
     col_widths = [24, 44, 14, 24, 24, 18, 22]
     col_widths = [int(w * page_w / sum(col_widths)) for w in col_widths]
+    # right-aligned column indices
+    _right = {2, 3, 4, 5}
 
     pdf.set_fill_color(*PDF_COLOR_PRIMARY)
     pdf.set_text_color(255, 255, 255)
@@ -614,7 +609,8 @@ def _generate_pdf_report(
                 pdf.set_text_color(0, 140, 0) if pnl >= 0 else pdf.set_text_color(200, 0, 0)
             else:
                 pdf.set_text_color(0, 0, 0)
-            pdf.cell(w, 5, f" {v}", border=1, fill=True)
+            align = "R" if j in _right else "L"
+            pdf.cell(w, 5, f" {v}", border=1, fill=True, align=align)
         pdf.set_text_color(0, 0, 0)
         pdf.ln()
 
@@ -648,7 +644,7 @@ def _generate_pdf_report(
     pdf.set_font("Helvetica", "I", 6)
     pdf.set_text_color(160, 160, 160)
     pdf.cell(0, 3, "Generated by NSE Portfolio Risk Scanner", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 3, f"Page {pdf.page_no()}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 3, f"Page {pdf.page_no()} / {{nb}}", align="C", new_x="LMARGIN", new_y="NEXT")
 
     result = pdf.output()
     return bytes(result) if isinstance(result, bytearray) else result
@@ -667,9 +663,66 @@ def _add_page_header(pdf, title: str | None = None) -> None:
     pdf.cell(0, 6, label)
     pdf.set_text_color(*PDF_COLOR_GRAY)
     pdf.set_font("Helvetica", "", 7)
-    pdf.set_xy(pdf.w - pdf.r_margin - 55, 2.5)
-    from datetime import datetime
-
-    pdf.cell(55, 6, datetime.now().strftime("%d %b %Y"), align="R")
+    pdf.set_xy(pdf.w - pdf.r_margin - 40, 2.5)
+    pdf.cell(40, 6, datetime.now().strftime("%d %b %Y"), align="R")
     pdf.set_y(14)
     pdf.set_text_color(0, 0, 0)
+
+
+def _add_cover_page(pdf, portfolio, risk) -> None:
+    """Draw a professional cover page with portfolio name, KPI summary, and risk gauge."""
+    pdf.set_fill_color(*PDF_COLOR_PRIMARY)
+    pdf.rect(0, 0, pdf.w, 55, style="F")
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_xy(pdf.l_margin, 12)
+    pdf.cell(0, 10, "NSE Portfolio Risk Report", align="C")
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_xy(pdf.l_margin, 25)
+    pdf.cell(0, 8, portfolio.name, align="C")
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_xy(pdf.l_margin, 35)
+    pdf.cell(0, 8, datetime.now().strftime("%d %B %Y"), align="C")
+    pdf.set_y(62)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Helvetica", "", 8)
+
+    # 3x2 KPI grid (same gap logic as page 2)
+    page_w = pdf.w - pdf.l_margin - pdf.r_margin
+    cw = (page_w - 6) / 3
+    y0 = pdf.get_y()
+    pnl_color = PDF_COLOR_GREEN if portfolio.total_pnl >= 0 else PDF_COLOR_RED
+    pnl_sign = "+" if portfolio.total_pnl >= 0 else ""
+
+    _kpi_card(pdf, "Holdings", str(portfolio.holding_count), pdf.l_margin, y0, cw)
+    _kpi_card(pdf, "Total Invested", f"Rs {portfolio.total_invested:,.0f}", pdf.l_margin + cw + 3, y0, cw)
+    _kpi_card(pdf, "Current Value", f"Rs {portfolio.total_current:,.0f}",
+              pdf.l_margin + 2 * (cw + 3), y0, cw)
+
+    y1 = y0 + 24
+    _kpi_card(pdf, "P&L", f"{pnl_sign}Rs {portfolio.total_pnl:+,.0f}", pdf.l_margin, y1, cw, color=pnl_color)
+    _kpi_card(pdf, "P&L %", f"{portfolio.total_pnl_pct:+.2f}%", pdf.l_margin + cw + 3, y1, cw)
+    _kpi_card(pdf, "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A",
+              pdf.l_margin + 2 * (cw + 3), y1, cw)
+
+    pdf.set_y(y1 + 28)
+
+    # Risk gauge (centered, limited width)
+    gauge = _risk_gauge_chart(risk.volatility_annual if risk else 0, page_w)
+    if gauge:
+        pdf.image(gauge, x=pdf.l_margin + page_w * 0.12, w=page_w * 0.76)
+    pdf.ln(6)
+
+    # Risk level badge
+    if risk:
+        assessment_text, bg_color = _risk_assessment_text(risk)
+        pdf.set_fill_color(*bg_color)
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_text_color(*PDF_COLOR_DARK)
+        pdf.cell(0, 7, f"  Risk Level: {assessment_text}", fill=True, new_x="LMARGIN", new_y="NEXT")
+
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "I", 7)
+    pdf.set_text_color(*PDF_COLOR_GRAY)
+    pdf.cell(0, 4, f"Report generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}", align="C",
+             new_x="LMARGIN", new_y="NEXT")

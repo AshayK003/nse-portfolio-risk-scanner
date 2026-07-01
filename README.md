@@ -34,7 +34,7 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Early Warnings** | MA crossover, RSI extremes, volatility regime shifts, correlation breakdowns, momentum divergences |
 | **Recommendations** | Actionable suggestions (reduce/hedge/diversify/accumulate) with expected risk reduction and trade-off analysis |
 | **AI Narratives** | Rule-based plain-English explanations — volatility, VaR, Sharpe, drawdown, concentration, benchmark alpha/beta, key concerns, overall verdict. No LLM, no API calls |
-| **Export** | CSV with position-level risk data + PDF report with charts |
+| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
 | **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
 
 ## Demo
