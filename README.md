@@ -9,7 +9,6 @@
   <img src="https://img.shields.io/badge/tests-360%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
-  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AshayK003/nse-portfolio-risk-scanner/ci.yml?branch=master&label=CI&style=flat&logo=githubactions" alt="CI"></a>
 </p>
 
 ---
@@ -174,7 +173,6 @@ None required. Runs with zero configuration.
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
 ├── tests/                    # 360 tests
-├── .github/workflows/ci.yml  # CI pipeline
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
@@ -297,7 +295,9 @@ streamlit run app.py --server.port 8501 --server.headless true
 
 The app binds to `0.0.0.0:8501` by default. Use a reverse proxy (nginx, Caddy) for production.
 
-**CI** (`.github/workflows/ci.yml`) runs on every push/PR: ruff check → ruff format check → pytest with coverage.
+## Pre-commit
+
+This project uses [pre-commit](https://pre-commit.com) with [Ruff](https://docs.astral.sh/ruff/) for linting and formatting on every commit. To set up:
 
 ---
 
