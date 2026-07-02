@@ -67,7 +67,7 @@ def compute_risk_metrics(
         RiskMetrics dataclass with all computed values
     """
     if prices.empty or len(weights) == 0:
-            return _empty_risk_metrics()
+        return _empty_risk_metrics()
 
     # Daily returns — use pre-computed portfolio_returns if provided
     if portfolio_returns is not None:

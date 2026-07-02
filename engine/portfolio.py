@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 
 from . import Holding, Portfolio
@@ -503,7 +504,6 @@ def _parse_float(s: str) -> float:
             s = s.replace(sym, "")
         s = s.strip()
         result = float(s) if s else 0.0
-        import math
         return 0.0 if (math.isnan(result) or math.isinf(result)) else result
     except (ValueError, TypeError):
         return 0.0

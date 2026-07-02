@@ -342,14 +342,13 @@ if _needs_compute:
 
         var_backtest = None
         try:
-            var_95 = risk.var_95_daily if hasattr(risk, "var_95_daily") else None
-            var_99 = risk.var_99_daily if hasattr(risk, "var_99_daily") else None
-            if var_95 is not None and not portfolio_returns.empty:
+            if risk.var_95 != 0 and not portfolio_returns.empty:
                 from engine.backtesting import kupiec_pof
-                daily_var_thresholds = np.percentile(portfolio_returns.values.flatten(), 5)
+                rets_flat = portfolio_returns.values.flatten()
+                var_forecast_series = np.full(len(rets_flat), abs(risk.var_95) / 100)
                 var_backtest = {"95%": kupiec_pof(
-                    portfolio_returns.values.flatten(),
-                    daily_var_thresholds,
+                    var_forecast_series,
+                    rets_flat,
                     confidence=0.95,
                 )}
         except Exception as e:

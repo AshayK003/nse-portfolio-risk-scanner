@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from math import log
 
 import numpy as np
+from scipy.stats import chi2
 
 
 @dataclass
@@ -76,7 +77,6 @@ def kupiec_pof(var_forecasts: np.ndarray, realized_returns: np.ndarray,
         lr_alt = x * log(actual_rate) + (n - x) * log(1.0 - actual_rate)
         lr = -2.0 * (lr_null - lr_alt)
 
-    from scipy.stats import chi2
     p_value = 1.0 - chi2.cdf(lr, 1)
 
     return KupiecResult(

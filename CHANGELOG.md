@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.11.1 (2026-07-01)
+
+### Fixed
+
+- **Backtest call args swapped** (`app.py:343-356`) — `backtest_var()` received returns as `var_forecasts` and a scalar as `realized_returns`, and referenced a non-existent `risk.var_95_daily` attribute. Fixed to pass a constant VaR forecast series (historical 5th percentile held constant) and real portfolio returns, using `risk.var_95` converted to decimal. The Kupiec POF test now receives correct inputs and produces meaningful p-values.
+- **yfinance imported at module level in `engine/fundamentals.py`** — `import yfinance as yf` at the top of the file forced the yfinance dependency to load on engine init, even when fundamentals analysis was never used. Moved to lazy import inside `compute_zscore()`.
+- **`import math` inside `_parse_float()`** (`engine/portfolio.py`) — `import math` was placed inside the function body, re-executed on every call. Hoisted to module top.
+- **Duplicate `import math`** (`engine/portfolio.py:506-507`) — a second `import math` existed inside another function. Removed.
+- **Indentation error** (`engine/risk.py:69-70`) — 8-space indent instead of 4-space, inconsistent with surrounding code. Fixed.
+- **Duplicate `from ui.charts import allocation_pie`** (`ui/dashboard.py:365`) — imported twice in the same file. Removed.
+- **`from scipy.stats import chi2` inside function** (`engine/backtesting.py:9,79`) — `chi2` was imported inside `kupiec_pof()` instead of at module level. Moved to top.
+
+### Tests
+
+- Updated `tests/test_fundamentals.py` mock targets from `engine.fundamentals.yf.Ticker` to `yfinance.Ticker` to match lazy-import change.
+- **364 passed, 1 skipped** — zero regressions.
+
 ## v0.11.0 (2026-07-01)
 
 ### Added

@@ -362,7 +362,6 @@ def render_optimization_section(
             )
 
         with col2:
-            from ui.charts import allocation_pie
             st.plotly_chart(
                 allocation_pie(opt.weights, "Optimized Allocation"),
                 use_container_width=True,

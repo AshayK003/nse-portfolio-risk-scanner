@@ -50,7 +50,7 @@ class TestComputeZscore:
         mock.balance_sheet = mock_df
         return mock
 
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_manufacturer_zscore(self, mock_ticker):
         """RELIANCE-like manufacturer should use Original formula."""
         bs = {
@@ -79,7 +79,7 @@ class TestComputeZscore:
         assert result.zone in ("Safe", "Grey Zone", "Distress")
         assert result.ticker == "RELIANCE.NS"
 
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_nonmanufacturer_zscore(self, mock_ticker):
         """Bank/financial should use Modified formula."""
         bs = {
@@ -107,7 +107,7 @@ class TestComputeZscore:
         assert result.model == "Modified"
         assert result.ticker == "HDFCBANK.NS"
 
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_missing_balance_sheet_returns_none(self, mock_ticker):
         mock = MagicMock()
         mock.info = {}
@@ -117,7 +117,7 @@ class TestComputeZscore:
         result = compute_zscore("FAKE.NS")
         assert result is None
 
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_empty_balance_sheet_returns_none(self, mock_ticker):
         import pandas as pd
         mock = MagicMock()
@@ -128,7 +128,7 @@ class TestComputeZscore:
         result = compute_zscore("FAKE.NS")
         assert result is None
 
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_zero_assets_returns_none(self, mock_ticker):
         bs = {"Total Assets": 0}
         mock = self._mock_ticker(bs, {})
@@ -139,7 +139,7 @@ class TestComputeZscore:
 
 
 class TestComputeAllZscores:
-    @patch("engine.fundamentals.yf.Ticker")
+    @patch("yfinance.Ticker")
     def test_returns_list(self, mock_ticker):
         bs = {
             "Total Assets": 1000000,

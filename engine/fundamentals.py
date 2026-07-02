@@ -9,7 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-import yfinance as yf
 
 
 @dataclass
@@ -47,6 +46,7 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
     for non-manufacturers / emerging markets.
     """
     try:
+        import yfinance as yf
         stock = yf.Ticker(ticker)
         info = stock.info or {}
         bs = stock.balance_sheet
