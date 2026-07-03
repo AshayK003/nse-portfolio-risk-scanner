@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.15.0 (2026-07-03)
+
+### Changed
+
+- **fpdf2 + matplotlib promoted to default dependencies** (`requirements.txt`) — PDF export now works with a plain `pip install -r requirements.txt`. Previously required `pip install -e ".[pdf]"`. No import cost increase — imports are lazy at runtime.
+
 ## v0.14.0 (2026-07-03)
 
 ### Added
