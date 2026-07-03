@@ -184,7 +184,7 @@ def render_export_section(
             use_container_width=True,
         )
     except ImportError:
-        st.caption("PDF export requires fpdf2: pip install fpdf2")
+        st.caption("PDF export uses pdf-studio (ReportLab backend)")
     except Exception as e:
         st.error(f"PDF generation failed: {e}")
 

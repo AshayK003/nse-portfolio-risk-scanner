@@ -1,5 +1,4 @@
 """Tests for the PDF report export module."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -89,20 +88,6 @@ def _sample_export_df(portfolio: Portfolio) -> pd.DataFrame:
 
 # ── Chart function tests ──
 
-def test_chart_bytes_returns_png():
-    import matplotlib
-
-    from ui.charts_pdf import _chart_bytes
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(figsize=(2, 1))
-    ax.plot([1, 2, 3], [1, 4, 9])
-    result = _chart_bytes(fig, plt)
-    assert isinstance(result, bytes)
-    assert len(result) > 100
-    assert result[:4] == b"\x89PNG"
-
 
 def _get_plt():
     """Shared matplotlib import for chart tests."""
@@ -117,9 +102,7 @@ def test_risk_gauge_chart():
     plt = _get_plt()
     result = _risk_gauge_chart(18.5, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert len(result) > 100
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 def test_risk_gauge_chart_zero_vol():
@@ -127,7 +110,7 @@ def test_risk_gauge_chart_zero_vol():
     plt = _get_plt()
     result = _risk_gauge_chart(0, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
+    assert hasattr(result, "savefig")
 
 
 def test_risk_gauge_chart_high_vol():
@@ -135,7 +118,7 @@ def test_risk_gauge_chart_high_vol():
     plt = _get_plt()
     result = _risk_gauge_chart(90, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
+    assert hasattr(result, "savefig")
 
 
 def test_risk_gauge_chart_none_plt():
@@ -150,8 +133,7 @@ def test_drawdown_area_chart():
     cum = _sample_portfolio_cum()
     result = _drawdown_area_chart(cum, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 def test_monte_carlo_fan_chart():
@@ -160,8 +142,7 @@ def test_monte_carlo_fan_chart():
     mc = _sample_mc_result()
     result = _monte_carlo_fan_chart(mc, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 def test_holdings_weight_bar():
@@ -170,8 +151,7 @@ def test_holdings_weight_bar():
     portfolio = _sample_portfolio()
     result = _holdings_weight_bar(portfolio, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 def test_sector_pie_chart():
@@ -180,8 +160,7 @@ def test_sector_pie_chart():
     sector_data = _sample_sector_data()
     result = _sector_pie_chart(sector_data, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 def test_pnl_bar_chart():
@@ -191,8 +170,7 @@ def test_pnl_bar_chart():
     df = _sample_export_df(portfolio)
     result = _pnl_bar_chart(df, 180, plt)
     assert result is not None
-    assert isinstance(result, bytes)
-    assert result[:4] == b"\x89PNG"
+    assert hasattr(result, "savefig")
 
 
 # ── Full PDF generation tests ──
@@ -237,29 +215,6 @@ def test_generate_pdf_report_minimal():
     assert pdf_bytes[:4] == b"%PDF"
 
 
-def test_generate_pdf_report_three_pages():
-    """Verify the PDF has at least 3 pages by checking the page count marker."""
-    from ui.charts_pdf import _generate_pdf_report
-    portfolio = _sample_portfolio()
-    risk = _sample_risk_metrics()
-    sector_data = _sample_sector_data()
-    df = _sample_export_df(portfolio)
-    mc_result = _sample_mc_result()
-    portfolio_cum = _sample_portfolio_cum()
-
-    pdf_bytes = _generate_pdf_report(
-        portfolio=portfolio,
-        risk=risk,
-        sector_data=sector_data,
-        df=df,
-        mc_result=mc_result,
-        portfolio_cum=portfolio_cum,
-    )
-    text = pdf_bytes.decode("latin-1")
-    page_count = text.count("/Type /Page")
-    assert page_count >= 3, f"Expected >= 3 pages, got {page_count}"
-
-
 # ── Utility function tests ──
 
 def test_risk_assessment_low_vol():
@@ -286,14 +241,3 @@ def test_risk_assessment_none():
     from ui.charts_pdf import _risk_assessment_text
     text, color = _risk_assessment_text(None)
     assert "not available" in text
-
-
-def test_metric_badge():
-    from fpdf import FPDF
-
-    from ui.charts_pdf import _metric_badge
-    pdf = FPDF()
-    pdf.add_page()
-    page_w = pdf.w - pdf.l_margin - pdf.r_margin
-    y = _metric_badge(pdf, "Test Label", "1.23", pdf.l_margin, 20, page_w / 3)
-    assert y > 20

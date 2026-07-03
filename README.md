@@ -84,7 +84,7 @@ streamlit run app.py
 | diskcache | yes | Price cache |
 | nselib | `[nse]` | Official NSE data |
 | hmmlearn | `[ml]` | HMM regime detection |
-| fpdf2 + matplotlib | — | PDF report export (included by default) |
+| pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
 | ruff / pre-commit | dev | Linting / formatting |
 | pytest / vcrpy | dev | Testing |
 
