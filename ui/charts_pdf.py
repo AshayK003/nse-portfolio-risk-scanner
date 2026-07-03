@@ -154,7 +154,7 @@ def _gauge(risk: RiskMetrics | None, plt) -> Figure | None:
     """Risk gauge bar with marker and LOW/MOD/HIGH zones."""
     if plt is None or risk is None:
         return None
-    fig, ax = plt.subplots(figsize=(6.3, 0.9))
+    fig, ax = plt.subplots(figsize=(6.3, 1.3))
     ax.set_xlim(0, 80)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -352,7 +352,7 @@ def _generate_pdf_report(
 
     gauge_fig = _gauge(risk, plt)
     if gauge_fig:
-        doc.add_chart(gauge_fig, width=430, height=45)
+        doc.add_chart(gauge_fig)
 
     if risk:
         text, bg_color = _risk_assessment_text(risk)
