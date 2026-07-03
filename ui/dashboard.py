@@ -189,7 +189,7 @@ def render_advanced_section(
     opt_advanced: dict | None,
 ) -> None:
     """Collapsible advanced analytics section."""
-    with st.expander("Advanced Analytics (v0.7.9)", expanded=False):
+    with st.expander("Advanced Analytics", expanded=False):
         if zscore:
             safe = sum(1 for z in zscore if z and z.zone == "Safe")
             grey = sum(1 for z in zscore if z and z.zone == "Grey Zone")
@@ -510,7 +510,7 @@ def render_rebalance_section(
 
     rows = []
     for t in rebalance.trades:
-        action_icon = "🟢" if t["action"] == "buy" else ("🔴" if t["action"] == "sell" else "⚪")
+        action_icon = "Buy" if t["action"] == "buy" else ("Sell" if t["action"] == "sell" else "Hold")
         reason = _opt_reason(
             f"{t['ticker']}.NS",
             t["current_w_pct"],

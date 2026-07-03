@@ -1,6 +1,22 @@
 # Changelog
 
-## v0.11.1 (2026-07-01)
+## v0.12.0 (2026-07-03)
+
+### Removed
+
+- **Dead functions in `data/prices.py`** — `get_stock_info()` (36 LOC), `list_available_benchmarks()` (5 LOC), and `get_cache_stats()` (8 LOC). None were imported or called anywhere in production code. Removal eliminates 3 stale yfinance/nselib code paths that could produce confusing log entries.
+- **Dead functions in `engine/performance.py`** — `compute_total_return()` (22 LOC), `compute_win_rate()` (13 LOC), and `compute_holding_returns()` (26 LOC). Only referenced in tests, never in production. Module docstring also updated to reflect current contents (was still mentioning Sharpe/Sortino/CAGR removed in v0.6.1).
+- **Corresponding dead tests** — `TestComputeTotalReturn`, `TestComputeWinRate`, and `TestComputeHoldingReturns` test classes removed from `tests/test_performance.py` (82 lines).
+
+### Fixed
+
+- **Emoji in rebalancing table** (`ui/dashboard.py:513`) — `🟢`/`🔴`/`⚪` replaced with plain-text `Buy`/`Sell`/`Hold` labels to match project's Lucide-SVGs-over-emoji convention. SVGs can't render inside dataframe cells, so text labels are the correct approach.
+- **Stale version string** (`ui/dashboard.py:192`) — `"(v0.7.9)"` suffix removed from Advanced Analytics expander label. Version strings embedded in UI elements go stale and require unnecessary updates on every release.
+
+### Metrics
+
+- **355 tests pass** — zero regressions, 0 failed, 1 skipped (hmmlearn).
+- **~152 lines removed** across 6 source files.
 
 ### Fixed
 

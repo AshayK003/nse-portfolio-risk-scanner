@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-364%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-355%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 364 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 355 tests.
 
 ---
 
@@ -173,7 +173,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 360 tests
+├── tests/                    # 355 tests
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
@@ -229,7 +229,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-360 tests across 26 test files. Every module in `engine/` has dedicated unit tests. Integration tests exercise the full CSV→risk-metrics pipeline with mock network layer.
+355 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
 
 ```bash
 pytest tests/                           # Full suite
@@ -243,7 +243,7 @@ pytest tests/ --cov=engine --cov-report=term-missing
 | CSV parsing + broker formats | `test_portfolio.py` | All 10+ broker formats, Indian numbers, BOM, delimiters |
 | Risk metrics | `test_risk.py` | VaR, volatility, drawdown, Monte Carlo, denoising, attribution |
 | Sector classification | `test_sector.py` | Mapping, HHI, diversification score, unknown tickers |
-| Performance | `test_performance.py` | Returns, CAGR, drawdown, win rate, holding P&L |
+| Performance | `test_performance.py` | Returns, max drawdown |
 | Benchmark | `test_benchmark.py` | Alpha, beta, tracking error, IR, outperformance |
 | Optimization | `test_optimization.py` | HRP, min-vol, max-Sharpe, rebalancing |
 | Regime detection | `test_regime.py` | HMM, statistical fallback, transition matrix |
