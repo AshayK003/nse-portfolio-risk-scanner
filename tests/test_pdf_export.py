@@ -5,6 +5,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from engine import Holding, Portfolio, RiskMetrics
 from engine.risk import MonteCarloResult
@@ -86,9 +87,6 @@ def _sample_export_df(portfolio: Portfolio) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ── Chart function tests ──
-
-
 def _get_plt():
     """Shared matplotlib import for chart tests."""
     import matplotlib
@@ -97,83 +95,119 @@ def _get_plt():
     return plt
 
 
-def test_risk_gauge_chart():
-    from ui.charts_pdf import _risk_gauge_chart
+# ── Chart figure tests (all return Figure objects) ──
+
+
+def test_gauge():
+    from ui.charts_pdf import _gauge
+    risk = _sample_risk_metrics()
     plt = _get_plt()
-    result = _risk_gauge_chart(18.5, 180, plt)
+    result = _gauge(risk, plt)
     assert result is not None
     assert hasattr(result, "savefig")
 
 
-def test_risk_gauge_chart_zero_vol():
-    from ui.charts_pdf import _risk_gauge_chart
+def test_gauge_none_risk():
+    from ui.charts_pdf import _gauge
     plt = _get_plt()
-    result = _risk_gauge_chart(0, 180, plt)
-    assert result is not None
-    assert hasattr(result, "savefig")
-
-
-def test_risk_gauge_chart_high_vol():
-    from ui.charts_pdf import _risk_gauge_chart
-    plt = _get_plt()
-    result = _risk_gauge_chart(90, 180, plt)
-    assert result is not None
-    assert hasattr(result, "savefig")
-
-
-def test_risk_gauge_chart_none_plt():
-    from ui.charts_pdf import _risk_gauge_chart
-    result = _risk_gauge_chart(18.5, 180, None)
+    result = _gauge(None, plt)
     assert result is None
 
 
-def test_drawdown_area_chart():
-    from ui.charts_pdf import _drawdown_area_chart
+def test_gauge_none_plt():
+    from ui.charts_pdf import _gauge
+    risk = _sample_risk_metrics()
+    result = _gauge(risk, None)
+    assert result is None
+
+
+def test_cover_banner():
+    from ui.charts_pdf import _cover_banner
+    portfolio = _sample_portfolio()
+    plt = _get_plt()
+    result = _cover_banner(portfolio, plt)
+    assert result is not None
+    assert hasattr(result, "savefig")
+
+
+def test_cover_banner_none():
+    from ui.charts_pdf import _cover_banner
+    portfolio = _sample_portfolio()
+    result = _cover_banner(portfolio, None)
+    assert result is None
+
+
+def test_drawdown_chart():
+    from ui.charts_pdf import _drawdown_chart
     plt = _get_plt()
     cum = _sample_portfolio_cum()
-    result = _drawdown_area_chart(cum, 180, plt)
+    result = _drawdown_chart(cum, plt)
     assert result is not None
     assert hasattr(result, "savefig")
 
 
-def test_monte_carlo_fan_chart():
-    from ui.charts_pdf import _monte_carlo_fan_chart
+def test_monte_carlo_chart():
+    from ui.charts_pdf import _monte_carlo_chart
     plt = _get_plt()
     mc = _sample_mc_result()
-    result = _monte_carlo_fan_chart(mc, 180, plt)
+    result = _monte_carlo_chart(mc, plt)
     assert result is not None
     assert hasattr(result, "savefig")
 
 
-def test_holdings_weight_bar():
-    from ui.charts_pdf import _holdings_weight_bar
+def test_sector_weight_composite():
+    from ui.charts_pdf import _sector_weight_composite
     plt = _get_plt()
     portfolio = _sample_portfolio()
-    result = _holdings_weight_bar(portfolio, 180, plt)
-    assert result is not None
-    assert hasattr(result, "savefig")
-
-
-def test_sector_pie_chart():
-    from ui.charts_pdf import _sector_pie_chart
-    plt = _get_plt()
     sector_data = _sample_sector_data()
-    result = _sector_pie_chart(sector_data, 180, plt)
+    result = _sector_weight_composite(sector_data, portfolio, plt)
     assert result is not None
     assert hasattr(result, "savefig")
 
 
-def test_pnl_bar_chart():
-    from ui.charts_pdf import _pnl_bar_chart
+def test_pnl_chart():
+    from ui.charts_pdf import _pnl_chart
     plt = _get_plt()
     portfolio = _sample_portfolio()
     df = _sample_export_df(portfolio)
-    result = _pnl_bar_chart(df, 180, plt)
+    result = _pnl_chart(df, plt)
     assert result is not None
     assert hasattr(result, "savefig")
 
 
+# ── Data table helper tests ──
+
+
+def test_cover_metrics():
+    from ui.charts_pdf import _cover_metrics
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    table = _cover_metrics(portfolio, risk)
+    assert isinstance(table, list)
+    assert "Holdings" in table[1][0]  # first data row, col 0
+    assert len(table) == 4  # header + 3 data rows
+
+
+def test_full_metrics():
+    from ui.charts_pdf import _full_metrics
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    table = _full_metrics(portfolio, risk)
+    assert isinstance(table, list)
+    assert len(table) >= 5  # header + 4+ data rows
+
+
+def test_risk_metrics_table():
+    from ui.charts_pdf import _risk_metrics_table
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    table = _risk_metrics_table(risk, portfolio)
+    assert isinstance(table, list)
+    assert len(table) == 7  # header + 6 risk metric rows
+
+
 # ── Full PDF generation tests ──
+
 
 def test_generate_pdf_report_full():
     """Generate a full PDF with all sections."""
@@ -216,6 +250,7 @@ def test_generate_pdf_report_minimal():
 
 
 # ── Utility function tests ──
+
 
 def test_risk_assessment_low_vol():
     from ui.charts_pdf import _risk_assessment_text

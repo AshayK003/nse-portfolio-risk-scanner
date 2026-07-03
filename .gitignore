@@ -50,6 +50,10 @@ research/
 # Broker exports
 portfolio_*.csv
 
+# Generated sample files
+*.sample.pdf
+sample-report.pdf
+
 # Egg info
 *.egg-info/
 
