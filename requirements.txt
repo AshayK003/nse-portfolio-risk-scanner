@@ -9,4 +9,6 @@ diskcache>=5.6.0,<6
 
 matplotlib>=3.8
 
-# PDF report export uses pdf-studio — pip install -e "D:/Personal projects/pdf-studio/"
+# PDF report export — pdf-studio from GitHub + its backends
+pdf-studio @ git+https://github.com/AshayK003/pdf-studio.git
+svglib>=1.5
