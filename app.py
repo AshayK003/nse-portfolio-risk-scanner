@@ -207,6 +207,13 @@ if _needs_compute:
         portfolio.holdings = [h for h in portfolio.holdings if h.ticker in prices.columns]
         st.warning(f"Could not fetch prices for: {', '.join(failed)}. These holdings are excluded.")
 
+    # Remove holdings where current_price is still 0 (all-NaN history after ffill).
+    # These inflate P&L because current_value = 0, making pnl = -invested_value.
+    zero_price = [h.ticker for h in portfolio.holdings if h.current_price == 0.0]
+    if zero_price:
+        portfolio.holdings = [h for h in portfolio.holdings if h.current_price > 0.0]
+        st.warning(f"No valid price data for: {', '.join(zero_price)}. These holdings are excluded.")
+
     if not portfolio.holdings:
         st.error("All holdings failed to fetch. No price data available for analysis.")
         st.stop()

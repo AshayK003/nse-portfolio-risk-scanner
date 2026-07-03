@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.16.1 (2026-07-03)
+
+### Fixed
+
+- **All-NaN price history inflated negative P&L** (`app.py:210-216`) — holdings whose price fetch returned a DataFrame but every value was NaN were silently kept in the portfolio with `current_price=0.0`, making `pnl = -invested_value`. Now removed alongside tickers absent from price data. Added a second filter after the existing failed-ticker check to remove any holding where `current_price == 0.0` after the fetch.
+
 ## v0.16.0 (2026-07-03)
 
 ### Changed
