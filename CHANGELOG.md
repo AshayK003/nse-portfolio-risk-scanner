@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.16.0 (2026-07-03)
+
+### Changed
+
+- **PDF report layout polished** (`pdf-studio`, `ui/charts_pdf.py`) — all spacing, alignment, and typography refined to a consistent 8pt grid system. No content changes, no new sections, no visual redesign.
+  - **Page margins**: 32pt on all sides (was 72pt). Content area widened ~40%.
+  - **Header**: repositioned to 18pt below page top.
+  - **Heading spacing**: 14pt below all section headings (was 6pt). Line height tightened to 1.2x.
+  - **Body paragraph spacing**: 10pt between paragraphs (was 4pt). Line height 1.35x.
+  - **Table padding**: cell vertical padding 6pt, horizontal 8pt (was 4pt/6pt). Header row minimum 28pt.
+  - **Holdings table**: numeric columns (Quantity, Avg Price, Current Price, P&L %) right-aligned. Column gutters ≥10pt.
+  - **Charts**: consistent 12pt above, 16pt below all chart figures.
+  - **Bullet lists**: 14pt left indent, 6pt spacing between items. Hanging indent for wrapped lines.
+  - **Muted/disclaimer text**: adjusted spacing for consistent page flow.
+  - **Caption style**: 12pt above table captions.
+
 ## v0.15.0 (2026-07-03)
 
 ### Changed

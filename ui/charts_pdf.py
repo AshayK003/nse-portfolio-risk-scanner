@@ -17,7 +17,7 @@ from engine.risk import MonteCarloResult
 
 # pdf-studio: lazy import so the module loads even when not installed
 try:
-    from pdf_studio import Document, Style, Font
+    from pdf_studio import Document, Font, Style
 
     _PDFSTUDIO_OK = True
 except ImportError:
@@ -42,23 +42,28 @@ def _import_matplotlib():
 
 
 def _body_style() -> Style:
-    return Style(font=Font("Inter", 9), space_before=1, space_after=4)
+    return Style(font=Font("Inter", 9), space_before=1, space_after=10)
 
 
 def _body_bold() -> Style:
-    return Style(font=Font("Inter", 9, bold=True), space_before=2, space_after=4)
+    return Style(font=Font("Inter", 9, bold=True), space_before=2, space_after=10)
 
 
 def _muted_style() -> Style:
-    return Style(font=Font("Inter", 7, italic=True), alignment="center", space_before=1, space_after=0)
+    return Style(font=Font("Inter", 7, italic=True), alignment="center", space_before=1, space_after=2)
 
 
 def _disclaimer_style() -> Style:
-    return Style(font=Font("Inter", 7, italic=True), alignment="center", space_before=10, space_after=2)
+    return Style(font=Font("Inter", 7, italic=True), alignment="center", space_before=14, space_after=8)
 
 
 def _subtitle_style() -> Style:
-    return Style(font=Font("Inter", 11, bold=True), space_before=6, space_after=6)
+    return Style(font=Font("Inter", 11, bold=True), space_before=14, space_after=14)
+
+
+def _spacer(pts: float) -> Style:
+    """Return a minimal-height paragraph style acting as a vertical spacer."""
+    return Style(font=Font("Inter", 1), space_before=0, space_after=pts)
 
 
 # ── Helper: build 4-column data tables ──
@@ -345,14 +350,14 @@ def _generate_pdf_report(
 
     banner = _cover_banner(portfolio, plt)
     if banner:
-        doc.add_chart(banner)
+        doc.add_chart(banner, space_before=0, space_after=12)
 
     doc.add_paragraph("Portfolio Summary", style=_subtitle_style())
     doc.add_table(_cover_metrics(portfolio, risk))
 
     gauge_fig = _gauge(risk, plt)
     if gauge_fig:
-        doc.add_chart(gauge_fig)
+        doc.add_chart(gauge_fig, space_before=12, space_after=16)
 
     if risk:
         text, bg_color = _risk_assessment_text(risk)
@@ -373,7 +378,9 @@ def _generate_pdf_report(
 
     doc.add_heading("1. Executive Summary", level=1)
     doc.add_paragraph("Portfolio-wide risk metrics at a glance.", style=_body_style())
+    doc.add_paragraph("", style=_spacer(2))
     doc.add_table(_full_metrics(portfolio, risk))
+    doc.add_paragraph("", style=_spacer(16))
 
     if risk:
         doc.add_paragraph(
@@ -386,7 +393,7 @@ def _generate_pdf_report(
 
     sw_fig = _sector_weight_composite(sector_data, portfolio, plt)
     if sw_fig:
-        doc.add_chart(sw_fig)
+        doc.add_chart(sw_fig, space_before=12, space_after=16)
     doc.add_page_break()
 
     # ════════════════════════════════════════════════════
@@ -398,17 +405,19 @@ def _generate_pdf_report(
                       style=_body_style())
 
     if risk:
+        doc.add_paragraph("", style=_spacer(2))
         doc.add_table(_risk_metrics_table(risk, portfolio))
+        doc.add_paragraph("", style=_spacer(16))
 
     if portfolio_cum is not None and not portfolio_cum.empty:
         dd_fig = _drawdown_chart(portfolio_cum, plt)
         if dd_fig:
-            doc.add_chart(dd_fig)
+            doc.add_chart(dd_fig, space_before=12, space_after=16)
 
     if mc_result:
         mc_fig = _monte_carlo_chart(mc_result, plt)
         if mc_fig:
-            doc.add_chart(mc_fig)
+            doc.add_chart(mc_fig, space_before=12, space_after=16)
 
     if recommendations and recommendations.priority_actions:
         doc.add_heading("Top Priority Actions", level=2)
@@ -430,7 +439,7 @@ def _generate_pdf_report(
 
     pnl_fig = _pnl_chart(df, plt)
     if pnl_fig:
-        doc.add_chart(pnl_fig)
+        doc.add_chart(pnl_fig, space_before=12, space_after=16)
 
     # Build display table
     display_cols = ["Ticker", "Name", "Quantity", "Avg Price", "Current Price", "P&L %", "Sector"]
@@ -445,7 +454,10 @@ def _generate_pdf_report(
         display_df["P&L %"] = display_df["P&L %"].apply(
             lambda x: f"{x:+.1f}%" if pd.notna(x) else ""
         )
-    doc.add_table(display_df, caption="Holdings Detail")
+    # Quantity(2), Avg Price(3), Current Price(4), P&L %(5) — right-aligned
+    doc.add_paragraph("", style=_spacer(2))
+    doc.add_table(display_df, caption="Holdings Detail", right_align_cols=[2, 3, 4, 5])
+    doc.add_paragraph("", style=_spacer(16))
 
     doc.add_paragraph(
         "Disclaimer: This report is for informational purposes only and does not "
