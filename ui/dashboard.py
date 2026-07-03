@@ -202,12 +202,15 @@ def render_advanced_section(
                 cols[2].metric("Distress", distress, border=True)
 
         if var_backtest:
-            row = var_backtest.get("95%", {})
-            exc = row.get("exceptions", 0)
-            total = row.get("observations", 0)
-            pv = row.get("p_value", float("nan"))
-            passed = pv > 0.05
-            st.metric("VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}")
+            row = var_backtest.get("95%")
+            if row:
+                exc = row.exceptions
+                total = row.observations
+                pv = row.p_value
+                passed = pv > 0.05
+                st.metric("VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}")
+            else:
+                st.info("VaR backtest: no data available.")
         elif var_backtest is not None:
             st.info("VaR backtest: no data available.")
 
