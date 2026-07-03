@@ -112,7 +112,8 @@ def generate_recommendations(
                 f"In a 10% market crash, this portfolio would lose ~{risk.beta * 10:.0f}% vs the market's 10%. "
                 f"The excess loss compounds with drawdown duration and recovery time.",
                 trade_off="Hedging (put options, index shorts) costs 1-3% annually in premium/roll costs and caps upside.",
-                details="Consider buying Nifty 50 put options or adding low-beta defensive stocks (pharma, FMCG) to reduce effective beta toward 1.0.",
+                details="Reduce portfolio beta by adding low-beta defensive stocks (pharma, FMCG). "
+                "For users with F&O access, Nifty 50 put options are an additional hedge option.",
             )
         )
     elif risk.beta < 0.6:

@@ -768,7 +768,7 @@ with tabs[6]:
 
         if recommendations.risk_reduction_potential > 0:
             st.metric("Total Risk Reduction Potential", f"{recommendations.risk_reduction_potential:.1f}%")
-            st.caption(
+            st.info(
                 "Risk reduction is a directional estimate based on heuristic rules, "
                 "not a backtested or simulated forecast."
             )
@@ -822,18 +822,25 @@ if st.session_state.get("_report_changed", False):
         logger.error("Failed to save analysis run: {e}", e=e)
 
 # ── Disclaimer ──
+# Permanent visible warning banner (not collapsed)
 st.markdown(
-    f"<details style='margin:1rem 0;font-size:0.85rem;color:#6b7280;'>"
+    f"<div style='padding:0.75rem 1rem;margin:1rem 0;background:rgba(245,158,11,0.08);"
+    f"border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;font-size:0.85rem;' role='alert'>"
+    f"<strong>⚠️ Not financial advice.</strong> This tool provides portfolio risk analysis "
+    "for educational and informational purposes only. Nothing on this platform constitutes "
+    "investment advice or a solicitation to buy or sell securities. "
+    "<strong>The creator is not a SEBI-registered investment advisor.</strong> "
+    "All trading and investment decisions are solely your responsibility."
+    f"</div>",
+    unsafe_allow_html=True,
+)
+
+# Collapsible detailed limitations
+st.markdown(
+    f"<details style='font-size:0.85rem;color:#6b7280;'>"
     f"<summary style='cursor:pointer;font-weight:600;color:#f59e0b;display:flex;align-items:center;gap:0.4rem;'>"
-    f"{icon_html(ALERT_TRIANGLE, size=16)} Disclaimer"
+    f"{icon_html(ALERT_TRIANGLE, size=14)} Detailed limitations"
     f"</summary>"
-    f"<p><strong>Not financial advice.</strong> This tool provides portfolio risk analysis, "
-    "sector concentration metrics, benchmark comparison, and other quantitative "
-    "indicators for educational and informational purposes only. Nothing on this "
-    "platform constitutes investment advice, a recommendation, or a solicitation "
-    "to buy or sell securities.</p>"
-    f"<p><strong>No SEBI registration.</strong> The creator is not a SEBI-registered investment "
-    "advisor. All trading and investment decisions are solely your responsibility.</p>"
     f"<p><strong>Data accuracy.</strong> Data is sourced from third-party public APIs (yfinance, "
     "nselib) and may be delayed, incomplete, or inaccurate. We do not guarantee "
     "the timeliness, accuracy, or completeness of any data displayed.</p>"

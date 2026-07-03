@@ -530,3 +530,19 @@ def render_rebalance_section(
             "Why": reason,
         })
     st.dataframe(rows, use_container_width=True, hide_index=True)
+
+    # Estimated transaction costs
+    buy_value = sum(t["change_rs"] for t in rebalance.trades if t["action"] == "buy")
+    sell_value = sum(abs(t["change_rs"]) for t in rebalance.trades if t["action"] == "sell")
+    stt = sell_value * 0.001
+    stamp = buy_value * 0.00015
+    brokerage = (buy_value + sell_value) * 0.0003
+    gst = brokerage * 0.18
+    total_cost = stt + stamp + brokerage + gst
+    if total_cost > 0:
+        st.caption(
+            f"Estimated transaction costs \u2014 STT: \u20b9{stt:,.0f} \u00b7 "
+            f"Stamp: \u20b9{stamp:,.0f} \u00b7 "
+            f"Brokerage: \u20b9{brokerage:,.0f} \u00b7 "
+            f"Total: \u20b9{total_cost:,.0f}"
+        )

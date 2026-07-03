@@ -23,7 +23,7 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 |----------|-------------|
 | **Risk Metrics** | Annualized volatility, VaR (95%/99%), CVaR, Sharpe/Sortino ratios, beta, max drawdown with peak-to-trough dates |
 | **Monte Carlo** | 10,000-path GBM simulation — probability of profit, confidence intervals, horizon VaR |
-| **Optimization** | Hierarchical Risk Parity (HRP), Minimum Volatility, Maximum Sharpe — with weight caps and cash-instrument exclusion |
+| **Optimization** | Hierarchical Risk Parity (HRP), Minimum Volatility, Maximum Sharpe — with weight caps, cash-instrument exclusion, and transaction cost estimates |
 | **Regime Detection** | HMM-based bull/neutral/bear classification with transition matrix and per-regime stats. Falls back to quantile heuristic when hmmlearn not installed |
 | **Factor Decomposition** | Market, size, momentum, volatility, liquidity, and concentration factor exposures. Macro sensitivity estimates for crude, rates, INR/USD, and risk sentiment |
 | **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |

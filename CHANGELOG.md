@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.13.0 (2026-07-03)
+
+### Added
+
+- **Transaction cost estimate in rebalancing** (`ui/dashboard.py`) — when the rebalancer suggests trades, the UI now shows estimated STT (0.1% on delivery sells), stamp duty (0.015% on buys), brokerage (~0.03%), and total cost as a caption below the trade table. Helps users evaluate whether rebalancing is worth the friction.
+
+### Changed
+
+- **Disclaimer moved outside collapsed `<details>` element** (`app.py`) — the "Not financial advice" + "No SEBI registration" warning is now a permanently visible banner above the collapsible limitations list. Every user sees the legal disclaimer without clicking.
+- **Risk reduction disclaimer upgraded from `st.caption` to `st.info`** (`app.py`) — the "directional estimate, not a forecast" warning below the Total Risk Reduction Potential metric now displays in a visible colored info box instead of subtle gray caption text.
+- **Hedge suggestion defaults to stock-level action first** (`engine/recommendations.py`) — changed from "Consider buying Nifty 50 put options or adding low-beta defensive stocks" to "Reduce portfolio beta by adding low-beta defensive stocks. For users with F&O access, Nifty 50 put options are an additional hedge option." Non-options users now see the actionable approach first.
+
 ## v0.12.0 (2026-07-03)
 
 ### Removed
