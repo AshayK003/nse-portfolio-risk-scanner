@@ -525,7 +525,7 @@ def render_rebalance_section(
             "Current": f"{t['current_w_pct']:.0f}%",
             "Target": f"{t['target_w_pct']:.0f}%",
             "Drift": f"{t['drift_pct']:+.1f}%",
-            "Action": f"{action_icon} {t['action'].title()}",
+            "Action": action_icon,
             "Change (Rs)": f"Rs {t['change_rs']:+,.0f}",
             "Why": reason,
         })
