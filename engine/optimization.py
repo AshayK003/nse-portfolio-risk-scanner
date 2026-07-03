@@ -328,7 +328,7 @@ def suggest_rebalance(
             "current_w_pct": round(current_w * 100, 1),
             "target_w_pct": round(target_w * 100, 1),
             "drift_pct": round(drift * 100, 1),
-            "action": "buy" if drift > 0.005 else ("sell" if drift < -0.005 else "hold"),
+            "action": "increase" if drift > 0.005 else ("decrease" if drift < -0.005 else "hold"),
             "change_rs": round(drift * total_value, 0),
         })
 

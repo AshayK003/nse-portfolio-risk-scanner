@@ -513,7 +513,7 @@ def render_rebalance_section(
 
     rows = []
     for t in rebalance.trades:
-        action_icon = "Buy" if t["action"] == "buy" else ("Sell" if t["action"] == "sell" else "Hold")
+        action_icon = "Increase" if t["action"] == "increase" else ("Decrease" if t["action"] == "decrease" else "Hold")
         reason = _opt_reason(
             f"{t['ticker']}.NS",
             t["current_w_pct"],
@@ -532,8 +532,8 @@ def render_rebalance_section(
     st.dataframe(rows, use_container_width=True, hide_index=True)
 
     # Estimated transaction costs
-    buy_value = sum(t["change_rs"] for t in rebalance.trades if t["action"] == "buy")
-    sell_value = sum(abs(t["change_rs"]) for t in rebalance.trades if t["action"] == "sell")
+    buy_value = sum(t["change_rs"] for t in rebalance.trades if t["action"] == "increase")
+    sell_value = sum(abs(t["change_rs"]) for t in rebalance.trades if t["action"] == "decrease")
     stt = sell_value * 0.001
     stamp = buy_value * 0.00015
     brokerage = (buy_value + sell_value) * 0.0003

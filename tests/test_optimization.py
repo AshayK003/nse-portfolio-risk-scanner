@@ -101,8 +101,8 @@ class TestSuggestRebalance:
         ]
         result = suggest_rebalance(holdings, target_method="equal_weight")
         actions = {t["ticker"]: t["action"] for t in result.trades}
-        # A at 33.3% should be a buy toward 50%, B at 66.7% a sell toward 50%
-        assert actions == {"A": "buy", "B": "sell"}
+        # A at 33.3% should be increased toward 50%, B at 66.7% decreased toward 50%
+        assert actions == {"A": "increase", "B": "decrease"}
 
     def test_action_hold_when_drift_below_0_5pct(self):
         holdings = [
