@@ -5,6 +5,7 @@
 ### Added
 
 - **Transaction cost estimate in rebalancing** (`ui/dashboard.py`) — when the rebalancer suggests trades, the UI now shows estimated STT (0.1% on delivery sells), stamp duty (0.015% on buys), brokerage (~0.03%), and total cost as a caption below the trade table. Helps users evaluate whether rebalancing is worth the friction.
+- **Rich CSV export** (`ui/export.py`) — CSV now includes 5 sections: portfolio summary (name, holdings, P&L, risk metrics), holdings detail with per-stock volatility and beta columns, sector allocation breakdown, recommendations table, and risk-reduction notice. BOM-encoded for Excel compatibility.
 
 ### Changed
 

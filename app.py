@@ -808,6 +808,7 @@ with tabs[7]:
         mc_result=mc_result,
         portfolio_cum=portfolio_cum,
         recommendations=recommendations,
+        risk_data=risk_data,
     )
 
 # ── Step 5: Save analysis run to history (only on fresh computation) ──
