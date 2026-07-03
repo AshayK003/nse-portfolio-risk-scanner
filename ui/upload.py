@@ -60,6 +60,16 @@ def render_sidebar():
     except Exception as e:
         st.sidebar.error(f"Could not load portfolios: {e}")
 
+    # ── Risk-free Rate ──
+    st.sidebar.divider()
+    st.sidebar.subheader("Assumptions")
+    stored_rf = st.session_state.get("risk_free_rate", 6.5)
+    st.session_state.risk_free_rate = st.sidebar.slider(
+        "Risk-free Rate (%)",
+        min_value=3.0, max_value=10.0, value=stored_rf, step=0.25,
+        help="Indian risk-free rate (10-year bond yield ~6.5%). Affects Sharpe, Sortino, and alpha.",
+    )
+
     # ── Risk Profile Selector ──
     st.sidebar.divider()
     st.sidebar.subheader("Risk Profile")
@@ -151,6 +161,30 @@ def render_manual_entry() -> list[Holding]:
 
 def render_upload_tab() -> Portfolio | None:
     """Render the CSV upload + manual entry section. Returns a Portfolio if loaded."""
+    # ── Load from shared link (query params) ──
+    query_params = st.query_params
+    if "p" in query_params and st.session_state.get("portfolio") is None:
+        try:
+            import base64
+            import json
+
+            decoded = base64.b64decode(query_params["p"]).decode()
+            data = json.loads(decoded)
+            holdings = []
+            for item in data["holdings"]:
+                from engine.portfolio import normalize_ticker
+                holdings.append(Holding(
+                    ticker=normalize_ticker(item["t"]),
+                    name=item.get("n", item["t"]),
+                    quantity=int(item["q"]),
+                    avg_price=float(item["p"]),
+                ))
+            portfolio = Portfolio(holdings=holdings, name="Shared Portfolio")
+            st.success("Loaded portfolio from shared link.")
+            return portfolio
+        except Exception:
+            st.warning("Could not decode shared portfolio link. The link may be invalid or expired.")
+
     # ── CSV Upload Section ──
     st.subheader("Upload Portfolio CSV")
 

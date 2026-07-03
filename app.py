@@ -124,6 +124,23 @@ st.session_state.portfolio = portfolio
 portfolio = render_data_editor(portfolio)
 render_save_button(portfolio)
 
+# ── Shareable link ──
+with st.expander("Share Portfolio", expanded=False):
+    import base64
+    import json
+
+    holdings_data = [
+        {"t": h.ticker.replace(".NS", ""), "n": h.name, "q": h.quantity, "p": h.avg_price}
+        for h in portfolio.holdings
+    ]
+    encoded = base64.b64encode(json.dumps({"holdings": holdings_data}).encode()).decode()
+    st.code(f"?p={encoded}", language="text")
+    st.caption(
+        "Append this to the app URL to share your portfolio. "
+        "Example: `https://yourapp.streamlit.app/?p=...` "
+        "No data is stored on any server."
+    )
+
 # ── Step 2: Benchmark selection ──
 benchmark_options = {v: k for k, v in BENCHMARK_TICKERS.items()}
 default_benchmark = "^NSEI"
@@ -148,6 +165,8 @@ if force:
 else:
     st.session_state.force_refresh = False
 
+risk_free_rate = st.session_state.get("risk_free_rate", 6.5) / 100.0
+
 # ── Input hash — skip recomputation when portfolio hasn't changed ──
 risk_profile_key = st.session_state.get("risk_profile", "moderate")
 profile = RISK_PROFILES[risk_profile_key]
@@ -157,6 +176,7 @@ _input_hash = hashlib.sha256(
             "holdings": [(h.ticker, h.quantity, h.avg_price, h.current_price) for h in portfolio.holdings],
             "benchmark": benchmark_choice,
             "risk_profile": risk_profile_key,
+            "risk_free_rate": round(risk_free_rate, 4),
         },
         sort_keys=True,
     ).encode(),
@@ -221,7 +241,8 @@ if _needs_compute:
         # Compute all risk metrics
         with st.spinner("Computing risk metrics..."):
             risk = compute_risk_metrics(
-                prices, weights, benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns
+                prices, weights, risk_free_rate=risk_free_rate,
+                benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns
             )
             sector = compute_sector_exposure(portfolio.holdings)
             benchmark = (
@@ -476,6 +497,36 @@ report = st.session_state.report
 
 # Summary metrics
 render_metric_row(report.portfolio, report.risk)
+
+# Portfolio Health Gauge
+institutional = report.institutional_scores
+if institutional and institutional.overall_risk_score > 0:
+    health = max(0, min(100, 100 - institutional.overall_risk_score))
+    if health >= 70:
+        color = "#22C55E"
+        label = "Good"
+    elif health >= 40:
+        color = "#EAB308"
+        label = "Moderate"
+    else:
+        color = "#EF4444"
+        label = "High Risk"
+
+    st.markdown(
+        f"""<div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;
+                          border:1px solid color-mix(in srgb, {color} 30%, transparent);
+                          border-radius:0.5rem;margin-bottom:0.5rem;">
+            <div style="flex:1;">
+                <div style="font-size:0.75rem;color:#888;text-transform:uppercase;">Portfolio Health</div>
+                <div style="font-size:1.5rem;font-weight:700;color:{color};">{health:.0f}/100</div>
+                <div style="font-size:0.8rem;color:{color};">{label}</div>
+            </div>
+            <div style="flex:2;font-size:0.8rem;color:#aaa;line-height:1.4;">
+                {institutional.score_interpretation[:200]}
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
 # Generate narrative (always available — pure functions, no IO)
 narrative = generate_narrative(report)
