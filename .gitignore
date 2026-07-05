@@ -40,7 +40,7 @@ htmlcov/
 
 # Internal
 
-.hermes/
+
 internals/
 *.db-shm
 *.db-wal
