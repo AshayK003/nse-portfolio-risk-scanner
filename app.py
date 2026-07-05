@@ -122,7 +122,6 @@ st.session_state.portfolio = portfolio
 
 # Allow editing
 portfolio = render_data_editor(portfolio)
-render_save_button(portfolio)
 
 # ── Shareable link ──
 with st.expander("Share Portfolio", expanded=False):
@@ -498,6 +497,9 @@ st.session_state.report = AnalysisReport(
     pelve=pelve,
     optimization_advanced=opt_advanced,
 )
+
+# ── Save portfolio (after prices are fetched, so current_price is set) ──
+render_save_button(portfolio)
 
 # ── Step 4: Display ──
 report = st.session_state.report

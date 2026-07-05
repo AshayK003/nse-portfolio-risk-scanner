@@ -25,6 +25,8 @@ from engine.narrative import NarrativeReport
 
 def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
     """Display top-level portfolio metric cards."""
+    has_prices = portfolio.total_current > 0
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric(
@@ -32,18 +34,24 @@ def render_metric_row(portfolio: Portfolio, risk: RiskMetrics) -> None:
             f"Rs {portfolio.total_invested:,.0f}",
         )
     with col2:
-        st.metric(
-            "Current Value",
-            f"Rs {portfolio.total_current:,.0f}",
-        )
+        if has_prices:
+            st.metric(
+                "Current Value",
+                f"Rs {portfolio.total_current:,.0f}",
+            )
+        else:
+            st.metric("Current Value", "—", delta="Awaiting prices", delta_color="off")
     with col3:
-        pnl = portfolio.total_pnl
-        st.metric(
-            "P&L",
-            f"Rs {pnl:+,.0f}",
-            delta=f"{portfolio.total_pnl_pct:+.2f}%",
-            delta_color="normal",
-        )
+        if has_prices:
+            pnl = portfolio.total_pnl
+            st.metric(
+                "P&L",
+                f"Rs {pnl:+,.0f}",
+                delta=f"{portfolio.total_pnl_pct:+.2f}%",
+                delta_color="normal",
+            )
+        else:
+            st.metric("P&L", "—", delta="Awaiting prices", delta_color="off")
     with col4:
         st.metric(
             "Holdings",
