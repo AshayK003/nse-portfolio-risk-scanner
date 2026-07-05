@@ -188,13 +188,30 @@ def render_upload_tab() -> Portfolio | None:
     # ── CSV Upload Section ──
     st.subheader("Upload Portfolio CSV")
 
-    uploaded = st.file_uploader(
-        "Upload portfolio CSV",
-        type="csv",
-        help="Upload a CSV exported from Zerodha, Groww, or any broker. "
-        "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
-        "Max file size: 10MB.",
-    )
+    download_col, upload_col = st.columns([1, 4])
+    with download_col:
+        _SAMPLE_CSV = """ticker,name,quantity,avg_price
+RELIANCE,Reliance Industries,10,2800.00
+TCS,Tata Consultancy Services,5,3850.00
+INFY,Infosys,20,1450.00
+ITC,ITC,50,450.00
+ICICIBANK,ICICI Bank,30,1200.00
+"""
+        st.download_button(
+            "Sample CSV",
+            data=_SAMPLE_CSV,
+            file_name="sample_portfolio.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    with upload_col:
+        uploaded = st.file_uploader(
+            "Upload portfolio CSV",
+            type="csv",
+            help="Upload a CSV exported from Zerodha, Groww, or any broker. "
+            "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
+            "Max file size: 10MB.",
+        )
 
     csv_portfolio = None
     if uploaded is not None:
