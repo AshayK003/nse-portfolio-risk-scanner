@@ -53,6 +53,7 @@ portfolio_*.csv
 # Generated sample files
 *.sample.pdf
 sample-report.pdf
+_test_header.pdf
 
 # Egg info
 *.egg-info/

@@ -43,9 +43,7 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 
 ## Demo
 
-<!-- Replace with a screenshot of the app:
-  ![App Screenshot](assets/demo.png)
--->
+
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
