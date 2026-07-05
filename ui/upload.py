@@ -188,30 +188,13 @@ def render_upload_tab() -> Portfolio | None:
     # ── CSV Upload Section ──
     st.subheader("Upload Portfolio CSV")
 
-    download_col, upload_col = st.columns([1, 4])
-    with download_col:
-        _SAMPLE_CSV = """ticker,name,quantity,avg_price
-RELIANCE,Reliance Industries,10,2800.00
-TCS,Tata Consultancy Services,5,3850.00
-INFY,Infosys,20,1450.00
-ITC,ITC,50,450.00
-ICICIBANK,ICICI Bank,30,1200.00
-"""
-        st.download_button(
-            "Sample CSV",
-            data=_SAMPLE_CSV,
-            file_name="sample_portfolio.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-    with upload_col:
-        uploaded = st.file_uploader(
-            "Upload portfolio CSV",
-            type="csv",
-            help="Upload a CSV exported from Zerodha, Groww, or any broker. "
-            "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
-            "Max file size: 10MB.",
-        )
+    uploaded = st.file_uploader(
+        "Upload portfolio CSV",
+        type="csv",
+        help="Upload a CSV exported from Zerodha, Groww, or any broker. "
+        "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
+        "Max file size: 10MB.",
+    )
 
     csv_portfolio = None
     if uploaded is not None:
@@ -247,6 +230,24 @@ ICICIBANK,ICICI Bank,30,1200.00
             </div>""",
             unsafe_allow_html=True,
         )
+
+        # Quick-launch sample portfolio (auto-analyzed on click)
+        if st.button("Try Sample Portfolio", use_container_width=True, type="primary"):
+            portfolio = Portfolio(
+                holdings=[
+                    Holding(ticker="RELIANCE.NS", name="RELIANCE", quantity=10, avg_price=2800.00),
+                    Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3850.00),
+                    Holding(ticker="INFY.NS", name="INFY", quantity=20, avg_price=1450.00),
+                    Holding(ticker="ITC.NS", name="ITC", quantity=50, avg_price=450.00),
+                    Holding(ticker="ICICIBANK.NS", name="ICICIBANK", quantity=30, avg_price=1200.00),
+                    Holding(ticker="BANKBEES.NS", name="BANKBEES", quantity=50, avg_price=550.00),
+                    Holding(ticker="CPSEETF.NS", name="CPSEETF", quantity=100, avg_price=50.00),
+                ],
+                name="Sample Portfolio",
+            )
+            st.session_state.portfolio = portfolio
+            st.rerun()
+
         return None
 
     portfolio = csv_portfolio or Portfolio(name="My Portfolio")
