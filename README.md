@@ -38,8 +38,9 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 || **Portfolio Health Gauge** | Single 0-100 health score at the top of every report — green/yellow/red color-coded. Instant answer to "is my portfolio OK?" |
 || **Risk-free Rate** | Adjustable slider (3-10%) in sidebar — Sharpe, Sortino, and alpha update dynamically. Default 6.5% (10-year Indian bond yield) |
 || **Shareable Links** | Base64-encoded portfolio in `?p=` query param — share your risk report as a single URL. Zero server storage |
-|| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
-| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
+||| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
+||| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
+||| **Try Sample Portfolio** | One-click button loads a diversified 7-holding portfolio with stocks, sector ETFs, and commodity ETFs. Instant analysis with zero setup — no CSV upload needed |
 
 ## Demo
 
