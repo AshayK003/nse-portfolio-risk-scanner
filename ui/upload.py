@@ -235,13 +235,13 @@ def render_upload_tab() -> Portfolio | None:
         if st.button("Try Sample Portfolio", use_container_width=True, type="primary"):
             portfolio = Portfolio(
                 holdings=[
-                    Holding(ticker="RELIANCE.NS", name="RELIANCE", quantity=10, avg_price=2800.00),
-                    Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3850.00),
-                    Holding(ticker="INFY.NS", name="INFY", quantity=20, avg_price=1450.00),
-                    Holding(ticker="ITC.NS", name="ITC", quantity=50, avg_price=450.00),
-                    Holding(ticker="ICICIBANK.NS", name="ICICIBANK", quantity=30, avg_price=1200.00),
-                    Holding(ticker="BANKBEES.NS", name="BANKBEES", quantity=50, avg_price=550.00),
-                    Holding(ticker="CPSEETF.NS", name="CPSEETF", quantity=100, avg_price=50.00),
+                    Holding(ticker="RELIANCE.NS", name="RELIANCE", quantity=10, avg_price=1100.00),
+                    Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=1700.00),
+                    Holding(ticker="INFY.NS", name="INFY", quantity=20, avg_price=850.00),
+                    Holding(ticker="ITC.NS", name="ITC", quantity=50, avg_price=240.00),
+                    Holding(ticker="ICICIBANK.NS", name="ICICIBANK", quantity=30, avg_price=1150.00),
+                    Holding(ticker="BANKBEES.NS", name="BANKBEES", quantity=50, avg_price=500.00),
+                    Holding(ticker="CPSEETF.NS", name="CPSEETF", quantity=100, avg_price=80.00),
                 ],
                 name="Sample Portfolio",
             )
