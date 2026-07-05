@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a3c6e,100:22C55E&height=200&section=header&text=NSE%20Portfolio%20Risk%20Scanner&fontSize=40&fontAlignY=32&desc=Institutional-grade%20risk%20analysis%20for%20Indian%20equity%20portfolios&descAlignY=50&animation=fadeIn" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a3c6e,100:22C55E&height=200&section=header&text=NSE%20Portfolio%20Risk%20Scanner&fontSize=40&fontAlignY=32&desc=Institutional-grade%20risk%20analysis%20for%20Indian%20equity%20portfolios&descAlignY=50&animation=fadeIn&fontColor=FFFFFF" width="100%"/>
 </p>
 
 <p align="center">
@@ -373,7 +373,7 @@ Look for issues tagged [`good-first-issue`](https://github.com/AshayK003/nse-por
 ---
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a3c6e,100:22C55E&height=120&section=footer&text=AshayK003/nse-portfolio-risk-scanner&fontSize=20&fontAlignY=70" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a3c6e,100:22C55E&height=120&section=footer&text=AshayK003/nse-portfolio-risk-scanner&fontSize=20&fontAlignY=70&fontColor=FFFFFF" width="100%"/>
 </p>
 
 <p align="center">
