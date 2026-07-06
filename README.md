@@ -378,5 +378,6 @@ Look for issues tagged [`good-first-issue`](https://github.com/AshayK003/nse-por
 
 <p align="center">
   Built by <a href="https://github.com/AshayK003">Ashay Kushwaha</a> ·
-  <a href="LICENSE">GNU AGPL v3</a>
+  <a href="LICENSE">GNU AGPL v3</a> ·
+  <a href="https://chai4.me/ashaykushwaha003"><img src="https://img.shields.io/badge/support%20developer-chai4.me-FFD700?style=flat&logo=buymeacoffee&logoColor=black" alt="Support Developer"></a>
 </p>
