@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
   <img src="https://img.shields.io/badge/tests-355%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
@@ -378,5 +378,5 @@ Look for issues tagged [`good-first-issue`](https://github.com/AshayK003/nse-por
 
 <p align="center">
   Built by <a href="https://github.com/AshayK003">Ashay Kushwaha</a> ·
-  <a href="LICENSE">MIT License</a>
+  <a href="LICENSE">GNU AGPL v3</a>
 </p>
