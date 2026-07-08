@@ -85,12 +85,62 @@ def render_risk_cards(risk: RiskMetrics) -> None:
         st.metric("Sortino Ratio", f"{risk.sortino:.2f}")
         st.caption("Downside-adjusted Sharpe")
     with col3:
-        st.metric("CAGR", f"{risk.cagr:.1f}%")
-        st.caption("Annualized return")
+        st.metric("Backtest CAGR", f"{risk.cagr:.1f}%")
+        st.caption("Annualized — based on overlapping price history")
     with col4:
         delta_color = "normal" if risk.beta <= 1 else "inverse"
         st.metric("Beta", f"{risk.beta:.2f}", delta_color=delta_color)
         st.caption("1.0 = market risk")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Calmar Ratio", f"{risk.calmar_ratio:.2f}")
+        st.caption("CAGR ÷ |Max DD| — return per drawdown risk")
+    with col2:
+        st.metric("Treynor Ratio", f"{risk.treynor_ratio:.2f}")
+        st.caption("Excess return per unit of beta risk")
+    with col3:
+        skw_label = "Symmetric" if abs(risk.skewness) < 0.5 else "Skewed" if risk.skewness < 0 else "Skewed"
+        skw_delta = "Normal" if abs(risk.skewness) < 0.5 else f"{risk.skewness:+.2f}"
+        st.metric("Skewness", f"{risk.skewness:.2f}", delta=skw_delta, delta_color="off")
+        st.caption("Negative = left-tail risk")
+    with col4:
+        kurt_label = "Normal" if abs(risk.kurtosis_excess) < 1 else "Fat tails" if risk.kurtosis_excess > 0 else "Thin tails"
+        st.metric("Excess Kurtosis", f"{risk.kurtosis_excess:.2f}")
+        st.caption(f"{kurt_label} — {'wider' if risk.kurtosis_excess > 0 else 'narrower'} tail than normal")
+
+
+def render_composition_metrics(portfolio: Portfolio) -> None:
+    """Display ETF ratio and US exposure in a compact row."""
+    total = portfolio.total_current
+    if total == 0:
+        return
+    etf_kw = ["ETF","BEES","IETF","SML250","LIQUIDCASE"]
+    us_tickers = {"MASPTOP50","MAFANG"}
+    etf_v = sum(h.current_value for h in portfolio.holdings
+                if any(k in h.ticker.upper() for k in etf_kw))
+    us_v = sum(h.current_value for h in portfolio.holdings
+               if h.ticker.replace(".NS","") in us_tickers)
+    etf_pct = etf_v / total * 100
+    us_pct = us_v / total * 100
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("ETF / Passive Allocation", f"{etf_pct:.1f}%")
+        st.caption("Higher = lower active risk")
+    with col2:
+        st.metric("US Exposure", f"{us_pct:.1f}%")
+        st.caption("International diversification")
+    with col3:
+        top3 = sorted(portfolio.holdings, key=lambda h: h.current_value, reverse=True)[:3]
+        conc = sum(h.current_value for h in top3) / total * 100
+        st.metric("Top-3 Concentration", f"{conc:.1f}%")
+        st.caption("Largest 3 holdings")
+    with col4:
+        wins = sum(1 for h in portfolio.holdings if h.pnl_pct > 0)
+        total_h = len(portfolio.holdings)
+        st.metric("Win Rate", f"{wins}/{total_h}")
+        st.caption("Positive positions")
 
 
 def render_sector_section(sector: SectorExposure) -> None:

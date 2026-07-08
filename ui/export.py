@@ -46,7 +46,11 @@ def _to_rich_csv(
         lines.append(f"VaR (95%),{risk.var_95:.2f}%")
         lines.append(f"CVaR (95%),{risk.cvar_95:.2f}%")
         lines.append(f"Max Drawdown,{risk.max_drawdown:.1f}%")
-        lines.append(f"CAGR,{risk.cagr:.1f}%")
+        lines.append(f"Backtest CAGR,{risk.cagr:.1f}%")
+        lines.append(f"Calmar Ratio,{risk.calmar_ratio:.2f}")
+        lines.append(f"Treynor Ratio,{risk.treynor_ratio:.2f}")
+        lines.append(f"Skewness,{risk.skewness:.3f}")
+        lines.append(f"Excess Kurtosis,{risk.kurtosis_excess:.3f}")
     lines.append("")
 
     # ── Section 2: Holdings Detail ──

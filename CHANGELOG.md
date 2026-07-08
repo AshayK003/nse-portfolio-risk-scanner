@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.17.0 (2026-07-08)
+
+### Added
+
+- **Calmar Ratio, Treynor Ratio, Skewness, Excess Kurtosis** (`engine/risk.py`, `ui/dashboard.py`) — new risk metric cards in a fourth row below the existing metrics. Calmar = CAGR ÷ |Max DD| (return per drawdown risk). Treynor = (CAGR − Rf) ÷ β (excess return per unit of market risk). Skewness and excess kurtosis from scipy.stats on daily portfolio returns. In CSV export and PDF report. Guarded against near-zero beta (Treynor = 0 when |β| < 0.1).
+- **Portfolio Composition row** (`ui/dashboard.py`, `app.py`) — new section showing ETF / Passive Allocation %, US Exposure % (MAFANG + MASPTOP50), Top-3 Concentration %, and Win/Loss count. Exposed between risk cards and institutional section. No data model changes — all computed at display time from the holdings list.
+- **ETF keyword detection** checks each ticker for ETF/BEES/IETF/SML250/LIQUIDCASE. US-exposure looks up MAFANG and MASPTOP50 tickers by exact match.
+
+### Changed
+
+- **RiskMetrics dataclass** — `calmar_ratio`, `skewness`, `kurtosis_excess`, `treynor_ratio` added with default 0.0. Existing code constructing or mocking RiskMetrics continues to work unchanged.
+
+### Tests
+
+- **355 tests pass** — zero regressions. Updated `test_risk_metrics_table` row count from 7→9.
+
+---
+
 ## v0.16.2 (2026-07-05)
 
 ### Added

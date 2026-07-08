@@ -104,7 +104,7 @@ def _full_metrics(portfolio: Portfolio, risk: RiskMetrics | None) -> list[list[s
         metric_rows += [
             ("Sortino", f"{risk.sortino:.2f}",
              "Beta", f"{risk.beta:.2f}"),
-            ("CAGR", f"{risk.cagr:.1f}%",
+            ("Backtest CAGR", f"{risk.cagr:.1f}%",
              "VaR (95%)", f"{risk.var_95:.2f}%"),
             ("CVaR (95%)", f"{risk.cvar_95:.2f}%",
              "Volatility", f"{risk.volatility_annual:.1f}%"),
@@ -118,7 +118,7 @@ def _risk_metrics_table(risk: RiskMetrics, portfolio: Portfolio) -> list[list[st
         ("VaR (95%)", f"{risk.var_95:.2f}%",
          "CVaR (95%)", f"{risk.cvar_95:.2f}%"),
         ("Volatility", f"{risk.volatility_annual:.1f}%",
-         "CAGR", f"{risk.cagr:.1f}%"),
+         "Backtest CAGR", f"{risk.cagr:.1f}%"),
         ("Max Drawdown", f"{risk.max_drawdown:.1f}%",
          "Total Return", f"{risk.total_return:.1f}%"),
         ("Sortino", f"{risk.sortino:.2f}",
@@ -127,6 +127,10 @@ def _risk_metrics_table(risk: RiskMetrics, portfolio: Portfolio) -> list[list[st
          "Correlation", f"{risk.correlation_to_benchmark:.2f}"),
         ("Stock Count", str(portfolio.holding_count),
          "Sharpe", f"{risk.sharpe:.2f}"),
+        ("Calmar Ratio", f"{risk.calmar_ratio:.2f}",
+         "Treynor Ratio", f"{risk.treynor_ratio:.2f}"),
+        ("Skewness", f"{risk.skewness:.3f}",
+         "Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"),
     ])
 
 

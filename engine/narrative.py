@@ -160,7 +160,7 @@ def _build_risk_assessment(risk: RiskMetrics) -> str:
     ]
 
     if cagr > 0:
-        parts.append(f"The CAGR (annualized return) is {cagr:.1f}% over the analysis period.")
+        parts.append(f"The backtest CAGR is {cagr:.1f}% — the annualized return if current weights had been held over the overlapping price history of all holdings.")
 
     return " ".join(parts)
 

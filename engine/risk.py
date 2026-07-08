@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from scipy.stats import kurtosis, skew
 
 
 @dataclass
@@ -29,6 +30,10 @@ class RiskMetrics:
     sortino: float
     cagr: float
     total_return: float
+    calmar_ratio: float = 0.0
+    skewness: float = 0.0
+    kurtosis_excess: float = 0.0
+    treynor_ratio: float = 0.0
 
 
 @dataclass
@@ -147,6 +152,22 @@ def compute_risk_metrics(
             beta = cov / var if var > 0 else 1.0
             corr = aligned.iloc[:, 0].corr(aligned.iloc[:, 1])
 
+    # --- Calmar Ratio ---
+    calmar = 0.0
+    if max_dd < 0:
+        calmar = cagr / abs(max_dd)
+
+    # --- Skewness & Kurtosis ---
+    rets = portfolio_returns.values.flatten()
+    rets_clean = rets[~np.isnan(rets)]
+    skw = float(skew(rets_clean)) if len(rets_clean) > 2 else 0.0
+    kurt = float(kurtosis(rets_clean, fisher=True)) if len(rets_clean) > 2 else 0.0
+
+    # --- Treynor Ratio ---
+    treynor = 0.0
+    if abs(beta) > 0.1:
+        treynor = (cagr - risk_free_rate * 100) / beta
+
     return RiskMetrics(
         volatility_annual=round(annual_vol * 100, 2),
         var_95=round(var_95, 2),
@@ -161,6 +182,10 @@ def compute_risk_metrics(
         sortino=round(sortino, 2),
         cagr=round(cagr, 2),
         total_return=round(total_return_val * 100, 2),
+        calmar_ratio=round(calmar, 2),
+        skewness=round(skw, 3),
+        kurtosis_excess=round(kurt, 3),
+        treynor_ratio=round(treynor, 2),
     )
 
 

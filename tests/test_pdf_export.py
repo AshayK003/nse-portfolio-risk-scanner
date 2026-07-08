@@ -203,7 +203,7 @@ def test_risk_metrics_table():
     risk = _sample_risk_metrics()
     table = _risk_metrics_table(risk, portfolio)
     assert isinstance(table, list)
-    assert len(table) == 7  # header + 6 risk metric rows
+    assert len(table) == 9  # header + 8 risk metric rows (6 original + 2 new)
 
 
 # ── Full PDF generation tests ──

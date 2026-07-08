@@ -58,6 +58,7 @@ from ui.charts import (
 from ui.dashboard import (
     render_advanced_section,
     render_benchmark_section,
+    render_composition_metrics,
     render_metric_row,
     render_monte_carlo_section,
     render_narrative_section,
@@ -570,9 +571,11 @@ with tabs[0]:
             with st.expander("Rolling 21-day Volatility", expanded=False):
                 st.line_chart(rv)
 
+    st.divider()
+    render_composition_metrics(report.portfolio)
+
     # ── Institutional Intelligence (collapsible) ──
     if institutional_scores:
-        st.divider()
         with st.expander("Institutional Risk Scores & Factor Analysis", expanded=False):
             score_cols = st.columns(5)
             score_labels = [
