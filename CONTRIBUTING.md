@@ -1,0 +1,122 @@
+# Contributing
+
+Thanks for helping improve NSE Portfolio Risk Scanner. Keep changes focused, testable, and aligned with the project's goal: professional-grade NSE portfolio risk analysis with zero paid APIs.
+
+## Development Setup
+
+```bash
+git clone https://github.com/AshayK003/nse-portfolio-risk-scanner.git
+cd nse-portfolio-risk-scanner
+
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+pip install -e ".[dev,pdf]"
+pre-commit install
+```
+
+Optional extras:
+
+```bash
+pip install -e ".[dev,pdf,nse]"      # Official NSE data support
+pip install -e ".[dev,pdf,nse,ml]"   # HMM regime detection
+pip install -e ".[dev,pdf,advanced]" # Advanced optimization and GARCH tooling
+```
+
+Run the app locally:
+
+```bash
+streamlit run app.py
+```
+
+## Architecture Overview
+
+The project keeps computation, data access, storage, and UI separate:
+
+| Layer | Directory | Responsibility |
+| --- | --- | --- |
+| Engine | `engine/` | Pure risk, scoring, optimization, scenario, narrative, and recommendation logic. No Streamlit or I/O. |
+| Data | `data/` | Price fetching and cache integration. |
+| Storage | `storage/` | SQLite persistence and serialization. |
+| UI | `ui/` | Streamlit rendering, upload controls, charts, dashboards, and exports. |
+| App shell | `app.py` | Thin orchestration from input to engine calls to UI rendering. |
+
+When adding behavior, put it in the lowest layer that owns the responsibility. UI code should call engine functions rather than computing risk metrics directly.
+
+## Tests and Quality Checks
+
+Run the focused test while developing, then the broader checks before opening a PR:
+
+```bash
+pytest tests/ -v
+ruff check .
+ruff format .
+```
+
+Useful targeted commands:
+
+```bash
+pytest tests/test_risk.py -v
+pytest tests/test_portfolio.py -k broker -v
+pytest tests/ --cov=engine --cov=data
+```
+
+## Adding a New Engine Module
+
+1. Add the implementation under `engine/`.
+2. Keep functions pure: inputs in, dataclass or plain value out.
+3. Avoid Streamlit, network, file, or database access in `engine/`.
+4. Add unit tests under `tests/test_<module>.py`.
+5. Wire the module through `app.py` or `ui/` only after the engine behavior is tested.
+6. Document user-facing behavior in `README.md` when the feature changes workflows or output.
+
+## Adding a New UI Tab
+
+1. Keep rendering helpers in `ui/`, not in `engine/`.
+2. Reuse existing dashboard, chart, and style helpers where possible.
+3. Pass precomputed engine results into UI functions.
+4. Include empty, partial-data, and error states.
+5. For visual changes, include before/after screenshots or a short screen recording in the PR.
+
+## Code Style
+
+- Target Python 3.10+.
+- Use Ruff for linting and formatting.
+- Prefer type hints on public helpers and engine functions.
+- Keep PRs small enough to review in one pass.
+- Do not add new dependencies without explaining the trade-off in the PR.
+- Keep comments for decisions and edge cases, not line-by-line narration.
+
+## Pull Request Checklist
+
+Before opening a PR:
+
+- [ ] The issue is linked in the PR description.
+- [ ] Tests pass locally or the skipped checks are explained.
+- [ ] New engine behavior has unit tests.
+- [ ] UI changes include screenshots or a concise visual summary.
+- [ ] No paid API, secret, or real user portfolio data is committed.
+- [ ] Documentation is updated for user-facing behavior changes.
+
+## PR Template
+
+```markdown
+Closes #<issue-number>
+
+## Summary
+
+- <summary item>
+
+## Verification
+
+- [ ] `pytest tests/ -v`
+- [ ] `ruff check .`
+- [ ] `ruff format .`
+
+## Notes
+
+Any trade-offs, screenshots, or follow-up work.
+```
