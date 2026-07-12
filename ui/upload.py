@@ -170,8 +170,18 @@ def render_upload_tab() -> Portfolio | None:
 
             decoded = base64.b64decode(query_params["p"]).decode()
             data = json.loads(decoded)
+            
+            # Validate required fields
+            if not isinstance(data, dict) or "holdings" not in data:
+                raise ValueError("Invalid portfolio data: missing 'holdings'")
+            if not isinstance(data["holdings"], list):
+                raise ValueError("Invalid portfolio data: 'holdings' must be a list")
+            
             holdings = []
             for item in data["holdings"]:
+                # Validate required fields
+                if not isinstance(item, dict) or "t" not in item or "q" not in item or "p" not in item:
+                    raise ValueError("Invalid holding: missing required fields (t, q, p)")
                 from engine.portfolio import normalize_ticker
                 holdings.append(Holding(
                     ticker=normalize_ticker(item["t"]),
