@@ -1,3 +1,4 @@
+from html import escape
 """
 Risk dashboard — metric cards, tabs, and layout.
 Thin Streamlit presentation that calls engine functions.
@@ -505,7 +506,7 @@ def render_regime_section(regime: RegimeResult | None) -> None:
     for i, stat in enumerate(regime.stats):
         with cols[i]:
             color = "green" if stat["label"] in ("Bull", "Strong Bull") else ("red" if stat["label"] in ("Bear", "Crisis") else "orange")
-            st.markdown(f"**<span style='color:{color}'>{stat['label']}</span>**", unsafe_allow_html=True)
+            st.markdown(f"**<span style='color:{color}'>{escape(str(stat['label']))}</span>**", unsafe_allow_html=True)
             st.metric("Occurrence", f"{stat['pct']}%")
             st.metric("Mean Return", f"{stat['mean_return']:+.3f}%")
             st.metric("Annual Vol", f"{stat['annual_vol']:.1f}%")
