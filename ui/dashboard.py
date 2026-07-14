@@ -1,4 +1,3 @@
-from html import escape
 """
 Risk dashboard — metric cards, tabs, and layout.
 Thin Streamlit presentation that calls engine functions.
@@ -6,6 +5,8 @@ Uses Lucide SVG icons instead of emojis.
 """
 
 from __future__ import annotations
+
+from html import escape
 
 import pandas as pd
 import streamlit as st
