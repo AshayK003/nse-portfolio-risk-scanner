@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-355%20passing-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-355%20total-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>

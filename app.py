@@ -370,7 +370,7 @@ if _needs_compute:
 
         var_backtest = None
         try:
-            if risk.var_95 != 0 and not portfolio_returns.empty:
+            if not np.isnan(risk.var_95) and risk.var_95 != 0 and not portfolio_returns.empty:
                 from engine.backtesting import kupiec_pof
                 rets_flat = portfolio_returns.values.flatten()
                 var_forecast_series = np.full(len(rets_flat), abs(risk.var_95) / 100)

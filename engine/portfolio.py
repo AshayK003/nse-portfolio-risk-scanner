@@ -16,6 +16,7 @@ import math
 import re
 
 from . import Holding, Portfolio
+from engine._log import logger
 
 # Common NSE ticker suffixes to strip
 _TICKER_CLEANUP = re.compile(r"[\.\-–—\s]+(NS|NSE|BSE|EQ|LTD)$", re.IGNORECASE)
@@ -159,6 +160,9 @@ def parse_portfolio_csv(
     # Phase 1: Preprocessing — sample rows + analyze columns
     samples = _sample_rows(reader, _CSV_SAMPLE_SIZE)
     col_map, pre_warnings = _resolve_column_map(reader.fieldnames, samples)
+    if pre_warnings:
+        for w in pre_warnings:
+            logger.info("Column resolution: {w}", w=w)
     price_role = col_map.pop("_price_role", "fallback")
 
     # Phase 2: Full parse with a fresh reader

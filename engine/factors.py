@@ -46,13 +46,6 @@ class MacroDriver:
     reasoning: str  # causal explanation
 
 
-def _compute_rolling_beta(series: pd.Series, benchmark: pd.Series, window: int = 63) -> pd.Series:
-    """Rolling beta of series vs benchmark."""
-    cov = series.rolling(window).cov(benchmark)
-    var = benchmark.rolling(window).var()
-    return cov / var.replace(0, np.nan)
-
-
 def _compute_momentum_score(returns: pd.Series, lookback: int = 252) -> float:
     """Price momentum score (annualized return over lookback)."""
     if len(returns) < lookback:

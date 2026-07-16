@@ -1,6 +1,21 @@
 # Changelog
 
-## v0.17.0 (2026-07-08)
+## v0.17.1 (2026-07-16)
+
+### Fixed
+
+- **Removed dead code (`engine/factors.py`)** — deleted unused `_compute_rolling_beta()` function (zero callers anywhere in the codebase). Beta is computed inline via covariance.
+- **Robust VaR backtest guard (`app.py`)** — added `not np.isnan()` check alongside the existing `!= 0` guard so NaN VaR values are correctly skipped instead of silently producing NaN backtest results.
+- **Explicit `betas` type check (`engine/scenario.py`)** — changed `if betas:` to `if betas is not None:` so an empty dict passed intentionally doesn't silently zero out sector impacts.
+- **Logged column-resolution warnings (`engine/portfolio.py`)** — `pre_warnings` from `_resolve_column_map()` were captured and discarded. Now logged via `logger.info()` so column-resolution signals aren't silently dropped.
+
+### Changed
+
+- **Hoisted in-function import reverted** (`engine/recommendations.py`) — the lazy `from engine.__init__ import MODERATE, RiskProfile` inside `generate_recommendations()` was flagged by an autopsy tool, but reverting it caused a circular import between `engine.__init__` and `engine.recommendations`. Kept as-is with a note that the lazy import is intentional.
+
+### Tests
+
+- **347 passed, 1 skipped** — zero regressions. The same 8 pre-existing PDF export test failures (`test_pdf_export.py`, numpy/pydantic compatibility) remain unchanged.
 
 ### Added
 

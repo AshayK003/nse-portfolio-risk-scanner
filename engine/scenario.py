@@ -294,7 +294,7 @@ def run_macro_scenarios(
         # Compute sector-level impacts
         portfolio_beta = (
             sum(betas.get(h.ticker, 1.0) * (h.current_value / total_value) for h in holdings)
-            if betas
+            if betas is not None
             else 1.0
         )
         for sector, sv in sector_values.items():
@@ -305,7 +305,7 @@ def run_macro_scenarios(
                     sector_weight * (portfolio_beta * market_change + sector_adj * 100),
                     2,
                 )
-                if betas
+                if betas is not None
                 else 0.0
             )
 
