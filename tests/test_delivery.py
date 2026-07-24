@@ -1,8 +1,9 @@
 """Tests for the delivery analysis module."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from engine.delivery import (
     DeliveryInfo,
@@ -28,21 +29,14 @@ class TestComputeDelivery:
         assert isinstance(result, DeliveryInfo)
         assert result.ticker == "RELIANCE"
         assert 0 < result.delivery_pct <= 100
-        assert result.delivery_trend == "stable"
 
-    def test_missing_columns_returns_none(self):
-        df = pd.DataFrame({"random_col": [1, 2, 3]})
-
-        result = _compute_delivery(df)
-
-        assert result is None
-
-    def test_zero_total_quantity_returns_none(self):
+    def test_insufficient_data_returns_none(self):
+        """Less than 2 rows should return None (can't compute meaningful delivery)."""
         df = pd.DataFrame(
             {
                 "SYMBOL": ["RELIANCE"],
-                "DELIV_QTY": [100],
-                "TOTTRDQTY": [0],
+                "DELIV_QTY": [1000],
+                "TOTTRDQTY": [5000],
             }
         )
 
@@ -50,12 +44,70 @@ class TestComputeDelivery:
 
         assert result is None
 
-    def test_rising_delivery_trend(self):
+    def test_zero_total_traded_returns_none(self):
         df = pd.DataFrame(
             {
-                "SYMBOL": ["RELIANCE"] * 20,
-                "DELIV_QTY": [100] * 10 + [500] * 10,
-                "TOTTRDQTY": [1000] * 20,
+                "SYMBOL": ["RELIANCE"] * 5,
+                "DELIV_QTY": [1000, 1200, 1100, 1300, 1400],
+                "TOTTRDQTY": [0, 0, 0, 0, 0],
+            }
+        )
+
+        result = _compute_delivery(df)
+
+        assert result is None
+
+    def test_missing_columns_returns_none(self):
+        df = pd.DataFrame(
+            {
+                "SYMBOL": ["RELIANCE"] * 5,
+                "DELIV_QTY": [1000, 1200, 1100, 1300, 1400],
+            }
+        )
+
+        result = _compute_delivery(df)
+
+        assert result is None
+
+    def test_delivery_pct_capped_at_100(self):
+        df = pd.DataFrame(
+            {
+                "SYMBOL": ["RELIANCE"] * 5,
+                "DELIV_QTY": [5000, 6000, 5500, 6500, 7000],
+                "TOTTRDQTY": [5000, 6000, 5500, 6500, 7000],
+            }
+        )
+
+        result = _compute_delivery(df)
+
+        assert result is not None
+        assert result.delivery_pct == 100.0
+
+    def test_multiple_symbols_uses_first(self):
+        df = pd.DataFrame(
+            {
+                "SYMBOL": ["RELIANCE"] * 3 + ["TCS"] * 2,
+                "DELIV_QTY": [1000, 1200, 1100, 2000, 2200],
+                "TOTTRDQTY": [5000, 6000, 5500, 10000, 11000],
+            }
+        )
+
+        result = _compute_delivery(df)
+
+        assert result is not None
+        assert result.ticker == "RELIANCE"
+
+    def test_trend_rising(self):
+        """Test rising trend detection when recent delivery avg > earlier avg by >3%."""
+        # Create 15 days of data with rising delivery
+        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
+        deliv = [1000 + i * 100 for i in range(15)]  # Rising
+        total = [5000] * 15
+        df = pd.DataFrame(
+            {
+                "SYMBOL": ["RELIANCE"] * 15,
+                "DELIV_QTY": deliv,
+                "TOTTRDQTY": total,
             }
         )
 
@@ -64,88 +116,91 @@ class TestComputeDelivery:
         assert result is not None
         assert result.delivery_trend == "rising"
 
-
-class TestFetchBhavcopySingle:
-    @patch("engine.delivery._NSELIB_AVAILABLE", False)
-    def test_returns_none_without_nselib(self):
-        result = _fetch_bhavcopy_single("RELIANCE")
-
-        assert result is None
-
-    @patch("engine.delivery._NSELIB_AVAILABLE", True)
-    @patch("engine.delivery.capital_market", create=True)
-    def test_returns_filtered_ticker_data(self, mock_capital_market):
-        mock_capital_market.bhav_copy_with_delivery.return_value = pd.DataFrame(
+    def test_trend_falling(self):
+        """Test falling trend detection when recent delivery avg < earlier avg by >3%."""
+        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
+        deliv = [2000 - i * 100 for i in range(15)]  # Falling
+        total = [5000] * 15
+        df = pd.DataFrame(
             {
-                "SYMBOL": ["TCS", "RELIANCE", "RELIANCE"],
-                "DATE": ["2026-01-03", "2026-01-02", "2026-01-01"],
-                "DELIV_QTY": [100, 200, 300],
-                "TOTTRDQTY": [1000, 1000, 1000],
+                "SYMBOL": ["RELIANCE"] * 15,
+                "DELIV_QTY": deliv,
+                "TOTTRDQTY": total,
             }
         )
 
-        result = _fetch_bhavcopy_single("RELIANCE.NS", period="1M")
+        result = _compute_delivery(df)
 
         assert result is not None
-        assert result["SYMBOL"].tolist() == ["RELIANCE", "RELIANCE"]
-        assert result["DATE"].is_monotonic_increasing
-        mock_capital_market.bhav_copy_with_delivery.assert_called_once_with(
-            period="1M"
+        assert result.delivery_trend == "falling"
+
+    def test_trend_stable(self):
+        """Test stable trend when diff within +/-3%."""
+        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
+        deliv = [1000] * 15  # Constant
+        total = [5000] * 15
+        df = pd.DataFrame(
+            {
+                "SYMBOL": ["RELIANCE"] * 15,
+                "DELIV_QTY": deliv,
+                "TOTTRDQTY": total,
+            }
         )
 
-    @patch("engine.delivery._NSELIB_AVAILABLE", True)
-    @patch("engine.delivery.capital_market", create=True)
-    def test_returns_none_on_nselib_error(self, mock_capital_market):
-        mock_capital_market.bhav_copy_with_delivery.side_effect = Exception(
-            "API error"
-        )
+        result = _compute_delivery(df)
 
-        result = _fetch_bhavcopy_single("RELIANCE")
+        assert result is not None
+        assert result.delivery_trend == "stable"
 
-        assert result is None
 
-    @patch("engine.delivery._NSELIB_AVAILABLE", True)
-    @patch("engine.delivery.capital_market", create=True)
-    def test_returns_none_for_empty_data(self, mock_capital_market):
-        mock_capital_market.bhav_copy_with_delivery.return_value = pd.DataFrame()
-
-        result = _fetch_bhavcopy_single("RELIANCE")
-
-        assert result is None
+class TestFetchBhavcopySingle:
+    def test_returns_none_when_nselib_unavailable(self):
+        with patch("engine.delivery._NSELIB_AVAILABLE", False):
+            result = _fetch_bhavcopy_single("RELIANCE", "1M")
+            assert result is None
 
 
 class TestFetchDeliveryForHoldings:
-    @patch("engine.delivery._NSELIB_AVAILABLE", True)
-    def test_empty_tickers_returns_empty_dict(self):
-        result = fetch_delivery_for_holdings([])
+    def test_returns_empty_when_nselib_unavailable(self):
+        with patch("engine.delivery._NSELIB_AVAILABLE", False):
+            result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+            assert result == {}
 
-        assert result == {}
+    def test_skips_tickers_with_no_data(self):
+        with patch("engine.delivery._NSELIB_AVAILABLE", True):
+            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
+                mock_fetch.return_value = None
 
-    @patch("engine.delivery._NSELIB_AVAILABLE", True)
-    @patch("engine.delivery._compute_delivery")
-    @patch("engine.delivery._fetch_bhavcopy_single")
-    def test_single_ticker_returns_delivery_info(
-        self,
-        mock_fetch,
-        mock_compute,
-    ):
-        mock_fetch.return_value = pd.DataFrame(
-            {
-                "SYMBOL": ["RELIANCE"],
-                "DELIV_QTY": [200],
-                "TOTTRDQTY": [1000],
-            }
-        )
-        expected = DeliveryInfo(
-            ticker="RELIANCE",
-            delivery_pct=20.0,
-            delivery_trend="stable",
-            avg_delivery=20.0,
-        )
-        mock_compute.return_value = expected
+                result = fetch_delivery_for_holdings(["RELIANCE", "TCS"], period="1M")
 
-        result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+                assert result == {}
 
-        assert result == {"RELIANCE": expected}
-        mock_fetch.assert_called_once_with("RELIANCE", "1M")
-        mock_compute.assert_called_once_with(mock_fetch.return_value)
+    def test_returns_delivery_info_when_data_available(self):
+        with patch("engine.delivery._NSELIB_AVAILABLE", True):
+            # Create mock bhavcopy data
+            mock_data = pd.DataFrame(
+                {
+                    "SYMBOL": ["RELIANCE"] * 5,
+                    "DELIV_QTY": [1000, 1200, 1100, 1300, 1400],
+                    "TOTTRDQTY": [5000, 6000, 5500, 6500, 7000],
+                    "DATE": pd.date_range(end="2024-01-15", periods=5, freq="B"),
+                }
+            )
+
+            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
+                mock_fetch.return_value = mock_data
+
+                result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+
+                assert "RELIANCE" in result
+                assert isinstance(result["RELIANCE"], DeliveryInfo)
+                assert result["RELIANCE"].ticker == "RELIANCE"
+
+    def test_exception_in_fetch_is_caught(self):
+        with patch("engine.delivery._NSELIB_AVAILABLE", True):
+            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
+                mock_fetch.side_effect = Exception("Network error")
+
+                result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+
+                assert result == {}

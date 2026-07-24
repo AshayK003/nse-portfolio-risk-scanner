@@ -53,6 +53,10 @@ def _compute_delivery(delivery_data: pd.DataFrame) -> DeliveryInfo | None:
     if not all(c in delivery_data.columns for c in required):
         return None
 
+    # Need at least 2 data points for meaningful delivery analysis
+    if len(delivery_data) < 2:
+        return None
+
     total_qty = delivery_data["TOTTRDQTY"].sum()
     if total_qty == 0:
         return None
