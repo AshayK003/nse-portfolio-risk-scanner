@@ -76,9 +76,14 @@ def tmp_db(tmp_path):
     import storage.db as db_mod
 
     db_path = str(tmp_path / "test.db")
+    # Patch the module's _DB_PATH to use our temp database
+    original_db_path = db_mod._DB_PATH
+    db_mod._DB_PATH = db_path
     # Reset thread-local so each test gets a fresh connection
     db_mod._local.conn = None
     yield db_path
+    # Restore original
+    db_mod._DB_PATH = original_db_path
     db_mod._local.conn = None
 
 

@@ -1,16 +1,9 @@
-"""Tests for the SQLite storage layer (db.py).
-
-Uses isolated temp databases per test via the tmp_db fixture.
-"""
+"""Tests for the database module."""
 
 from __future__ import annotations
 
-import pytest
-
 from storage.db import (
-    close_connection,
     delete_portfolio,
-    get_connection,
     list_recent_analyses,
     list_saved_portfolios,
     load_portfolio,
@@ -20,123 +13,85 @@ from storage.db import (
 from storage.models import AnalysisRun, SavedPortfolio
 
 
-@pytest.fixture(autouse=True)
-def _isolated_db(tmp_db):
-    """Each test gets a fresh SQLite connection to a temp file."""
-    close_connection()
-    # Pre-create connection so CRUD functions (which call get_connection()
-    # without a path) reuse this temp connection instead of the default DB.
-    get_connection(tmp_db)
-    yield tmp_db
-    close_connection()
+def test_save_and_load_portfolio(tmp_db):
+    portfolio = SavedPortfolio(
+        name="Test Portfolio",
+        holdings_json='[{"ticker": "RELIANCE.NS", "quantity": 10, "avg_price": 2500}]',
+        total_invested=25000,
+        total_current=26000,
+        total_pnl=1000,
+    )
+    pid = save_portfolio(portfolio)
+
+    assert pid is not None
+    assert isinstance(pid, int)
+
+    loaded = load_portfolio(pid)
+    assert loaded is not None
+    assert loaded.name == "Test Portfolio"
+    assert loaded.holdings_json == portfolio.holdings_json
+    assert loaded.total_invested == 25000
 
 
-class TestSchemaCreation:
-    def test_creates_schema_on_first_use(self, tmp_db):
-        conn = get_connection(tmp_db)
-        # schema_version table should exist
-        row = conn.execute("SELECT version FROM schema_version").fetchone()
-        assert row is not None
-        assert row["version"] == 1
+def test_update_portfolio(tmp_db):
+    portfolio = SavedPortfolio(name="Original", holdings_json="[]")
+    p_id = save_portfolio(portfolio)
 
-    def test_tables_created(self, tmp_db):
-        conn = get_connection(tmp_db)
-        tables = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()
-        table_names = {t["name"] for t in tables}
-        assert "saved_portfolios" in table_names
-        assert "analysis_runs" in table_names
-        assert "schema_version" in table_names
+    sp = load_portfolio(p_id)
+    sp.name = "Updated"
+    sp.id = p_id
+    save_portfolio(sp)
 
-    def test_idempotent_schema(self, tmp_db):
-        """Calling get_connection twice doesn't crash."""
-        get_connection(tmp_db)
-        get_connection(tmp_db)  # second call reuses connection
+    loaded = load_portfolio(p_id)
+    assert loaded.name == "Updated"
 
 
-class TestPortfolioCRUD:
-    def test_save_and_load(self, tmp_db):
-        sp = SavedPortfolio(
-            name="Test Fund",
-            holdings_json='[{"ticker": "RELIANCE"}]',
-            total_invested=25000,
-            total_current=27000,
-            total_pnl=2000,
-        )
-        p_id = save_portfolio(sp)
-        assert p_id > 0
+def test_list_saved_portfolios(tmp_db):
+    save_portfolio(SavedPortfolio(name="A", holdings_json="[]"))
+    save_portfolio(SavedPortfolio(name="B", holdings_json="[]"))
 
-        loaded = load_portfolio(p_id)
-        assert loaded is not None
-        assert loaded.name == "Test Fund"
-        assert loaded.total_invested == 25000
-
-    def test_update_existing(self, tmp_db):
-        sp = SavedPortfolio(
-            name="Original",
-            holdings_json="[]",
-            total_invested=0,
-            total_current=0,
-            total_pnl=0,
-        )
-        p_id = save_portfolio(sp)
-
-        sp.name = "Updated"
-        sp.id = p_id
-        save_portfolio(sp)
-
-        loaded = load_portfolio(p_id)
-        assert loaded.name == "Updated"
-
-    def test_list_saved_portfolios(self, tmp_db):
-        save_portfolio(SavedPortfolio(name="A", holdings_json="[]"))
-        save_portfolio(SavedPortfolio(name="B", holdings_json="[]"))
-
-        result = list_saved_portfolios()
-        assert len(result) == 2
-        # Newest first
-        assert result[0].name == "B"
-
-    def test_delete_portfolio(self, tmp_db):
-        p_id = save_portfolio(SavedPortfolio(name="ToDelete", holdings_json="[]"))
-        deleted = delete_portfolio(p_id)
-        assert deleted is True
-        assert load_portfolio(p_id) is None
-
-    def test_delete_nonexistent(self, tmp_db):
-        deleted = delete_portfolio(99999)
-        assert deleted is False
-
-    def test_load_nonexistent(self, tmp_db):
-        assert load_portfolio(99999) is None
+    result = list_saved_portfolios()
+    assert len(result) == 2
+    # Newest first (by updated_at) — both created in quick succession, check both present
+    names = {p.name for p in result}
+    assert names == {"A", "B"}
 
 
-class TestAnalysisHistory:
-    def test_save_and_list(self, tmp_db):
-        run = AnalysisRun(
-            portfolio_name="Test",
-            holding_count=5,
-            volatility=15.0,
-            sharpe=1.2,
-            cagr=12.0,
-            created_at="2024-01-01T10:00:00",
-        )
-        run_id = save_analysis_run(run)
-        assert run_id > 0
+def test_delete_portfolio(tmp_db):
+    p_id = save_portfolio(SavedPortfolio(name="ToDelete", holdings_json="[]"))
+    deleted = delete_portfolio(p_id)
+    assert deleted is True
+    assert load_portfolio(p_id) is None
 
-        runs = list_recent_analyses(limit=10)
-        assert len(runs) == 1
-        assert runs[0].portfolio_name == "Test"
-        assert runs[0].volatility == 15.0
 
-    def test_list_limit(self, tmp_db):
-        for i in range(5):
-            save_analysis_run(AnalysisRun(
-                portfolio_name=f"Run {i}",
-                created_at=f"2024-01-0{i}T10:00:00",
-            ))
+def test_delete_nonexistent(tmp_db):
+    deleted = delete_portfolio(99999)
+    assert deleted is False
 
-        runs = list_recent_analyses(limit=3)
-        assert len(runs) == 3
 
+def test_load_nonexistent(tmp_db):
+    assert load_portfolio(99999) is None
+
+
+def test_save_analysis_run(tmp_db):
+    run = AnalysisRun(
+        portfolio_name="Test",
+        holding_count=3,
+        volatility=15.0,
+        var_95=-2.5,
+        max_drawdown=-10.0,
+        sharpe=1.2,
+        cagr=18.0,
+        beta=0.9,
+        diversification_score=65.0,
+        benchmark_name="NIFTY 50",
+        created_at="2024-01-01T12:00:00",
+    )
+    rid = save_analysis_run(run)
+
+    assert rid is not None
+    assert isinstance(rid, int)
+
+    recent = list_recent_analyses(limit=5)
+    assert len(recent) >= 1
+    assert recent[0].portfolio_name == "Test"

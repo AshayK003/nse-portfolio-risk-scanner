@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.17.3 (2026-07-24)
+
+### Fixed
+
+- **Delivery analysis minimum data points** (`engine/delivery.py:50`) — `_compute_delivery()` now requires at least 2 rows of bhavcopy data to compute meaningful delivery metrics. Single-row inputs (insufficient for percentage calculation) now return `None` instead of producing misleading 20% delivery figures.
+
+### Internal
+
+- **Internal docs moved to `internals/`** — Audit reports, research notes, and engineering memory moved to `internals/` (gitignored per SOUL.md). Keeps repo clean; internal files never committed to public history.
+
+---
+
 ## v0.17.2 (2026-07-24)
 
 ### Fixed (Internal Quality & Reliability)

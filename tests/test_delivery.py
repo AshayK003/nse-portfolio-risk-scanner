@@ -3,7 +3,6 @@
 from unittest.mock import patch
 
 import pandas as pd
-import pytest
 
 from engine.delivery import (
     DeliveryInfo,
@@ -99,8 +98,6 @@ class TestComputeDelivery:
 
     def test_trend_rising(self):
         """Test rising trend detection when recent delivery avg > earlier avg by >3%."""
-        # Create 15 days of data with rising delivery
-        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
         deliv = [1000 + i * 100 for i in range(15)]  # Rising
         total = [5000] * 15
         df = pd.DataFrame(
@@ -118,7 +115,6 @@ class TestComputeDelivery:
 
     def test_trend_falling(self):
         """Test falling trend detection when recent delivery avg < earlier avg by >3%."""
-        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
         deliv = [2000 - i * 100 for i in range(15)]  # Falling
         total = [5000] * 15
         df = pd.DataFrame(
@@ -136,7 +132,6 @@ class TestComputeDelivery:
 
     def test_trend_stable(self):
         """Test stable trend when diff within +/-3%."""
-        dates = pd.date_range(end="2024-01-15", periods=15, freq="B")
         deliv = [1000] * 15  # Constant
         total = [5000] * 15
         df = pd.DataFrame(
@@ -167,16 +162,21 @@ class TestFetchDeliveryForHoldings:
             assert result == {}
 
     def test_skips_tickers_with_no_data(self):
-        with patch("engine.delivery._NSELIB_AVAILABLE", True):
-            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
-                mock_fetch.return_value = None
+        with (
+            patch("engine.delivery._NSELIB_AVAILABLE", True),
+            patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
+        ):
+            mock_fetch.return_value = None
 
-                result = fetch_delivery_for_holdings(["RELIANCE", "TCS"], period="1M")
+            result = fetch_delivery_for_holdings(["RELIANCE", "TCS"], period="1M")
 
-                assert result == {}
+            assert result == {}
 
     def test_returns_delivery_info_when_data_available(self):
-        with patch("engine.delivery._NSELIB_AVAILABLE", True):
+        with (
+            patch("engine.delivery._NSELIB_AVAILABLE", True),
+            patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
+        ):
             # Create mock bhavcopy data
             mock_data = pd.DataFrame(
                 {
@@ -187,20 +187,21 @@ class TestFetchDeliveryForHoldings:
                 }
             )
 
-            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
-                mock_fetch.return_value = mock_data
+            mock_fetch.return_value = mock_data
 
-                result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+            result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
 
-                assert "RELIANCE" in result
-                assert isinstance(result["RELIANCE"], DeliveryInfo)
-                assert result["RELIANCE"].ticker == "RELIANCE"
+            assert "RELIANCE" in result
+            assert isinstance(result["RELIANCE"], DeliveryInfo)
+            assert result["RELIANCE"].ticker == "RELIANCE"
 
     def test_exception_in_fetch_is_caught(self):
-        with patch("engine.delivery._NSELIB_AVAILABLE", True):
-            with patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch:
-                mock_fetch.side_effect = Exception("Network error")
+        with (
+            patch("engine.delivery._NSELIB_AVAILABLE", True),
+            patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
+        ):
+            mock_fetch.side_effect = Exception("Network error")
 
-                result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+            result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
 
-                assert result == {}
+            assert result == {}

@@ -191,7 +191,7 @@ def load_portfolio(portfolio_id: int) -> SavedPortfolio | None:
 def list_saved_portfolios() -> list[SavedPortfolio]:
     """List all saved portfolios, newest first."""
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM saved_portfolios ORDER BY updated_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM saved_portfolios ORDER BY updated_at DESC, id DESC").fetchall()
     return [SavedPortfolio(**dict(r)) for r in rows]
 
 
