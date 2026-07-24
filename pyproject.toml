@@ -38,7 +38,7 @@ ml = [
 ]
 advanced = [
     "arch>=5.0",
-    "riskfolio-lib>=1.4.0,<2",
+    "riskfolio-lib>=2",
 ]
 
 [tool.uv]
