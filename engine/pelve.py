@@ -21,9 +21,9 @@ from scipy.stats import norm
 class PelveResult:
     """PELVE analysis result."""
 
-    pelve: float           # The PELVE ratio
-    epsilon: float         # The tail probability used (typically 0.01)
-    interpretation: str    # Plain-English explanation
+    pelve: float  # The PELVE ratio
+    epsilon: float  # The tail probability used (typically 0.01)
+    interpretation: str  # Plain-English explanation
 
 
 def compute_pelve(returns: np.ndarray, epsilon: float = 0.01) -> PelveResult | None:
@@ -85,13 +85,17 @@ def compute_pelve(returns: np.ndarray, epsilon: float = 0.01) -> PelveResult | N
 
     # Interpretation
     if pelve > 2.5:
-        interp = (f"PELVE of {pelve:.2f} is above 2.5 — switching from VaR to ES "
-                  f"at standard risk weights would INCREASE capital requirements. "
-                  f"Tail risk is heavier than normal.")
+        interp = (
+            f"PELVE of {pelve:.2f} is above 2.5 — switching from VaR to ES "
+            f"at standard risk weights would INCREASE capital requirements. "
+            f"Tail risk is heavier than normal."
+        )
     elif pelve < 2.5:
-        interp = (f"PELVE of {pelve:.2f} is below 2.5 — switching from VaR to ES "
-                  f"would DECREASE capital requirements. "
-                  f"Tail risk is lighter than normal.")
+        interp = (
+            f"PELVE of {pelve:.2f} is below 2.5 — switching from VaR to ES "
+            f"would DECREASE capital requirements. "
+            f"Tail risk is lighter than normal."
+        )
     else:
         interp = f"PELVE of {pelve:.2f} is exactly at the Basel benchmark of 2.5."
 

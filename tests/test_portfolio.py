@@ -131,19 +131,14 @@ class TestParsePortfolio:
 
     def test_indian_number_format(self):
         """User pastes Indian-formatted numbers: 1,23,456.78."""
-        csv = b"ticker,quantity,avg_price\nRELIANCE,10,2500.00\nTCS,5,\"1,23,456.78\"\n"
+        csv = b'ticker,quantity,avg_price\nRELIANCE,10,2500.00\nTCS,5,"1,23,456.78"\n'
         portfolio = parse_portfolio_csv(csv)
         assert len(portfolio.holdings) == 2
         assert portfolio.holdings[1].avg_price == 123456.78
 
     def test_malformed_row_skipped(self):
         """Row with non-numeric quantity is skipped, others survive."""
-        csv = (
-            b"ticker,quantity,avg_price\n"
-            b"RELIANCE,10,2500\n"
-            b"TCS,abc,3500\n"
-            b"HDFCBANK,20,1600\n"
-        )
+        csv = b"ticker,quantity,avg_price\nRELIANCE,10,2500\nTCS,abc,3500\nHDFCBANK,20,1600\n"
         portfolio = parse_portfolio_csv(csv)
         assert len(portfolio.holdings) == 2
         assert portfolio.holdings[0].ticker == "RELIANCE.NS"
@@ -205,8 +200,7 @@ class TestParsePortfolio:
         csv = b"Symbol,Qty,Cost\nRELIANCE,10,25000\nTCS,5,17500\n"
         portfolio = parse_portfolio_csv(csv)
         assert portfolio.holdings[0].avg_price == 2500.0, (
-            "25000 (total) / 10 (qty) = 2500, "
-            f"got {portfolio.holdings[0].avg_price}"
+            f"25000 (total) / 10 (qty) = 2500, got {portfolio.holdings[0].avg_price}"
         )
         assert portfolio.holdings[1].avg_price == 3500.0
 
@@ -380,9 +374,7 @@ class TestPortfolioFromDict:
     def test_basic_conversion(self):
         data = {
             "name": "Test",
-            "holdings": [
-                {"ticker": "RELIANCE", "name": "RIL", "quantity": 10, "avg_price": 2500}
-            ],
+            "holdings": [{"ticker": "RELIANCE", "name": "RIL", "quantity": 10, "avg_price": 2500}],
         }
         p = portfolio_from_dict(data)
         assert p.name == "Test"

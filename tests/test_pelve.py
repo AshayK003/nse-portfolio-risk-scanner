@@ -49,6 +49,7 @@ class TestComputePelve:
         normal_ret = np.random.default_rng(42).normal(0, 0.01, 2000)
         # Fat-tailed returns (t-dist with low df)
         from scipy.stats import t as t_dist
+
         fat_ret = t_dist.rvs(df=3, scale=0.01, size=2000, random_state=42)
         normal_pelve = compute_pelve(normal_ret)
         fat_pelve = compute_pelve(fat_ret)

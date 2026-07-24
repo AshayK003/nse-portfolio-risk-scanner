@@ -54,9 +54,19 @@ def _to_rich_csv(
     # ── Section 2: Holdings Detail ──
     lines.append("HOLDINGS")
     header = [
-        "Ticker", "Name", "Quantity", "Avg Price", "Current Price",
-        "Invested", "Current Value", "P&L", "P&L %", "Sector",
-        "Weight %", "Volatility (Ann%)", "Beta",
+        "Ticker",
+        "Name",
+        "Quantity",
+        "Avg Price",
+        "Current Price",
+        "Invested",
+        "Current Value",
+        "P&L",
+        "P&L %",
+        "Sector",
+        "Weight %",
+        "Volatility (Ann%)",
+        "Beta",
     ]
     lines.append(",".join(header))
 
@@ -69,10 +79,15 @@ def _to_rich_csv(
         vol = vol_map.get(h.ticker, "")
         beta = beta_map.get(h.ticker, "")
         row = [
-            ticker, _esc(h.name or ""), str(h.quantity),
-            f"{h.avg_price:.2f}", f"{h.current_price:.2f}",
-            f"{h.invested_value:,.0f}", f"{h.current_value:,.0f}",
-            f"{h.pnl:+,.0f}", f"{h.pnl_pct:+.2f}%",
+            ticker,
+            _esc(h.name or ""),
+            str(h.quantity),
+            f"{h.avg_price:.2f}",
+            f"{h.current_price:.2f}",
+            f"{h.invested_value:,.0f}",
+            f"{h.current_value:,.0f}",
+            f"{h.pnl:+,.0f}",
+            f"{h.pnl_pct:+.2f}%",
             _esc(h.sector or ""),
             f"{weight:.1f}%",
             f"{vol:.1f}" if vol != "" else "",
@@ -101,8 +116,7 @@ def _to_rich_csv(
             )
         if recommendations.risk_reduction_potential > 0:
             lines.append(
-                f"Total Risk Reduction Potential,,,,"
-                f"{recommendations.risk_reduction_potential:.1f}%,"
+                f"Total Risk Reduction Potential,,,,{recommendations.risk_reduction_potential:.1f}%,"
             )
         lines.append("")
 
@@ -159,18 +173,20 @@ def render_export_section(
     # Build the legacy holdings DataFrame for the PDF generator
     rows = []
     for h in portfolio.holdings:
-        rows.append({
-            "Ticker": h.ticker.replace(".NS", ""),
-            "Name": h.name,
-            "Quantity": h.quantity,
-            "Avg Price": h.avg_price,
-            "Current Price": h.current_price,
-            "Invested": h.invested_value,
-            "Current Value": h.current_value,
-            "P&L": h.pnl,
-            "P&L %": h.pnl_pct,
-            "Sector": h.sector,
-        })
+        rows.append(
+            {
+                "Ticker": h.ticker.replace(".NS", ""),
+                "Name": h.name,
+                "Quantity": h.quantity,
+                "Avg Price": h.avg_price,
+                "Current Price": h.current_price,
+                "Invested": h.invested_value,
+                "Current Value": h.current_value,
+                "P&L": h.pnl,
+                "P&L %": h.pnl_pct,
+                "Sector": h.sector,
+            }
+        )
     df = pd.DataFrame(rows)
 
     try:

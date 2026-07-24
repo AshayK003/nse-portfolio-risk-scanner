@@ -19,12 +19,23 @@ class TestGenerateNarrative:
         from engine import Holding
 
         holdings = [
-            Holding(ticker="RELIANCE.NS", name="Reliance Industries", quantity=10, avg_price=2500,
-                    sector="Oil & Gas", current_price=2800),
-            Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500,
-                    sector="IT", current_price=3800),
-            Holding(ticker="HDFCBANK.NS", name="HDFC Bank", quantity=20, avg_price=1600,
-                    sector="Banking", current_price=1700),
+            Holding(
+                ticker="RELIANCE.NS",
+                name="Reliance Industries",
+                quantity=10,
+                avg_price=2500,
+                sector="Oil & Gas",
+                current_price=2800,
+            ),
+            Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500, sector="IT", current_price=3800),
+            Holding(
+                ticker="HDFCBANK.NS",
+                name="HDFC Bank",
+                quantity=20,
+                avg_price=1600,
+                sector="Banking",
+                current_price=1700,
+            ),
         ]
         p = Portfolio(holdings=holdings, name=overrides.get("name", "Test"))
         return p
@@ -126,9 +137,16 @@ class TestGenerateNarrative:
     @pytest.mark.parametrize("pnl_pct,word", [(12.5, "up"), (-8.3, "down")])
     def test_summary_reflects_pnl_direction(self, pnl_pct, word):
         from engine import Holding
+
         h = [
-            Holding(ticker="RELIANCE.NS", name="R", quantity=10, avg_price=100,
-                    current_price=100 * (1 + pnl_pct / 100), sector="Oil & Gas"),
+            Holding(
+                ticker="RELIANCE.NS",
+                name="R",
+                quantity=10,
+                avg_price=100,
+                current_price=100 * (1 + pnl_pct / 100),
+                sector="Oil & Gas",
+            ),
         ]
         port = Portfolio(holdings=h)
         risk = self._make_risk(volatility_annual=12.0)
@@ -138,6 +156,7 @@ class TestGenerateNarrative:
 
     def test_summary_single_holdings_grammar(self):
         from engine import Holding
+
         h = [Holding(ticker="RELIANCE.NS", name="R", quantity=10, avg_price=100, current_price=110)]
         port = Portfolio(holdings=h)
         risk = self._make_risk(volatility_annual=12.0)
@@ -225,11 +244,17 @@ class TestGenerateNarrative:
 
     def test_single_stock_concentration_concern(self):
         from engine import Holding
+
         h = [
-            Holding(ticker="RELIANCE.NS", name="R", quantity=100, avg_price=100,
-                    current_price=500, sector="Oil & Gas"),
-            Holding(ticker="TCS.NS", name="T", quantity=1, avg_price=100,
-                    current_price=100, sector="IT"),
+            Holding(
+                ticker="RELIANCE.NS",
+                name="R",
+                quantity=100,
+                avg_price=100,
+                current_price=500,
+                sector="Oil & Gas",
+            ),
+            Holding(ticker="TCS.NS", name="T", quantity=1, avg_price=100, current_price=100, sector="IT"),
         ]
         port = Portfolio(holdings=h)
         sector = self._make_sector(
@@ -308,13 +333,19 @@ class TestGenerateNarrative:
 
     def test_zero_values_dont_crash(self):
         risk = self._make_risk(
-            volatility_annual=0.0, var_95=0.0, sharpe=0.0,
-            max_drawdown=0.0, cagr=0.0, beta=0.0,
+            volatility_annual=0.0,
+            var_95=0.0,
+            sharpe=0.0,
+            max_drawdown=0.0,
+            cagr=0.0,
+            beta=0.0,
         )
         report = self._make_report(risk=risk)
         n = generate_narrative(report)
-        assert all(len(getattr(n, f)) > 0 for f in
-                   ["summary", "risk_assessment", "concentration", "benchmark_context", "overall_verdict"])
+        assert all(
+            len(getattr(n, f)) > 0
+            for f in ["summary", "risk_assessment", "concentration", "benchmark_context", "overall_verdict"]
+        )
 
     def test_empty_sector_alloc(self):
         sector = SectorExposure(
@@ -335,11 +366,12 @@ class TestGenerateNarrative:
             concentrated_sectors=["Banking"],
         )
         from engine import Holding
+
         h = [
-            Holding(ticker="BIG.NS", name="B", quantity=100, avg_price=100,
-                    current_price=500, sector="Banking"),
-            Holding(ticker="SMALL.NS", name="S", quantity=1, avg_price=100,
-                    current_price=100, sector="IT"),
+            Holding(
+                ticker="BIG.NS", name="B", quantity=100, avg_price=100, current_price=500, sector="Banking"
+            ),
+            Holding(ticker="SMALL.NS", name="S", quantity=1, avg_price=100, current_price=100, sector="IT"),
         ]
         report = self._make_report(portfolio=Portfolio(holdings=h), risk=risk, sector=sector)
         n = generate_narrative(report)

@@ -17,18 +17,19 @@ from scipy.stats import chi2
 class KupiecResult:
     """Kupiec POF backtest result for a single confidence level."""
 
-    confidence: float        # VaR confidence level (e.g. 0.95)
-    exceptions: int          # Number of VaR breaches
-    observations: int        # Total backtest observations
+    confidence: float  # VaR confidence level (e.g. 0.95)
+    exceptions: int  # Number of VaR breaches
+    observations: int  # Total backtest observations
     expected_exceptions: float  # Expected breaches under correct model
-    exception_rate: float    # Actual breach rate
-    lr_stat: float           # Likelihood ratio statistic
-    p_value: float           # p-value (reject if < 0.05)
-    passed: bool             # True if p_value >= 0.05 (fail to reject)
+    exception_rate: float  # Actual breach rate
+    lr_stat: float  # Likelihood ratio statistic
+    p_value: float  # p-value (reject if < 0.05)
+    passed: bool  # True if p_value >= 0.05 (fail to reject)
 
 
-def kupiec_pof(var_forecasts: np.ndarray, realized_returns: np.ndarray,
-               confidence: float = 0.95) -> KupiecResult:
+def kupiec_pof(
+    var_forecasts: np.ndarray, realized_returns: np.ndarray, confidence: float = 0.95
+) -> KupiecResult:
     """Run Kupiec POF backtest on aligned VaR forecasts and realized returns.
 
     Parameters
@@ -56,9 +57,16 @@ def kupiec_pof(var_forecasts: np.ndarray, realized_returns: np.ndarray,
     expected = n * p
 
     if n == 0:
-        return KupiecResult(confidence=confidence, exceptions=0, observations=0,
-                            expected_exceptions=0, exception_rate=0.0,
-                            lr_stat=0.0, p_value=1.0, passed=True)
+        return KupiecResult(
+            confidence=confidence,
+            exceptions=0,
+            observations=0,
+            expected_exceptions=0,
+            exception_rate=0.0,
+            lr_stat=0.0,
+            p_value=1.0,
+            passed=True,
+        )
 
     if confidence <= 0 or confidence >= 1:
         raise ValueError(f"confidence must be in (0, 1), got {confidence}")
@@ -91,8 +99,9 @@ def kupiec_pof(var_forecasts: np.ndarray, realized_returns: np.ndarray,
     )
 
 
-def backtest_var(var_forecasts: np.ndarray, realized_returns: np.ndarray,
-                 confidences: list[float] | None = None) -> list[KupiecResult]:
+def backtest_var(
+    var_forecasts: np.ndarray, realized_returns: np.ndarray, confidences: list[float] | None = None
+) -> list[KupiecResult]:
     """Run Kupiec backtest at multiple confidence levels."""
     if confidences is None:
         confidences = [0.95, 0.99]

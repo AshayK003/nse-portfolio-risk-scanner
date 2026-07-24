@@ -13,16 +13,19 @@ from engine.fundamentals import (
 
 
 class TestClassifyZone:
-    @pytest.mark.parametrize("zscore,model,expected", [
-        (3.5, "Original", "Safe"),
-        (2.5, "Original", "Grey Zone"),
-        (1.0, "Original", "Distress"),
-        (3.0, "Original", "Safe"),
-        (1.8, "Original", "Grey Zone"),
-        (3.0, "Modified", "Safe"),
-        (2.0, "Modified", "Grey Zone"),
-        (0.5, "Modified", "Distress"),
-    ])
+    @pytest.mark.parametrize(
+        "zscore,model,expected",
+        [
+            (3.5, "Original", "Safe"),
+            (2.5, "Original", "Grey Zone"),
+            (1.0, "Original", "Distress"),
+            (3.0, "Original", "Safe"),
+            (1.8, "Original", "Grey Zone"),
+            (3.0, "Modified", "Safe"),
+            (2.0, "Modified", "Grey Zone"),
+            (0.5, "Modified", "Distress"),
+        ],
+    )
     def test_classify(self, zscore, model, expected):
         assert _classify_zone(zscore, model) == expected
 
@@ -37,6 +40,7 @@ class TestComputeZscore:
         if bs_data:
             # Simulate a real balance sheet DataFrame with columns as dates
             import pandas as pd
+
             dates = pd.date_range("2025-03-31", periods=1)
             df = pd.DataFrame(bs_data, index=dates).T
             mock_df.__getitem__ = lambda self, key: df
@@ -68,8 +72,7 @@ class TestComputeZscore:
             "Total Revenue": 800000,
             "Revenue": 800000,
         }
-        info = {"longName": "Reliance Industries Ltd", "sector": "Energy",
-                "marketCap": 1500000}
+        info = {"longName": "Reliance Industries Ltd", "sector": "Energy", "marketCap": 1500000}
         mock = self._mock_ticker(bs, info)
         mock_ticker.return_value = mock
 
@@ -97,8 +100,7 @@ class TestComputeZscore:
             "Total Revenue": 300000,
             "Revenue": 300000,
         }
-        info = {"longName": "HDFC Bank Ltd", "sector": "Financial Services",
-                "marketCap": 5000000}
+        info = {"longName": "HDFC Bank Ltd", "sector": "Financial Services", "marketCap": 5000000}
         mock = self._mock_ticker(bs, info)
         mock_ticker.return_value = mock
 
@@ -120,6 +122,7 @@ class TestComputeZscore:
     @patch("yfinance.Ticker")
     def test_empty_balance_sheet_returns_none(self, mock_ticker):
         import pandas as pd
+
         mock = MagicMock()
         mock.info = {}
         mock.balance_sheet = pd.DataFrame()
@@ -162,6 +165,7 @@ class TestComputeAllZscores:
         df = MagicMock()
         df.empty = False
         import pandas as pd
+
         dates = pd.date_range("2025-03-31", periods=1)
         df_actual = pd.DataFrame(bs, index=dates).T
         mock.balance_sheet = df_actual

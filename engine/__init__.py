@@ -26,25 +26,38 @@ class RiskProfile:
 
 # Pre-built risk profiles
 CONSERVATIVE = RiskProfile(
-    name="Conservative", method="min_volatility",
-    max_single_weight=0.25, beta_threshold=1.0, sharpe_threshold=0.8,
-    drawdown_threshold=15.0, cvar_threshold=3.0, concentration_threshold=25.0,
+    name="Conservative",
+    method="min_volatility",
+    max_single_weight=0.25,
+    beta_threshold=1.0,
+    sharpe_threshold=0.8,
+    drawdown_threshold=15.0,
+    cvar_threshold=3.0,
+    concentration_threshold=25.0,
 )
 MODERATE = RiskProfile(
-    name="Moderate", method="hrp",
-    max_single_weight=0.35, beta_threshold=1.3, sharpe_threshold=0.5,
-    drawdown_threshold=20.0, cvar_threshold=4.0, concentration_threshold=35.0,
+    name="Moderate",
+    method="hrp",
+    max_single_weight=0.35,
+    beta_threshold=1.3,
+    sharpe_threshold=0.5,
+    drawdown_threshold=20.0,
+    cvar_threshold=4.0,
+    concentration_threshold=35.0,
 )
 AGGRESSIVE = RiskProfile(
-    name="Aggressive", method="max_sharpe",
-    max_single_weight=0.50, beta_threshold=1.8, sharpe_threshold=0.3,
-    drawdown_threshold=30.0, cvar_threshold=6.0, concentration_threshold=50.0,
+    name="Aggressive",
+    method="max_sharpe",
+    max_single_weight=0.50,
+    beta_threshold=1.8,
+    sharpe_threshold=0.3,
+    drawdown_threshold=30.0,
+    cvar_threshold=6.0,
+    concentration_threshold=50.0,
 )
 
 # Lookup from display-name key
-RISK_PROFILES: dict[str, RiskProfile] = {
-    p.name.lower(): p for p in [CONSERVATIVE, MODERATE, AGGRESSIVE]
-}
+RISK_PROFILES: dict[str, RiskProfile] = {p.name.lower(): p for p in [CONSERVATIVE, MODERATE, AGGRESSIVE]}
 _DEFAULT_PROFILE = MODERATE
 
 

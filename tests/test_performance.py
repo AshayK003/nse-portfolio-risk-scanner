@@ -35,8 +35,6 @@ class TestComputePortfolioReturns:
         assert len(result) == 0
 
 
-
-
 class TestComputeMaxDrawdown:
     def test_drawdown_is_negative(self):
         dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
@@ -63,5 +61,3 @@ class TestComputeMaxDrawdown:
         series = pd.Series(np.linspace(100, 200, 100), index=dates)
         result = compute_max_drawdown(series)
         assert abs(result["max_drawdown"] - 0) < 0.01
-
-

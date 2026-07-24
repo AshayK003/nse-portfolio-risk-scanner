@@ -31,8 +31,10 @@ def _import_matplotlib():
     """Lazy-import matplotlib with Agg backend. Returns (matplotlib, pyplot) or (None, None)."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+
         return matplotlib, plt
     except ImportError:
         return None, None
@@ -79,59 +81,51 @@ def _cover_metrics(portfolio: Portfolio, risk: RiskMetrics | None) -> list[list[
     """Portfolio summary for the cover page (4-column)."""
     sharpe_val = f"{risk.sharpe:.2f}" if risk else "N/A"
     pnl_val = f"Rs {portfolio.total_pnl:+,.0f}"
-    return _metrics_table([
-        ("Holdings", str(portfolio.holding_count),
-         "Total Invested", f"Rs {portfolio.total_invested:,.0f}"),
-        ("Current Value", f"Rs {portfolio.total_current:,.0f}",
-         "P&L", pnl_val),
-        ("P&L %", f"{portfolio.total_pnl_pct:+.2f}%",
-         "Sharpe", sharpe_val),
-    ])
+    return _metrics_table(
+        [
+            (
+                "Holdings",
+                str(portfolio.holding_count),
+                "Total Invested",
+                f"Rs {portfolio.total_invested:,.0f}",
+            ),
+            ("Current Value", f"Rs {portfolio.total_current:,.0f}", "P&L", pnl_val),
+            ("P&L %", f"{portfolio.total_pnl_pct:+.2f}%", "Sharpe", sharpe_val),
+        ]
+    )
 
 
 def _full_metrics(portfolio: Portfolio, risk: RiskMetrics | None) -> list[list[str]]:
     """Extended metrics for Executive Summary (4-column)."""
     pnl_val = f"Rs {portfolio.total_pnl:+,.0f}"
     metric_rows = [
-        ("Holdings", str(portfolio.holding_count),
-         "Total Invested", f"Rs {portfolio.total_invested:,.0f}"),
-        ("Current Value", f"Rs {portfolio.total_current:,.0f}",
-         "P&L", pnl_val),
-        ("P&L %", f"{portfolio.total_pnl_pct:+.2f}%",
-         "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A"),
+        ("Holdings", str(portfolio.holding_count), "Total Invested", f"Rs {portfolio.total_invested:,.0f}"),
+        ("Current Value", f"Rs {portfolio.total_current:,.0f}", "P&L", pnl_val),
+        ("P&L %", f"{portfolio.total_pnl_pct:+.2f}%", "Sharpe", f"{risk.sharpe:.2f}" if risk else "N/A"),
     ]
     if risk:
         metric_rows += [
-            ("Sortino", f"{risk.sortino:.2f}",
-             "Beta", f"{risk.beta:.2f}"),
-            ("Backtest CAGR", f"{risk.cagr:.1f}%",
-             "VaR (95%)", f"{risk.var_95:.2f}%"),
-            ("CVaR (95%)", f"{risk.cvar_95:.2f}%",
-             "Volatility", f"{risk.volatility_annual:.1f}%"),
+            ("Sortino", f"{risk.sortino:.2f}", "Beta", f"{risk.beta:.2f}"),
+            ("Backtest CAGR", f"{risk.cagr:.1f}%", "VaR (95%)", f"{risk.var_95:.2f}%"),
+            ("CVaR (95%)", f"{risk.cvar_95:.2f}%", "Volatility", f"{risk.volatility_annual:.1f}%"),
         ]
     return _metrics_table(metric_rows)
 
 
 def _risk_metrics_table(risk: RiskMetrics, portfolio: Portfolio) -> list[list[str]]:
     """Risk metric detail table for Risk Analysis page."""
-    return _metrics_table([
-        ("VaR (95%)", f"{risk.var_95:.2f}%",
-         "CVaR (95%)", f"{risk.cvar_95:.2f}%"),
-        ("Volatility", f"{risk.volatility_annual:.1f}%",
-         "Backtest CAGR", f"{risk.cagr:.1f}%"),
-        ("Max Drawdown", f"{risk.max_drawdown:.1f}%",
-         "Total Return", f"{risk.total_return:.1f}%"),
-        ("Sortino", f"{risk.sortino:.2f}",
-         "Beta", f"{risk.beta:.2f}"),
-        ("VaR (99%)", f"{risk.var_99:.2f}%",
-         "Correlation", f"{risk.correlation_to_benchmark:.2f}"),
-        ("Stock Count", str(portfolio.holding_count),
-         "Sharpe", f"{risk.sharpe:.2f}"),
-        ("Calmar Ratio", f"{risk.calmar_ratio:.2f}",
-         "Treynor Ratio", f"{risk.treynor_ratio:.2f}"),
-        ("Skewness", f"{risk.skewness:.3f}",
-         "Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"),
-    ])
+    return _metrics_table(
+        [
+            ("VaR (95%)", f"{risk.var_95:.2f}%", "CVaR (95%)", f"{risk.cvar_95:.2f}%"),
+            ("Volatility", f"{risk.volatility_annual:.1f}%", "Backtest CAGR", f"{risk.cagr:.1f}%"),
+            ("Max Drawdown", f"{risk.max_drawdown:.1f}%", "Total Return", f"{risk.total_return:.1f}%"),
+            ("Sortino", f"{risk.sortino:.2f}", "Beta", f"{risk.beta:.2f}"),
+            ("VaR (99%)", f"{risk.var_99:.2f}%", "Correlation", f"{risk.correlation_to_benchmark:.2f}"),
+            ("Stock Count", str(portfolio.holding_count), "Sharpe", f"{risk.sharpe:.2f}"),
+            ("Calmar Ratio", f"{risk.calmar_ratio:.2f}", "Treynor Ratio", f"{risk.treynor_ratio:.2f}"),
+            ("Skewness", f"{risk.skewness:.3f}", "Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"),
+        ]
+    )
 
 
 # ── Chart figure builders (return Figure objects) ──
@@ -148,12 +142,27 @@ def _cover_banner(portfolio: Portfolio, plt) -> Figure | None:
 
     navy = (25 / 255, 60 / 255, 120 / 255)
     ax.add_patch(plt.Rectangle((0, 0.3), 6.3, 1.9, facecolor=navy, edgecolor="none"))
-    ax.text(3.15, 1.9, "NSE Portfolio Risk Report", ha="center", va="center",
-            fontsize=20, fontweight="bold", color="white")
-    ax.text(3.15, 1.4, portfolio.name, ha="center", va="center",
-            fontsize=13, color="white")
-    ax.text(3.15, 0.95, datetime.now().strftime("%d %B %Y"), ha="center", va="center",
-            fontsize=9, fontstyle="italic", color="#bbbbbb")
+    ax.text(
+        3.15,
+        1.9,
+        "NSE Portfolio Risk Report",
+        ha="center",
+        va="center",
+        fontsize=20,
+        fontweight="bold",
+        color="white",
+    )
+    ax.text(3.15, 1.4, portfolio.name, ha="center", va="center", fontsize=13, color="white")
+    ax.text(
+        3.15,
+        0.95,
+        datetime.now().strftime("%d %B %Y"),
+        ha="center",
+        va="center",
+        fontsize=9,
+        fontstyle="italic",
+        color="#bbbbbb",
+    )
 
     fig.tight_layout()
     return fig
@@ -175,8 +184,7 @@ def _gauge(risk: RiskMetrics | None, plt) -> Figure | None:
     val = min(risk.volatility_annual, 80)
     ax.plot([val, val], [0, 0.7], color="#1f2937", linewidth=2, zorder=3)
     ax.plot(val, 0.7, marker="v", color="#1f2937", markersize=5, zorder=3)
-    ax.text(val, -0.35, f"{risk.volatility_annual:.1f}%", ha="center",
-            fontsize=9, fontweight="bold")
+    ax.text(val, -0.35, f"{risk.volatility_annual:.1f}%", ha="center", fontsize=9, fontweight="bold")
     ax.text(7.5, 0.65, "LOW", ha="center", fontsize=6, color="#15803d", fontweight="bold")
     ax.text(22.5, 0.65, "MOD", ha="center", fontsize=6, color="#a16207", fontweight="bold")
     ax.text(55, 0.65, "HIGH", ha="center", fontsize=6, color="#dc2626", fontweight="bold")
@@ -197,14 +205,20 @@ def _sector_weight_composite(sector_data: dict | None, portfolio: Portfolio, plt
         sizes = list(sector_data.values())
         colors = plt.cm.Set2.colors[: len(labels)]
         wedges, texts, autotexts = ax1.pie(
-            sizes, labels=None, autopct="%1.0f%%",
-            startangle=90, colors=colors, textprops={"fontsize": 7},
+            sizes,
+            labels=None,
+            autopct="%1.0f%%",
+            startangle=90,
+            colors=colors,
+            textprops={"fontsize": 7},
         )
         ax1.set_title("Sector Allocation", fontsize=10, fontweight="bold")
         ax1.legend(
             wedges,
             [f"{lab} ({s:.0f}%)" for lab, s in zip(labels, sizes, strict=False)],
-            loc="center left", bbox_to_anchor=(1, 0.5), fontsize=6,
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            fontsize=6,
         )
 
     # ── Right: Holdings weight ──
@@ -219,8 +233,9 @@ def _sector_weight_composite(sector_data: dict | None, portfolio: Portfolio, plt
     ax2.set_xlabel("Weight (%)", fontsize=7)
     ax2.tick_params(axis="x", labelsize=6)
     for bar, w in zip(bars, weights, strict=False):
-        ax2.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
-                 f"{w:.1f}%", va="center", fontsize=7)
+        ax2.text(
+            bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2, f"{w:.1f}%", va="center", fontsize=7
+        )
     ax2.set_title("Top Holdings", fontsize=10, fontweight="bold")
     ax2.margins(x=0.15)
 
@@ -259,18 +274,38 @@ def _monte_carlo_chart(mc_result: MonteCarloResult, plt) -> Figure | None:
 
     ci_lower = max(mc_result.ci_lower, -margin)
     ci_upper = min(mc_result.ci_upper, margin)
-    ax.barh(0.5, ci_upper - ci_lower, left=ci_lower, height=0.25,
-            color="#3b82f6", alpha=0.2, ec="#2563eb", linewidth=0.5)
+    ax.barh(
+        0.5,
+        ci_upper - ci_lower,
+        left=ci_lower,
+        height=0.25,
+        color="#3b82f6",
+        alpha=0.2,
+        ec="#2563eb",
+        linewidth=0.5,
+    )
     ax.plot(mc_result.expected_return, 0.5, "D", color="#2563eb", markersize=5, zorder=3)
-    ax.text(mc_result.expected_return, 0.75, f"Expected: {mc_result.expected_return:.1f}%",
-            ha="center", fontsize=7, color="#2563eb")
+    ax.text(
+        mc_result.expected_return,
+        0.75,
+        f"Expected: {mc_result.expected_return:.1f}%",
+        ha="center",
+        fontsize=7,
+        color="#2563eb",
+    )
     ax.plot(mc_result.var_95, 0.25, "v", color="#ef4444", markersize=4, zorder=3)
-    ax.text(mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%",
-            ha="center", fontsize=6, color="#ef4444")
-    ax.text(0, -0.05,
-            f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, "
-            f"{mc_result.horizon_days}d horizon",
-            ha="center", fontsize=6, color="#6b7280")
+    ax.text(
+        mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%", ha="center", fontsize=6, color="#ef4444"
+    )
+    ax.text(
+        0,
+        -0.05,
+        f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, "
+        f"{mc_result.horizon_days}d horizon",
+        ha="center",
+        fontsize=6,
+        color="#6b7280",
+    )
     ax.set_title("Monte Carlo Projection", fontsize=10, fontweight="bold")
     fig.tight_layout()
     return fig
@@ -294,9 +329,14 @@ def _pnl_chart(df: pd.DataFrame, plt) -> Figure | None:
     ax.tick_params(axis="x", labelsize=7)
     for bar, val in zip(bars, pnl_values, strict=False):
         px = bar.get_width()
-        ax.text(px + (0.4 if px >= 0 else -0.4), bar.get_y() + bar.get_height() / 2,
-                f"{val:+.1f}%", va="center", fontsize=7,
-                ha="left" if px >= 0 else "right")
+        ax.text(
+            px + (0.4 if px >= 0 else -0.4),
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:+.1f}%",
+            va="center",
+            fontsize=7,
+            ha="left" if px >= 0 else "right",
+        )
     ax.set_title("Holdings P&L", fontsize=10, fontweight="bold")
     ax.margins(x=0.15)
     fig.tight_layout()
@@ -405,8 +445,9 @@ def _generate_pdf_report(
     # ════════════════════════════════════════════════════
 
     doc.add_heading("2. Risk Analysis", level=1)
-    doc.add_paragraph("Detailed risk metrics, historical drawdown, and forward-looking simulation.",
-                      style=_body_style())
+    doc.add_paragraph(
+        "Detailed risk metrics, historical drawdown, and forward-looking simulation.", style=_body_style()
+    )
 
     if risk:
         doc.add_paragraph("", style=_spacer(2))
@@ -451,13 +492,9 @@ def _generate_pdf_report(
     if "Name" in display_df.columns:
         display_df["Name"] = display_df["Name"].apply(lambda x: str(x)[:18] if pd.notna(x) else "")
     if "Quantity" in display_df.columns:
-        display_df["Quantity"] = display_df["Quantity"].apply(
-            lambda x: str(int(x)) if pd.notna(x) else ""
-        )
+        display_df["Quantity"] = display_df["Quantity"].apply(lambda x: str(int(x)) if pd.notna(x) else "")
     if "P&L %" in display_df.columns:
-        display_df["P&L %"] = display_df["P&L %"].apply(
-            lambda x: f"{x:+.1f}%" if pd.notna(x) else ""
-        )
+        display_df["P&L %"] = display_df["P&L %"].apply(lambda x: f"{x:+.1f}%" if pd.notna(x) else "")
     # Quantity(2), Avg Price(3), Current Price(4), P&L %(5) — right-aligned
     doc.add_paragraph("", style=_spacer(2))
     doc.add_table(display_df, caption="Holdings Detail", right_align_cols=[2, 3, 4, 5])

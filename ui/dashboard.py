@@ -102,12 +102,18 @@ def render_risk_cards(risk: RiskMetrics) -> None:
         st.metric("Treynor Ratio", f"{risk.treynor_ratio:.2f}")
         st.caption("Excess return per unit of beta risk")
     with col3:
-            skewness = risk.skewness
-            skw_delta = "Normal" if abs(skewness) < 0.5 else f"{skewness:+.2f}"
-            st.metric("Skewness", f"{skewness:.2f}", delta=skw_delta, delta_color="off")
-            st.caption("Negative = left-tail risk")
+        skewness = risk.skewness
+        skw_delta = "Normal" if abs(skewness) < 0.5 else f"{skewness:+.2f}"
+        st.metric("Skewness", f"{skewness:.2f}", delta=skw_delta, delta_color="off")
+        st.caption("Negative = left-tail risk")
     with col4:
-        kurt_label = "Normal" if abs(risk.kurtosis_excess) < 1 else "Fat tails" if risk.kurtosis_excess > 0 else "Thin tails"
+        kurt_label = (
+            "Normal"
+            if abs(risk.kurtosis_excess) < 1
+            else "Fat tails"
+            if risk.kurtosis_excess > 0
+            else "Thin tails"
+        )
         st.metric("Excess Kurtosis", f"{risk.kurtosis_excess:.2f}")
         st.caption(f"{kurt_label} — {'wider' if risk.kurtosis_excess > 0 else 'narrower'} tail than normal")
 
@@ -117,12 +123,10 @@ def render_composition_metrics(portfolio: Portfolio) -> None:
     total = portfolio.total_current
     if total == 0:
         return
-    etf_kw = ["ETF","BEES","IETF","SML250","LIQUIDCASE"]
-    us_tickers = {"MASPTOP50","MAFANG"}
-    etf_v = sum(h.current_value for h in portfolio.holdings
-                if any(k in h.ticker.upper() for k in etf_kw))
-    us_v = sum(h.current_value for h in portfolio.holdings
-               if h.ticker.replace(".NS","") in us_tickers)
+    etf_kw = ["ETF", "BEES", "IETF", "SML250", "LIQUIDCASE"]
+    us_tickers = {"MASPTOP50", "MAFANG"}
+    etf_v = sum(h.current_value for h in portfolio.holdings if any(k in h.ticker.upper() for k in etf_kw))
+    us_v = sum(h.current_value for h in portfolio.holdings if h.ticker.replace(".NS", "") in us_tickers)
     etf_pct = etf_v / total * 100
     us_pct = us_v / total * 100
 
@@ -268,7 +272,9 @@ def render_advanced_section(
                 total = row.observations
                 pv = row.p_value
                 passed = pv > 0.05
-                st.metric("VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}")
+                st.metric(
+                    "VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}"
+                )
             else:
                 st.info("VaR backtest: no data available.")
         elif var_backtest is not None:
@@ -286,10 +292,12 @@ def render_advanced_section(
             w = opt_advanced
             if w:
                 st.dataframe(
-                    pd.DataFrame(list(w.items()), columns=["Ticker", "Opt. Weight"]).assign(
-                        **{"Opt. Weight %": lambda df: df["Opt. Weight"] * 100}
-                    ).drop(columns=["Opt. Weight"]).style.format({"Opt. Weight %": "{:.1f}%"}),
-                    use_container_width=True, hide_index=True,
+                    pd.DataFrame(list(w.items()), columns=["Ticker", "Opt. Weight"])
+                    .assign(**{"Opt. Weight %": lambda df: df["Opt. Weight"] * 100})
+                    .drop(columns=["Opt. Weight"])
+                    .style.format({"Opt. Weight %": "{:.1f}%"}),
+                    use_container_width=True,
+                    hide_index=True,
                 )
 
 
@@ -320,7 +328,10 @@ def render_stock_risk_table(risk_df: pd.DataFrame) -> None:
 
 
 def _opt_reason(
-    ticker: str, cur_w_pct: float, opt_w_pct: float, risk_data: dict | None,
+    ticker: str,
+    cur_w_pct: float,
+    opt_w_pct: float,
+    risk_data: dict | None,
 ) -> str:
     """One-line explanation for a weight change recommendation."""
     change = opt_w_pct - cur_w_pct
@@ -388,7 +399,11 @@ def render_optimization_section(
         with col3:
             st.metric("Sharpe Ratio", f"{opt.sharpe:.2f}")
 
-    method_labels = {"hrp": "Hierarchical Risk Parity", "min_volatility": "Minimum Volatility", "max_sharpe": "Maximum Sharpe"}
+    method_labels = {
+        "hrp": "Hierarchical Risk Parity",
+        "min_volatility": "Minimum Volatility",
+        "max_sharpe": "Maximum Sharpe",
+    }
     method_name = method_labels.get(opt.method, opt.method)
     st.caption(f"Method: {method_name}")
 
@@ -414,10 +429,13 @@ def render_optimization_section(
     if portfolio and portfolio.total_current > 0:
         col1, col2 = st.columns(2)
         total_value = portfolio.total_current
-        current_weights = {h.ticker: h.current_value / total_value for h in portfolio.holdings if h.ticker in opt.weights}
+        current_weights = {
+            h.ticker: h.current_value / total_value for h in portfolio.holdings if h.ticker in opt.weights
+        }
 
         with col1:
             from ui.charts import allocation_pie
+
             st.plotly_chart(
                 allocation_pie(current_weights, "Current Allocation"),
                 use_container_width=True,
@@ -438,13 +456,15 @@ def render_optimization_section(
             opt_val = opt_w * total_value
             diff = opt_val - cur_val
             reason = _opt_reason(ticker, cur_w * 100, opt_w * 100, risk_data)
-            comparison.append({
-                "Ticker": ticker.replace(".NS", ""),
-                "Current": f"{cur_w * 100:.0f}%",
-                "Optimized": f"{opt_w * 100:.0f}%",
-                "Change (Rs)": f"{diff:+,.0f}",
-                "Why": reason,
-            })
+            comparison.append(
+                {
+                    "Ticker": ticker.replace(".NS", ""),
+                    "Current": f"{cur_w * 100:.0f}%",
+                    "Optimized": f"{opt_w * 100:.0f}%",
+                    "Change (Rs)": f"{diff:+,.0f}",
+                    "Why": reason,
+                }
+            )
         st.dataframe(comparison, use_container_width=True, hide_index=True)
 
         # Warn if optimization concentrates above profile's single-holding limit
@@ -457,10 +477,12 @@ def render_optimization_section(
     else:
         rows = []
         for ticker, weight in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
-            rows.append({
-                "Ticker": ticker.replace(".NS", ""),
-                "Suggested Weight": f"{weight * 100:.1f}%",
-            })
+            rows.append(
+                {
+                    "Ticker": ticker.replace(".NS", ""),
+                    "Suggested Weight": f"{weight * 100:.1f}%",
+                }
+            )
         st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
@@ -506,8 +528,14 @@ def render_regime_section(regime: RegimeResult | None) -> None:
     cols = st.columns(len(regime.stats))
     for i, stat in enumerate(regime.stats):
         with cols[i]:
-            color = "green" if stat["label"] in ("Bull", "Strong Bull") else ("red" if stat["label"] in ("Bear", "Crisis") else "orange")
-            st.markdown(f"**<span style='color:{color}'>{escape(str(stat['label']))}</span>**", unsafe_allow_html=True)
+            color = (
+                "green"
+                if stat["label"] in ("Bull", "Strong Bull")
+                else ("red" if stat["label"] in ("Bear", "Crisis") else "orange")
+            )
+            st.markdown(
+                f"**<span style='color:{color}'>{escape(str(stat['label']))}</span>**", unsafe_allow_html=True
+            )
             st.metric("Occurrence", f"{stat['pct']}%")
             st.metric("Mean Return", f"{stat['mean_return']:+.3f}%")
             st.metric("Annual Vol", f"{stat['annual_vol']:.1f}%")
@@ -518,7 +546,12 @@ def render_regime_section(regime: RegimeResult | None) -> None:
         trans = regime.transition_matrix
         trans_rows = []
         for i, label in enumerate(regime.labels):
-            trans_rows.append({"From \\ To": label, **{regime.labels[j]: f"{trans[i][j]:.1%}" for j in range(len(regime.labels))}})
+            trans_rows.append(
+                {
+                    "From \\ To": label,
+                    **{regime.labels[j]: f"{trans[i][j]:.1%}" for j in range(len(regime.labels))},
+                }
+            )
         st.dataframe(trans_rows, use_container_width=True, hide_index=True)
 
 
@@ -545,13 +578,15 @@ def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
             st.markdown(f"**{s.name}**")
             rows = []
             for h in s.holding_impacts:
-                rows.append({
-                    "Ticker": h["ticker"],
-                    "Weight": f"{h['weight_pct']:.0f}%",
-                    "Beta": h["beta"],
-                    "Est. Impact": f"{h['impact_pct']:+.1f}%",
-                    "Impact (Rs)": f"Rs {h['impact_rs']:,.0f}",
-                })
+                rows.append(
+                    {
+                        "Ticker": h["ticker"],
+                        "Weight": f"{h['weight_pct']:.0f}%",
+                        "Beta": h["beta"],
+                        "Est. Impact": f"{h['impact_pct']:+.1f}%",
+                        "Impact (Rs)": f"Rs {h['impact_rs']:,.0f}",
+                    }
+                )
             if rows:
                 st.dataframe(rows, use_container_width=True, hide_index=True)
             st.divider()
@@ -573,22 +608,26 @@ def render_rebalance_section(
 
     rows = []
     for t in rebalance.trades:
-        action_icon = "Increase" if t["action"] == "increase" else ("Decrease" if t["action"] == "decrease" else "Hold")
+        action_icon = (
+            "Increase" if t["action"] == "increase" else ("Decrease" if t["action"] == "decrease" else "Hold")
+        )
         reason = _opt_reason(
             f"{t['ticker']}.NS",
             t["current_w_pct"],
             t["target_w_pct"],
             risk_data,
         )
-        rows.append({
-            "Ticker": t["ticker"],
-            "Current": f"{t['current_w_pct']:.0f}%",
-            "Target": f"{t['target_w_pct']:.0f}%",
-            "Drift": f"{t['drift_pct']:+.1f}%",
-            "Action": action_icon,
-            "Change (Rs)": f"Rs {t['change_rs']:+,.0f}",
-            "Why": reason,
-        })
+        rows.append(
+            {
+                "Ticker": t["ticker"],
+                "Current": f"{t['current_w_pct']:.0f}%",
+                "Target": f"{t['target_w_pct']:.0f}%",
+                "Drift": f"{t['drift_pct']:+.1f}%",
+                "Action": action_icon,
+                "Change (Rs)": f"Rs {t['change_rs']:+,.0f}",
+                "Why": reason,
+            }
+        )
     st.dataframe(rows, use_container_width=True, hide_index=True)
 
     # Estimated transaction costs

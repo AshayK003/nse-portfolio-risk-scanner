@@ -258,16 +258,18 @@ def compute_stock_risk_attribution(prices, weights, stock_betas=None):
 
     rows = []
     for i, t in enumerate(tickers):
-        rows.append({
-            "Ticker": t.replace(".NS", ""),
-            "Weight (%)": round(w[i] * 100, 1),
-            "Beta": round(stock_betas.get(t, 1.0), 2) if stock_betas else 1.0,
-            "Ann. Vol (%)": round(float(ann_vol.iloc[i]) if hasattr(ann_vol, "iloc") else ann_vol[i], 1),
-            "Avg Corr": round(float(avg_corr[i]), 2),
-            "MRC": round(float(mrc[i]), 3),
-            "Risk Contrib (%)": round(float(crc_pct[i]), 1),
-            "VaR 95%": round(float(var_95_vals[i]), 2),
-        })
+        rows.append(
+            {
+                "Ticker": t.replace(".NS", ""),
+                "Weight (%)": round(w[i] * 100, 1),
+                "Beta": round(stock_betas.get(t, 1.0), 2) if stock_betas else 1.0,
+                "Ann. Vol (%)": round(float(ann_vol.iloc[i]) if hasattr(ann_vol, "iloc") else ann_vol[i], 1),
+                "Avg Corr": round(float(avg_corr[i]), 2),
+                "MRC": round(float(mrc[i]), 3),
+                "Risk Contrib (%)": round(float(crc_pct[i]), 1),
+                "VaR 95%": round(float(var_95_vals[i]), 2),
+            }
+        )
     return pd.DataFrame(rows)
 
 

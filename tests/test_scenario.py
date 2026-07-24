@@ -6,7 +6,9 @@ from engine.scenario import run_default_scenarios, run_scenario
 
 class TestRunScenario:
     def test_single_holding(self):
-        holdings = [Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)]
+        holdings = [
+            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)
+        ]
         betas = {"RELIANCE.NS": 1.2}
         result = run_scenario(holdings, betas, -10, "Test Crash")
         assert result.name == "Test Crash"
@@ -24,7 +26,9 @@ class TestRunScenario:
         assert result.market_change == -10
 
     def test_positive_scenario(self):
-        holdings = [Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)]
+        holdings = [
+            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)
+        ]
         betas = {"RELIANCE.NS": 1.0}
         result = run_scenario(holdings, betas, +15)
         assert result.portfolio_impact_pct > 0
@@ -48,13 +52,17 @@ class TestRunScenario:
 
 class TestRunDefaultScenarios:
     def test_returns_five_scenarios(self):
-        holdings = [Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)]
+        holdings = [
+            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)
+        ]
         betas = {"RELIANCE.NS": 1.0}
         results = run_default_scenarios(holdings, betas)
         assert len(results) == 5
 
     def test_ordered_by_severity(self):
-        holdings = [Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)]
+        holdings = [
+            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500, current_price=2600)
+        ]
         betas = {"RELIANCE.NS": 1.0}
         results = run_default_scenarios(holdings, betas)
         impacts = [s.portfolio_impact_pct for s in results]

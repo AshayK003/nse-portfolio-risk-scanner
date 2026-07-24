@@ -34,6 +34,7 @@ def _isnan(v: float) -> bool:
 
 _DEFAULT_PERIOD = "1y"
 
+
 class _LRUCache:
     """Simple LRU cache with bounded size — evicts oldest entries."""
 

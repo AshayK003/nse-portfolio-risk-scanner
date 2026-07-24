@@ -9,6 +9,7 @@ from __future__ import annotations
 
 try:
     import riskfolio as rf
+
     RISKFOLIO_AVAILABLE = True
 except ImportError:
     RISKFOLIO_AVAILABLE = False
@@ -19,8 +20,7 @@ def riskfolio_available() -> bool:
     return RISKFOLIO_AVAILABLE
 
 
-def optimize_advanced(returns, method: str = "CVaR",
-                      obj: str = "Sharpe") -> dict | None:
+def optimize_advanced(returns, method: str = "CVaR", obj: str = "Sharpe") -> dict | None:
     """Run Riskfolio-Lib optimization if available.
 
     Parameters
@@ -43,8 +43,7 @@ def optimize_advanced(returns, method: str = "CVaR",
     try:
         port = rf.Portfolio(returns=returns)
         port.assets_stats(method="hist")
-        weights = port.optimization(model="Classic", rm=method,
-                                    obj=obj, hist=True)
+        weights = port.optimization(model="Classic", rm=method, obj=obj, hist=True)
         return weights.to_dict().get("weights", {})
     except Exception:
         return None

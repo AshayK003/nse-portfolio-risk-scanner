@@ -66,4 +66,5 @@ class TestDetectRegimes:
 
 def _hmm_available():
     from engine.regime import _HMMLEARN_AVAILABLE
+
     return _HMMLEARN_AVAILABLE

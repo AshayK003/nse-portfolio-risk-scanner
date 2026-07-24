@@ -23,6 +23,7 @@ class RegimeResult:
     transition_matrix: list[list[float]]
     stats: list[dict]  # per-regime: return, vol, count
 
+
 try:
     from hmmlearn import hmm
 
@@ -42,9 +43,7 @@ def _label_map(n_states: int) -> dict[int, str]:
     return {i: f"State {i + 1}" for i in range(n_states)}
 
 
-def _compute_stats(
-    returns: pd.Series, state_seq: list[str], labels: list[str]
-) -> list[dict]:
+def _compute_stats(returns: pd.Series, state_seq: list[str], labels: list[str]) -> list[dict]:
     """Per-regime statistics from state sequence."""
     stats = []
     for ls in labels:

@@ -169,6 +169,7 @@ def optimize_hrp(returns: pd.DataFrame, max_single_weight: float = 0.35) -> Opti
 def _get_quasi_diag(link: np.ndarray) -> list[int]:
     """Reorder assets by hierarchical clustering order (quasi-diagonalization)."""
     from scipy.cluster.hierarchy import leaves_list
+
     return leaves_list(link).tolist()
 
 
@@ -208,7 +209,9 @@ def _inverse_variance(cov: np.ndarray) -> np.ndarray:
     return inv_diag / inv_diag.sum()
 
 
-def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35) -> OptimizationResult:
+def optimize_min_volatility(
+    returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35
+) -> OptimizationResult:
     """Minimum volatility portfolio (SciPy constrained optimization)."""
     from scipy.optimize import minimize
 
@@ -242,7 +245,9 @@ def optimize_min_volatility(returns: pd.DataFrame, risk_free_rate: float = 0.065
     )
 
 
-def optimize_max_sharpe(returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35) -> OptimizationResult:
+def optimize_max_sharpe(
+    returns: pd.DataFrame, risk_free_rate: float = 0.065, max_single_weight: float = 0.35
+) -> OptimizationResult:
     """Maximum Sharpe ratio portfolio."""
     from scipy.optimize import minimize
 
@@ -322,15 +327,17 @@ def suggest_rebalance(
         target_w = target_weights.get(h.ticker, 0.0)
         drift = target_w - current_w
         total_abs_drift += abs(drift)
-        trades.append({
-            "ticker": h.ticker.replace(".NS", ""),
-            "name": h.name,
-            "current_w_pct": round(current_w * 100, 1),
-            "target_w_pct": round(target_w * 100, 1),
-            "drift_pct": round(drift * 100, 1),
-            "action": "increase" if drift > 0.005 else ("decrease" if drift < -0.005 else "hold"),
-            "change_rs": round(drift * total_value, 0),
-        })
+        trades.append(
+            {
+                "ticker": h.ticker.replace(".NS", ""),
+                "name": h.name,
+                "current_w_pct": round(current_w * 100, 1),
+                "target_w_pct": round(target_w * 100, 1),
+                "drift_pct": round(drift * 100, 1),
+                "action": "increase" if drift > 0.005 else ("decrease" if drift < -0.005 else "hold"),
+                "change_rs": round(drift * total_value, 0),
+            }
+        )
 
     return RebalanceSuggestion(
         target_method=target_method,

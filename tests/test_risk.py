@@ -232,6 +232,7 @@ class TestDenoiseCorrelation:
 
     def test_single_asset(self):
         import pandas as pd
+
         corr = pd.DataFrame({"A": [1.0]})
         result = denoise_correlation(corr, 100)
         assert abs(result.iloc[0, 0] - 1.0) < 0.01
@@ -244,7 +245,16 @@ class TestStockRiskAttribution:
         weights = [0.4, 0.3, 0.3]
         df = compute_stock_risk_attribution(sample_prices, weights)
         assert not df.empty
-        expected = {"Ticker", "Weight (%)", "Beta", "Ann. Vol (%)", "Avg Corr", "MRC", "Risk Contrib (%)", "VaR 95%"}
+        expected = {
+            "Ticker",
+            "Weight (%)",
+            "Beta",
+            "Ann. Vol (%)",
+            "Avg Corr",
+            "MRC",
+            "Risk Contrib (%)",
+            "VaR 95%",
+        }
         assert set(df.columns) >= expected
         assert len(df) == 3
 

@@ -24,7 +24,9 @@ class TestClassifyHoldings:
         for ticker, expected_sector in cases:
             holdings = [Holding(ticker=ticker, name=f"{ticker} fund", quantity=100, avg_price=100)]
             result = classify_holdings(holdings)
-            assert result[0].sector == expected_sector, f"{ticker} → expected {expected_sector}, got {result[0].sector}"
+            assert result[0].sector == expected_sector, (
+                f"{ticker} → expected {expected_sector}, got {result[0].sector}"
+            )
 
     def test_sector_map_loaded(self):
         sector_map = load_sector_map()
@@ -93,10 +95,8 @@ class TestComputeSectorExposure:
     def test_unknown_sector_grouped(self):
         """Holdings with sector='Unknown' are grouped under Unknown."""
         holdings = [
-            Holding(ticker="X.NS", name="X", quantity=10, avg_price=100,
-                    sector="Unknown", current_price=100),
-            Holding(ticker="Y.NS", name="Y", quantity=10, avg_price=100,
-                    sector="Unknown", current_price=100),
+            Holding(ticker="X.NS", name="X", quantity=10, avg_price=100, sector="Unknown", current_price=100),
+            Holding(ticker="Y.NS", name="Y", quantity=10, avg_price=100, sector="Unknown", current_price=100),
         ]
         result = compute_sector_exposure(holdings)
         assert "Unknown" in result.sector_allocation
@@ -105,12 +105,9 @@ class TestComputeSectorExposure:
     def test_herfindahl_index_range(self):
         """HHI should be between 0 and 1."""
         holdings = [
-            Holding(ticker="A.NS", name="A", quantity=10, avg_price=100,
-                    sector="IT", current_price=100),
-            Holding(ticker="B.NS", name="B", quantity=10, avg_price=100,
-                    sector="Banking", current_price=100),
-            Holding(ticker="C.NS", name="C", quantity=10, avg_price=100,
-                    sector="Pharma", current_price=100),
+            Holding(ticker="A.NS", name="A", quantity=10, avg_price=100, sector="IT", current_price=100),
+            Holding(ticker="B.NS", name="B", quantity=10, avg_price=100, sector="Banking", current_price=100),
+            Holding(ticker="C.NS", name="C", quantity=10, avg_price=100, sector="Pharma", current_price=100),
         ]
         result = compute_sector_exposure(holdings)
         assert 0 <= result.herfindahl_index <= 1.0

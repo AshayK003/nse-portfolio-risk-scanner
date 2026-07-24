@@ -24,10 +24,24 @@ from storage.models import (
 def _make_portfolio() -> Portfolio:
     return Portfolio(
         holdings=[
-            Holding(ticker="RELIANCE.NS", name="RIL", quantity=10, avg_price=2500,
-                    sector="Oil & Gas", current_price=2600, change_pct=1.5),
-            Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500,
-                    sector="IT", current_price=3400, change_pct=-0.8),
+            Holding(
+                ticker="RELIANCE.NS",
+                name="RIL",
+                quantity=10,
+                avg_price=2500,
+                sector="Oil & Gas",
+                current_price=2600,
+                change_pct=1.5,
+            ),
+            Holding(
+                ticker="TCS.NS",
+                name="TCS",
+                quantity=5,
+                avg_price=3500,
+                sector="IT",
+                current_price=3400,
+                change_pct=-0.8,
+            ),
         ],
         name="Test Fund",
     )
@@ -46,10 +60,16 @@ def _make_report() -> AnalysisReport:
             herfindahl_index=0.32,
         ),
         benchmark=BenchmarkComparison(
-            portfolio_return=20.0, benchmark_return=15.0, alpha=5.0,
-            tracking_error=4.0, information_ratio=1.25, beta=0.9,
-            correlation=0.88, rolling_alpha_6m=6.0,
-            outperformance_months=7, total_months=12,
+            portfolio_return=20.0,
+            benchmark_return=15.0,
+            alpha=5.0,
+            tracking_error=4.0,
+            information_ratio=1.25,
+            beta=0.9,
+            correlation=0.88,
+            rolling_alpha_6m=6.0,
+            outperformance_months=7,
+            total_months=12,
         ),
     )
 
@@ -105,9 +125,7 @@ class TestPortfolioRoundTrip:
         """When JSON has no sector/current_price/change_pct, defaults are used."""
         sp = SavedPortfolio(
             name="Legacy",
-            holdings_json=json.dumps([
-                {"ticker": "TCS", "name": "TCS", "quantity": 5, "avg_price": 3500}
-            ]),
+            holdings_json=json.dumps([{"ticker": "TCS", "name": "TCS", "quantity": 5, "avg_price": 3500}]),
         )
         p = saved_to_portfolio(sp)
         assert p.holdings[0].sector == ""

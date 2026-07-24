@@ -242,8 +242,18 @@ def allocation_pie(weights: dict[str, float], title: str = "Allocation") -> go.F
     values = list(weights.values())
     cleaned = [t.replace(".NS", "") for t in tickers]
     # Stock-market palette: greens, greys, muted reds
-    stock_colors = ["#29c76a", "#6b7280", "#ef4444", "#eab308", "#8b5cf6",
-                    "#14b8a6", "#f97316", "#3b82f6", "#ec4899", "#84cc16"]
+    stock_colors = [
+        "#29c76a",
+        "#6b7280",
+        "#ef4444",
+        "#eab308",
+        "#8b5cf6",
+        "#14b8a6",
+        "#f97316",
+        "#3b82f6",
+        "#ec4899",
+        "#84cc16",
+    ]
     fig = go.Figure(
         go.Pie(
             labels=cleaned,
@@ -259,5 +269,3 @@ def allocation_pie(weights: dict[str, float], title: str = "Allocation") -> go.F
         margin=dict(t=30, b=0, l=0, r=0),
     )
     return fig
-
-

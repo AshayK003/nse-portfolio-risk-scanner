@@ -66,7 +66,10 @@ def render_sidebar():
     stored_rf = st.session_state.get("risk_free_rate", 6.5)
     st.session_state.risk_free_rate = st.sidebar.slider(
         "Risk-free Rate (%)",
-        min_value=3.0, max_value=10.0, value=stored_rf, step=0.25,
+        min_value=3.0,
+        max_value=10.0,
+        value=stored_rf,
+        step=0.25,
         help="Indian risk-free rate (10-year bond yield ~6.5%). Affects Sharpe, Sortino, and alpha.",
     )
 
@@ -152,7 +155,9 @@ def render_manual_entry() -> list[Holding]:
             with col_b:
                 st.text(f"{h.quantity} shares")
             with col_c:
-                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", use_container_width=True):
+                if st.button(
+                    "Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", use_container_width=True
+                ):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 
@@ -183,12 +188,15 @@ def render_upload_tab() -> Portfolio | None:
                 if not isinstance(item, dict) or "t" not in item or "q" not in item or "p" not in item:
                     raise ValueError("Invalid holding: missing required fields (t, q, p)")
                 from engine.portfolio import normalize_ticker
-                holdings.append(Holding(
-                    ticker=normalize_ticker(item["t"]),
-                    name=item.get("n", item["t"]),
-                    quantity=int(item["q"]),
-                    avg_price=float(item["p"]),
-                ))
+
+                holdings.append(
+                    Holding(
+                        ticker=normalize_ticker(item["t"]),
+                        name=item.get("n", item["t"]),
+                        quantity=int(item["q"]),
+                        avg_price=float(item["p"]),
+                    )
+                )
             portfolio = Portfolio(holdings=holdings, name="Shared Portfolio")
             st.success("Loaded portfolio from shared link.")
             return portfolio
@@ -315,9 +323,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
                         continue
                     new_holdings.append(
                         Holding(
-                            ticker=(ticker_str + ".NS")
-                            if not ticker_str.endswith(".NS")
-                            else ticker_str,
+                            ticker=(ticker_str + ".NS") if not ticker_str.endswith(".NS") else ticker_str,
                             name=row.get("Name", ticker_str),
                             quantity=int(row["Quantity"]),
                             avg_price=float(row["Avg Price"]),

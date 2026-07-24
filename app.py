@@ -156,9 +156,7 @@ benchmark_choice = st.selectbox(
 # Force refresh toggle
 refresh_col1, refresh_col2 = st.columns([4, 1])
 with refresh_col2:
-    force = st.checkbox(
-        "Force refresh prices", value=False, key="force_refresh_cb"
-    )
+    force = st.checkbox("Force refresh prices", value=False, key="force_refresh_cb")
 if force:
     st.session_state.force_refresh = True
 else:
@@ -233,18 +231,22 @@ if _needs_compute:
         portfolio_cum = (1 + portfolio_returns).cumprod()
 
         with st.spinner("Fetching benchmark data..."):
-                    try:
-                        benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
-                    except Exception as e:
-                        logger.warning("Benchmark fetch failed: {e}", e=e)
-                        benchmark_prices = pd.Series(dtype=float)
-                        st.warning(
-                            f"Could not fetch benchmark data ({benchmark_choice}). "
-                            f"Benchmark comparison (alpha, beta, tracking error) will be unavailable. "
-                            f"Try a different benchmark or check network connectivity."
-                        )
+            try:
+                benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
+            except Exception as e:
+                logger.warning("Benchmark fetch failed: {e}", e=e)
+                benchmark_prices = pd.Series(dtype=float)
+                st.warning(
+                    f"Could not fetch benchmark data ({benchmark_choice}). "
+                    f"Benchmark comparison (alpha, beta, tracking error) will be unavailable. "
+                    f"Try a different benchmark or check network connectivity."
+                )
 
-        benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty and len(benchmark_prices) > 1 else None
+        benchmark_returns = (
+            benchmark_prices.pct_change().dropna()
+            if not benchmark_prices.empty and len(benchmark_prices) > 1
+            else None
+        )
         benchmark_cum = (
             (1 + benchmark_returns).cumprod() if benchmark_returns is not None else pd.Series(dtype=float)
         )
@@ -252,8 +254,11 @@ if _needs_compute:
         # Compute all risk metrics
         with st.spinner("Computing risk metrics..."):
             risk = compute_risk_metrics(
-                prices, weights, risk_free_rate=risk_free_rate,
-                benchmark_returns=benchmark_returns, portfolio_returns=portfolio_returns
+                prices,
+                weights,
+                risk_free_rate=risk_free_rate,
+                benchmark_returns=benchmark_returns,
+                portfolio_returns=portfolio_returns,
             )
             sector = compute_sector_exposure(portfolio.holdings)
             benchmark = (
@@ -272,7 +277,9 @@ if _needs_compute:
         if len(weights) >= 2:
             rets = prices.pct_change().dropna()
             method_map = {
-                "min_volatility": lambda: optimize_min_volatility(rets, max_single_weight=profile.max_single_weight),
+                "min_volatility": lambda: optimize_min_volatility(
+                    rets, max_single_weight=profile.max_single_weight
+                ),
                 "hrp": lambda: optimize_hrp(rets, max_single_weight=profile.max_single_weight),
                 "max_sharpe": lambda: optimize_max_sharpe(rets, max_single_weight=profile.max_single_weight),
             }
@@ -310,7 +317,9 @@ if _needs_compute:
                 stock_betas = {c: 1.0 for c in rets.columns}
 
         scenarios = run_default_scenarios(portfolio.holdings, stock_betas) if stock_betas else []
-        rebalance = suggest_rebalance(portfolio.holdings, profile=profile) if portfolio.holding_count >= 1 else None
+        rebalance = (
+            suggest_rebalance(portfolio.holdings, profile=profile) if portfolio.holding_count >= 1 else None
+        )
 
         # ── v0.7.0 Intelligence modules (each guarded so one failure doesn't kill the rest) ──
 
@@ -322,7 +331,9 @@ if _needs_compute:
 
         macro_drivers = None
         try:
-            macro_drivers = estimate_macro_sensitivities(portfolio_returns, prices, weights, benchmark_returns)
+            macro_drivers = estimate_macro_sensitivities(
+                portfolio_returns, prices, weights, benchmark_returns
+            )
         except Exception as e:
             logger.warning("Macro drivers failed: {e}", e=e)
 
@@ -376,13 +387,16 @@ if _needs_compute:
         try:
             if not np.isnan(risk.var_95) and risk.var_95 != 0 and not portfolio_returns.empty:
                 from engine.backtesting import kupiec_pof
+
                 rets_flat = portfolio_returns.values.flatten()
                 var_forecast_series = np.full(len(rets_flat), abs(risk.var_95) / 100)
-                var_backtest = {"95%": kupiec_pof(
-                    var_forecast_series,
-                    rets_flat,
-                    confidence=0.95,
-                )}
+                var_backtest = {
+                    "95%": kupiec_pof(
+                        var_forecast_series,
+                        rets_flat,
+                        confidence=0.95,
+                    )
+                }
         except Exception as e:
             logger.warning("VaR backtest failed: {e}", e=e)
 
@@ -561,7 +575,11 @@ tabs = st.tabs(tab_names)
 with tabs[0]:
     render_narrative_section(narrative)
     render_advanced_section(
-        report.zscore, report.var_backtest, report.garch_var, report.pelve, report.optimization_advanced,
+        report.zscore,
+        report.var_backtest,
+        report.garch_var,
+        report.pelve,
+        report.optimization_advanced,
     )
     render_risk_cards(report.risk)
     col1, col2 = st.columns(2)
@@ -599,7 +617,9 @@ with tabs[0]:
 
             with st.expander("Risk Factor Breakdown", expanded=False):
                 if institutional_scores.risk_factors:
-                    for factor in sorted(institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True):
+                    for factor in sorted(
+                        institutional_scores.risk_factors, key=lambda f: f.composite, reverse=True
+                    ):
                         with st.expander(
                             f"**{factor.name}** \u2014 Score: {factor.composite:.1f}/100",
                             expanded=factor.composite > 20,
@@ -708,8 +728,10 @@ with tabs[3]:
             key="drawdown_chart",
         )
     with col2:
-        corr = raw_corr if not raw_corr.empty else (
-            compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame()
+        corr = (
+            raw_corr
+            if not raw_corr.empty
+            else (compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame())
         )
         st.plotly_chart(
             correlation_heatmap(corr),
@@ -804,7 +826,12 @@ if sector:
 
 # ── Tab 6: Recommendations ──
 with tabs[6]:
-    render_optimization_section(opt_result, portfolio=report.portfolio, risk_data=risk_data, max_single_weight=profile.max_single_weight)
+    render_optimization_section(
+        opt_result,
+        portfolio=report.portfolio,
+        risk_data=risk_data,
+        max_single_weight=profile.max_single_weight,
+    )
     render_rebalance_section(rebalance, risk_data=risk_data)
     st.divider()
     if recommendations:

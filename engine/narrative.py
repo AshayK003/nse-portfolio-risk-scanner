@@ -41,7 +41,9 @@ def generate_narrative(report: AnalysisReport) -> NarrativeReport:
     summary = _build_summary(portfolio, risk)
     risk_assessment = _build_risk_assessment(risk)
     concentration = _build_concentration(sector, portfolio)
-    benchmark_context = _build_benchmark_context(benchmark) if benchmark else "Benchmark comparison is not available."
+    benchmark_context = (
+        _build_benchmark_context(benchmark) if benchmark else "Benchmark comparison is not available."
+    )
     key_concerns = _build_key_concerns(risk, sector, benchmark, portfolio)
     overall_verdict = _build_overall_verdict(risk, sector)
 
@@ -56,6 +58,7 @@ def generate_narrative(report: AnalysisReport) -> NarrativeReport:
 
 
 # ── Threshold helpers (calibrated for Indian equity context) ──
+
 
 def _vol_level(vol: float) -> str:
     if vol < 15:
@@ -109,6 +112,7 @@ def _diversification_level(score: float) -> str:
 
 # ── Section builders ──
 
+
 def _build_summary(portfolio: Portfolio, risk: RiskMetrics) -> str:
     hc = portfolio.holding_count
     invested = portfolio.total_invested
@@ -160,7 +164,9 @@ def _build_risk_assessment(risk: RiskMetrics) -> str:
     ]
 
     if cagr > 0:
-        parts.append(f"The backtest CAGR is {cagr:.1f}% — the annualized return if current weights had been held over the overlapping price history of all holdings.")
+        parts.append(
+            f"The backtest CAGR is {cagr:.1f}% — the annualized return if current weights had been held over the overlapping price history of all holdings."
+        )
 
     return " ".join(parts)
 
@@ -235,14 +241,15 @@ def _build_benchmark_context(benchmark: BenchmarkComparison) -> str:
     ]
 
     if te > 0:
-        parts.append(f"Tracking error of {te:.1f}% indicates the portfolio's return pattern "
-                      f"deviates {'significantly' if te > 8 else 'moderately' if te > 4 else 'modestly'} from the benchmark.")
+        parts.append(
+            f"Tracking error of {te:.1f}% indicates the portfolio's return pattern "
+            f"deviates {'significantly' if te > 8 else 'moderately' if te > 4 else 'modestly'} from the benchmark."
+        )
 
     if total_m > 0:
         win_rate = outperf / total_m * 100
         parts.append(
-            f"The portfolio beat the benchmark in {outperf} of {total_m} months "
-            f"({win_rate:.0f}% win rate)."
+            f"The portfolio beat the benchmark in {outperf} of {total_m} months ({win_rate:.0f}% win rate)."
         )
 
     return " ".join(parts)

@@ -71,7 +71,8 @@ class PriceCache:
         with _CACHE_LOCK:
             try:
                 dates = [
-                    d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10] for d in close_series.index
+                    d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
+                    for d in close_series.index
                 ]
                 values = [round(float(v), 4) for v in close_series.values]
                 self._cache.set(ticker, {"dates": dates, "values": values}, expire=self.ttl_hours * 3600)

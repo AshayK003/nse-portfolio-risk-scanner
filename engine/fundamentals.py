@@ -47,6 +47,7 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
     """
     try:
         import yfinance as yf
+
         stock = yf.Ticker(ticker)
         info = stock.info or {}
         bs = stock.balance_sheet
@@ -70,8 +71,7 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
     sales = _get(bs, "Total Revenue") or _get(bs, "Revenue")
     market_cap = info.get("marketCap") or info.get("market_cap", 0)
 
-    if any(v is None for v in [current_assets, current_liab, total_liab,
-                                retained_earnings, sales]):
+    if any(v is None for v in [current_assets, current_liab, total_liab, retained_earnings, sales]):
         return None
 
     company_name = info.get("longName") or info.get("shortName") or ticker
@@ -80,8 +80,9 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
 
     # Detect manufacturing vs non-manufacturing via sector
     sector = (info.get("sector") or "").lower()
-    is_mfg = any(kw in sector for kw in ["industrials", "technology", "energy",
-                                          "materials", "consumer cyclical"])
+    is_mfg = any(
+        kw in sector for kw in ["industrials", "technology", "energy", "materials", "consumer cyclical"]
+    )
     model = "Original" if is_mfg else "Modified"
 
     X1 = working_capital / total_assets  # noqa: N806
@@ -96,8 +97,7 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
         z = 6.56 * X1 + 3.26 * X2 + 6.72 * X3 + 1.05 * X4
 
     zone = _classify_zone(z, model)
-    return ZScoreResult(ticker=ticker, company_name=company_name,
-                        zscore=round(z, 2), zone=zone, model=model)
+    return ZScoreResult(ticker=ticker, company_name=company_name, zscore=round(z, 2), zone=zone, model=model)
 
 
 def compute_all_zscores(tickers: list[str]) -> list[ZScoreResult]:

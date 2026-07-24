@@ -43,13 +43,29 @@ _CURRENCY_SUFFIXES = ["(₹)", "(rs)", "(inr)", "($)", "(rs.)"]
 # Order matters: more specific/variants listed first within each role.
 _COLUMN_ALIASES = {
     "ticker": [
-        "ticker", "symbol", "stock", "scrip", "isin",
-        "tradingsymbol", "trading symbol", "instrument",
-        "security", "code",
+        "ticker",
+        "symbol",
+        "stock",
+        "scrip",
+        "isin",
+        "tradingsymbol",
+        "trading symbol",
+        "instrument",
+        "security",
+        "code",
     ],
     "quantity": [
-        "quantity", "qty", "qty.", "shares", "holdings",
-        "units", "netqty", "net qty", "nos", "pos", "size",
+        "quantity",
+        "qty",
+        "qty.",
+        "shares",
+        "holdings",
+        "units",
+        "netqty",
+        "net qty",
+        "nos",
+        "pos",
+        "size",
     ],
     "avg_price": [
         "avg_price",
@@ -113,13 +129,24 @@ _COLUMN_ALIASES = {
         "total",
     ],
     "pnl": [
-        "pnl", "p&l", "profit & loss", "profit and loss",
-        "profit/loss", "unrealized pnl", "unrealised pnl",
-        "day pnl", "total pnl", "mtm",
+        "pnl",
+        "p&l",
+        "profit & loss",
+        "profit and loss",
+        "profit/loss",
+        "unrealized pnl",
+        "unrealised pnl",
+        "day pnl",
+        "total pnl",
+        "mtm",
     ],
     "name": [
-        "name", "company", "company name", "security name",
-        "securityname", "description",
+        "name",
+        "company",
+        "company name",
+        "security name",
+        "securityname",
+        "description",
     ],
 }
 
@@ -147,7 +174,7 @@ def parse_portfolio_csv(
     Returns a validated Portfolio or raises ValueError.
     """
     if len(csv_bytes) > _MAX_CSV_BYTES:
-        raise ValueError(f"CSV file exceeds maximum size of {_MAX_CSV_BYTES // (1024*1024)}MB")
+        raise ValueError(f"CSV file exceeds maximum size of {_MAX_CSV_BYTES // (1024 * 1024)}MB")
 
     try:
         content = csv_bytes.decode("utf-8-sig")
@@ -273,8 +300,7 @@ def validate_portfolio(portfolio: Portfolio) -> list[str]:
 
     if portfolio.holding_count > 50:
         warnings.append(
-            f"Portfolio has {portfolio.holding_count} holdings — "
-            f"yfinance rate limits may slow data fetching"
+            f"Portfolio has {portfolio.holding_count} holdings — yfinance rate limits may slow data fetching"
         )
 
     # Check for extreme concentration
@@ -329,14 +355,16 @@ def _clean_col_name(name: str) -> str:
 
 
 def _sample_rows(
-    reader: csv.DictReader, n: int = _CSV_SAMPLE_SIZE,
+    reader: csv.DictReader,
+    n: int = _CSV_SAMPLE_SIZE,
 ) -> list[dict[str, str]]:
     """Consume up to n rows from a reader for value analysis."""
     return [row for _, row in zip(range(n), reader, strict=False)]
 
 
 def _analyze_values(
-    fieldnames: list[str], samples: list[dict[str, str]],
+    fieldnames: list[str],
+    samples: list[dict[str, str]],
 ) -> dict[str, dict]:
     """Classify each column by its sampled numeric values."""
     analysis: dict[str, dict] = {}
@@ -485,11 +513,15 @@ def _resolve_column_map(
 
     # --- Column origin info for downstream auto-correct ---
     col_map["_price_role"] = (
-        "total_cost" if cost_col == price_col else
-        "total_value" if val_col == price_col else
-        "avg_price" if avg_col == price_col else
-        "current_price" if cur_col == price_col else
-        "fallback"
+        "total_cost"
+        if cost_col == price_col
+        else "total_value"
+        if val_col == price_col
+        else "avg_price"
+        if avg_col == price_col
+        else "current_price"
+        if cur_col == price_col
+        else "fallback"
     )
 
     return col_map, warnings
@@ -519,12 +551,14 @@ def portfolio_from_dict(data: dict) -> Portfolio:
         raw_ticker = h.get("ticker", "").strip()
         if not raw_ticker:
             continue
-        holdings.append(Holding(
-            ticker=normalize_ticker(raw_ticker),
-            name=h.get("name", raw_ticker),
-            quantity=int(h.get("quantity", 0)),
-            avg_price=float(h.get("avg_price", 0)),
-        ))
+        holdings.append(
+            Holding(
+                ticker=normalize_ticker(raw_ticker),
+                name=h.get("name", raw_ticker),
+                quantity=int(h.get("quantity", 0)),
+                avg_price=float(h.get("avg_price", 0)),
+            )
+        )
     return Portfolio(
         holdings=holdings,
         name=data.get("name", "My Portfolio"),

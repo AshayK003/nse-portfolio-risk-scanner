@@ -53,6 +53,3 @@ def compute_max_drawdown(prices: pd.Series | pd.DataFrame) -> dict:
         "start": str(start.date()) if hasattr(start, "date") else str(start),
         "end": str(end.date()) if hasattr(end, "date") else str(end),
     }
-
-
-

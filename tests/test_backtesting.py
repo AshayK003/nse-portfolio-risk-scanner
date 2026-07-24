@@ -25,7 +25,7 @@ class TestKupiecPOF:
     def test_all_exceptions_when_var_always_breached(self):
         """If losses always exceed VaR, exceptions = n."""
         forecasts = np.array([0.001] * 100)  # 0.1% VaR
-        returns = np.array([-0.05] * 100)    # -5% returns
+        returns = np.array([-0.05] * 100)  # -5% returns
         result = kupiec_pof(forecasts, returns, confidence=0.95)
         assert result.exceptions == 100
 
@@ -40,6 +40,7 @@ class TestKupiecPOF:
         returns = rng.normal(0, sigma, n)
         # VaR at correct level
         from scipy.stats import norm
+
         var_forecasts = np.full(n, sigma * norm.ppf(confidence))
         result = kupiec_pof(var_forecasts, returns, confidence=confidence)
         # Expected ~ n * p = 100

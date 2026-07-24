@@ -84,7 +84,9 @@ def generate_recommendations(
             sec_pct = sector.sector_allocation.get(sec, 0)
             recs.append(
                 Recommendation(
-                    action=ActionType.REDUCE if sec_pct > profile.concentration_threshold else ActionType.DIVERSIFY,
+                    action=ActionType.REDUCE
+                    if sec_pct > profile.concentration_threshold
+                    else ActionType.DIVERSIFY,
                     target=sec,
                     urgency="immediate" if sec_pct > profile.concentration_threshold * 1.15 else "near-term",
                     confidence=0.85,
@@ -155,7 +157,9 @@ def generate_recommendations(
             Recommendation(
                 action=ActionType.MONITOR,
                 target="PORTFOLIO",
-                urgency="immediate" if abs(risk.max_drawdown) > profile.drawdown_threshold * 1.5 else "near-term",
+                urgency="immediate"
+                if abs(risk.max_drawdown) > profile.drawdown_threshold * 1.5
+                else "near-term",
                 confidence=0.9,
                 expected_risk_reduction=0.0,
                 reasoning=f"Maximum drawdown of {risk.max_drawdown:.1f}% ({risk.max_drawdown_start} to {risk.max_drawdown_end}) "
@@ -271,7 +275,9 @@ def generate_recommendations(
 
     summary_parts = []
     if recs:
-        summary_parts.append(f"Portfolio analysis identified {len(recs)} actionable recommendations based on a **{profile.name}** risk profile.")
+        summary_parts.append(
+            f"Portfolio analysis identified {len(recs)} actionable recommendations based on a **{profile.name}** risk profile."
+        )
         if priority:
             summary_parts.append(
                 f"{len(priority)} require immediate attention: "

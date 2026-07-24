@@ -68,9 +68,15 @@ def _compute_delivery(delivery_data: pd.DataFrame) -> DeliveryInfo | None:
     if len(delivery_data) >= 15:
         recent = delivery_data.tail(10)
         earlier = delivery_data.tail(20).head(10)
-        recent_avg = recent["DELIV_QTY"].sum() / recent["TOTTRDQTY"].sum() * 100 if recent["TOTTRDQTY"].sum() > 0 else 0
+        recent_avg = (
+            recent["DELIV_QTY"].sum() / recent["TOTTRDQTY"].sum() * 100
+            if recent["TOTTRDQTY"].sum() > 0
+            else 0
+        )
         earlier_avg = (
-            earlier["DELIV_QTY"].sum() / earlier["TOTTRDQTY"].sum() * 100 if earlier["TOTTRDQTY"].sum() > 0 else 0
+            earlier["DELIV_QTY"].sum() / earlier["TOTTRDQTY"].sum() * 100
+            if earlier["TOTTRDQTY"].sum() > 0
+            else 0
         )
         diff = recent_avg - earlier_avg
         trend = "rising" if diff > 3 else ("falling" if diff < -3 else "stable")

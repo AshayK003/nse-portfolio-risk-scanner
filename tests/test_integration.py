@@ -225,11 +225,7 @@ class TestPortfolioParsingEdgeCases:
 
     def test_heavy_weight_portfolio(self):
         """One stock is 99% of portfolio — should still compute without errors."""
-        csv = (
-            b"ticker,quantity,avg_price\n"
-            b"RELIANCE,1000,2500\n"
-            b"TCS,1,3500\n"
-        )
+        csv = b"ticker,quantity,avg_price\nRELIANCE,1000,2500\nTCS,1,3500\n"
         portfolio = parse_portfolio_csv(csv)
         portfolio.holdings = classify_holdings(portfolio.holdings, load_sector_map())
         prices = _mock_fetch_prices(portfolio.holdings)
