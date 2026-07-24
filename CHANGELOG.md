@@ -6,10 +6,6 @@
 
 - **Delivery analysis minimum data points** (`engine/delivery.py:50`) — `_compute_delivery()` now requires at least 2 rows of bhavcopy data to compute meaningful delivery metrics. Single-row inputs (insufficient for percentage calculation) now return `None` instead of producing misleading 20% delivery figures.
 
-### Housekeeping
-
-- **Internal documentation relocated** — Audit reports, research notes, and engineering memory moved to a gitignored directory. Keeps public repo clean; internal files never committed to public history.
-
 ---
 
 ## v0.17.2 (2026-07-24)
