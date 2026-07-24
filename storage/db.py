@@ -110,7 +110,8 @@ def _ensure_schema(conn: sqlite3.Connection):
             created_at TEXT NOT NULL
         );
 
-        CREATE INDEX IF NOT EXISTS idx_analysis_created ON analysis_runs(created_at);
+        CREATE INDEX IF NOT EXISTS idx_analysis_created_desc ON analysis_runs(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_analysis_portfolio ON analysis_runs(portfolio_name);
     """)
 
     # Update version
@@ -121,7 +122,7 @@ def _ensure_schema(conn: sqlite3.Connection):
     conn.commit()
 
 
-# ── Portfolio CRUD ──
+# ── Portfolio CRUD ───
 
 
 def save_portfolio(portfolio: SavedPortfolio) -> int:
@@ -202,7 +203,7 @@ def delete_portfolio(portfolio_id: int) -> bool:
     return cursor.rowcount > 0
 
 
-# ── Analysis History ──
+# ── Analysis History ───
 
 
 def save_analysis_run(run: AnalysisRun) -> int:
@@ -245,4 +246,3 @@ def list_recent_analyses(limit: int = 10) -> list[AnalysisRun]:
         (limit,),
     ).fetchall()
     return [AnalysisRun(**dict(r)) for r in rows]
-

@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import os
+import threading
 
 import pandas as pd
 
@@ -34,9 +35,13 @@ _DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".
 
 _CACHE_DIR = os.environ.get("NSE_RISK_SCANNER_CACHE_DIR", _DEFAULT_CACHE_DIR)
 
+# Module-level lock for thread-safe cache operations
+# diskcache.Cache is NOT thread-safe for concurrent writes by default
+_CACHE_LOCK = threading.Lock()
+
 
 class PriceCache:
-    """Diskcache-backed L2 price cache with configurable TTL."""
+    """Diskcache-backed L2 price cache with configurable TTL. Thread-safe for concurrent access."""
 
     def __init__(self, ttl_hours: int = 24, directory: str = _CACHE_DIR):
         self.ttl_hours = ttl_hours
@@ -48,53 +53,59 @@ class PriceCache:
     def get(self, ticker: str) -> pd.Series | None:
         if self._cache is None:
             return None
-        try:
-            self._cache.expire()  # evict stale entries before lookup
-            raw = self._cache.get(ticker)
-            if raw is None:
+        with _CACHE_LOCK:
+            try:
+                self._cache.expire()  # evict stale entries before lookup
+                raw = self._cache.get(ticker)
+                if raw is None:
+                    return None
+                series = pd.Series(raw["values"], index=pd.to_datetime(raw["dates"]), name=ticker)
+                series.index.name = "Date"
+                return series
+            except Exception:
                 return None
-            series = pd.Series(raw["values"], index=pd.to_datetime(raw["dates"]), name=ticker)
-            series.index.name = "Date"
-            return series
-        except Exception:
-            return None
 
     def set(self, ticker: str, close_series: pd.Series):
         if self._cache is None or close_series is None or close_series.empty:
             return
-        try:
-            dates = [
-                d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10] for d in close_series.index
-            ]
-            values = [round(float(v), 4) for v in close_series.values]
-            self._cache.set(ticker, {"dates": dates, "values": values}, expire=self.ttl_hours * 3600)
-        except Exception:
-            return
+        with _CACHE_LOCK:
+            try:
+                dates = [
+                    d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10] for d in close_series.index
+                ]
+                values = [round(float(v), 4) for v in close_series.values]
+                self._cache.set(ticker, {"dates": dates, "values": values}, expire=self.ttl_hours * 3600)
+            except Exception:
+                return
 
     def has(self, ticker: str) -> bool:
         if self._cache is None:
             return False
-        try:
-            return ticker in self._cache
-        except Exception:
-            return False
+        with _CACHE_LOCK:
+            try:
+                return ticker in self._cache
+            except Exception:
+                return False
 
     def clear(self, ticker: str):
         if self._cache is None:
             return
-        try:
-            del self._cache[ticker]
-        except Exception:
-            return
+        with _CACHE_LOCK:
+            try:
+                del self._cache[ticker]
+            except Exception:
+                return
 
     def clear_all(self):
         if self._cache is None:
             return
-        try:
-            self._cache.clear()
-        except Exception:
-            return
+        with _CACHE_LOCK:
+            try:
+                self._cache.clear()
+            except Exception:
+                return
 
     def evict_stale(self):
         if self._cache is not None:
-            self._cache.expire()
+            with _CACHE_LOCK:
+                self._cache.expire()

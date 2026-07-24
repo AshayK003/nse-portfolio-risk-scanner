@@ -20,9 +20,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-from engine._log import logger
-
 from engine import Holding
+from engine._log import logger
 
 
 def _isnan(v: float) -> bool:
@@ -98,8 +97,14 @@ def _fetch_via_nselib(ticker: str, period: str = "1Y") -> pd.DataFrame | None:
         return None
     try:
         clean = ticker.replace(".NS", "")
-        # TODO: nselib has no timeout param — can block indefinitely under load
-        raw = capital_market.price_volume_data(symbol=clean, period=period)
+        # nselib has no timeout param — wrap in thread with timeout to prevent indefinite blocking
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(capital_market.price_volume_data, symbol=clean, period=period)
+            try:
+                raw = future.result(timeout=10)  # 10s timeout per ticker
+            except TimeoutError:
+                logger.warning("nselib fetch timeout for {t}", t=ticker)
+                return None
         if raw is None or raw.empty:
             return None
         if "CLOSE_PRICE" not in raw.columns:

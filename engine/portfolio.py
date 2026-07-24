@@ -14,9 +14,11 @@ import csv
 import io
 import math
 import re
+from contextlib import suppress
+
+from engine._log import logger
 
 from . import Holding, Portfolio
-from engine._log import logger
 
 # Common NSE ticker suffixes to strip
 _TICKER_CLEANUP = re.compile(r"[\.\-–—\s]+(NS|NSE|BSE|EQ|LTD)$", re.IGNORECASE)
@@ -304,12 +306,12 @@ _CSV_SAMPLE_SIZE = 5
 
 def _detect_delimiter(content: str) -> str:
     """Auto-detect CSV delimiter by scoring each candidate on first 5 lines."""
-    lines = [l for l in content.split("\n")[:5] if l.strip()]
+    lines = [line for line in content.split("\n")[:5] if line.strip()]
     if not lines:
         return ","
     candidates = {",": 0, ";": 0, "|": 0, "\t": 0}
     for delim in candidates:
-        scores = [l.count(delim) for l in lines]
+        scores = [line.count(delim) for line in lines]
         if scores and sum(scores) > 0:
             consistent = 1.0 if max(scores) == min(scores) and scores[0] > 0 else 0.5
             candidates[delim] = sum(scores) * consistent
@@ -330,7 +332,7 @@ def _sample_rows(
     reader: csv.DictReader, n: int = _CSV_SAMPLE_SIZE,
 ) -> list[dict[str, str]]:
     """Consume up to n rows from a reader for value analysis."""
-    return [row for _, row in zip(range(n), reader)]
+    return [row for _, row in zip(range(n), reader, strict=False)]
 
 
 def _analyze_values(
@@ -343,10 +345,8 @@ def _analyze_values(
         for row in samples:
             raw = row.get(f, "").strip()
             if raw:
-                try:
+                with suppress(ValueError, TypeError):
                     nums.append(_parse_float(raw))
-                except (ValueError, TypeError):
-                    pass
         if not nums:
             continue
         min_v, max_v = min(nums), max(nums)
@@ -497,20 +497,19 @@ def _resolve_column_map(
 
 def _parse_float(s: str) -> float:
     """Parse a float from a string, handling Indian number format and common symbols."""
-    try:
-        s = s.strip().lstrip("+")
-        if not s:
-            return 0.0
-        # Handle Indian format: 1,23,456.78 -> 123456.78
-        s = s.replace(",", "")
-        # Strip currency symbols, percentage signs, and whitespace
-        for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"', "$"):
-            s = s.replace(sym, "")
-        s = s.strip()
+    s = s.strip().lstrip("+")
+    if not s:
+        return 0.0
+    # Handle Indian format: 1,23,456.78 -> 123456.78
+    s = s.replace(",", "")
+    # Strip currency symbols, percentage signs, and whitespace
+    for sym in ("₹", "Rs.", "Rs", "%", "`", "'", '"', "$"):
+        s = s.replace(sym, "")
+    s = s.strip()
+    with suppress(ValueError, TypeError):
         result = float(s) if s else 0.0
         return 0.0 if (math.isnan(result) or math.isinf(result)) else result
-    except (ValueError, TypeError):
-        return 0.0
+    return 0.0
 
 
 def portfolio_from_dict(data: dict) -> Portfolio:

@@ -102,10 +102,10 @@ def render_risk_cards(risk: RiskMetrics) -> None:
         st.metric("Treynor Ratio", f"{risk.treynor_ratio:.2f}")
         st.caption("Excess return per unit of beta risk")
     with col3:
-        skw_label = "Symmetric" if abs(risk.skewness) < 0.5 else "Skewed" if risk.skewness < 0 else "Skewed"
-        skw_delta = "Normal" if abs(risk.skewness) < 0.5 else f"{risk.skewness:+.2f}"
-        st.metric("Skewness", f"{risk.skewness:.2f}", delta=skw_delta, delta_color="off")
-        st.caption("Negative = left-tail risk")
+            skewness = risk.skewness
+            skw_delta = "Normal" if abs(skewness) < 0.5 else f"{skewness:+.2f}"
+            st.metric("Skewness", f"{skewness:.2f}", delta=skw_delta, delta_color="off")
+            st.caption("Negative = left-tail risk")
     with col4:
         kurt_label = "Normal" if abs(risk.kurtosis_excess) < 1 else "Fat tails" if risk.kurtosis_excess > 0 else "Thin tails"
         st.metric("Excess Kurtosis", f"{risk.kurtosis_excess:.2f}")

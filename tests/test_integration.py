@@ -162,7 +162,6 @@ class TestMismatchedDimensions:
 
     def test_partial_fetch_dropped_ticker(self):
         """Portfolio has 3 holdings, prices only return 2 — dot product must not crash."""
-        from engine.portfolio import normalize_ticker
 
         portfolio = Portfolio(
             holdings=[

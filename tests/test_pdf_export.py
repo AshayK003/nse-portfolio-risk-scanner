@@ -10,6 +10,15 @@ import pytest
 from engine import Holding, Portfolio, RiskMetrics
 from engine.risk import MonteCarloResult
 
+# Skip PDF tests if pdf-studio not available
+try:
+    from pdf_studio import Document  # noqa: F401
+    _PDF_STUDIO_AVAILABLE = True
+except ImportError:
+    _PDF_STUDIO_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(not _PDF_STUDIO_AVAILABLE, reason="pdf-studio not installed")
+
 
 def _sample_portfolio() -> Portfolio:
     """Create a portfolio with non-zero current prices for PDF testing."""

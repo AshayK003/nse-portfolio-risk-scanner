@@ -14,11 +14,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from engine._log import logger
-
 from data.prices import fetch_benchmark, fetch_prices, fetch_prices_refreshed
 from engine import AnalysisReport
 from engine.__init__ import RISK_PROFILES
+from engine._log import logger
 from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
 from engine.fundamentals import compute_all_zscores
@@ -234,11 +233,16 @@ if _needs_compute:
         portfolio_cum = (1 + portfolio_returns).cumprod()
 
         with st.spinner("Fetching benchmark data..."):
-            try:
-                benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
-            except Exception as e:
-                logger.warning("Benchmark fetch failed: {e}", e=e)
-                benchmark_prices = pd.Series(dtype=float)
+                    try:
+                        benchmark_prices = fetch_benchmark(benchmark_choice, period="1y")
+                    except Exception as e:
+                        logger.warning("Benchmark fetch failed: {e}", e=e)
+                        benchmark_prices = pd.Series(dtype=float)
+                        st.warning(
+                            f"Could not fetch benchmark data ({benchmark_choice}). "
+                            f"Benchmark comparison (alpha, beta, tracking error) will be unavailable. "
+                            f"Try a different benchmark or check network connectivity."
+                        )
 
         benchmark_returns = benchmark_prices.pct_change().dropna() if not benchmark_prices.empty and len(benchmark_prices) > 1 else None
         benchmark_cum = (
@@ -888,14 +892,14 @@ if st.session_state.get("_report_changed", False):
 # ── Disclaimer ──
 # Permanent visible warning banner (not collapsed)
 st.markdown(
-    f"<div style='padding:0.75rem 1rem;margin:1rem 0;background:rgba(245,158,11,0.08);"
-    f"border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;font-size:0.85rem;' role='alert'>"
-    f"<strong>⚠️ Not financial advice.</strong> This tool provides portfolio risk analysis "
+    "<div style='padding:0.75rem 1rem;margin:1rem 0;background:rgba(245,158,11,0.08);"
+    "border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;font-size:0.85rem;' role='alert'>"
+    "<strong>⚠️ Not financial advice.</strong> This tool provides portfolio risk analysis "
     "for educational and informational purposes only. Nothing on this platform constitutes "
     "investment advice or a solicitation to buy or sell securities. "
     "<strong>The creator is not a SEBI-registered investment advisor.</strong> "
     "All trading and investment decisions are solely your responsibility."
-    f"</div>",
+    "</div>",
     unsafe_allow_html=True,
 )
 

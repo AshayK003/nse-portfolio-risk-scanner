@@ -8,7 +8,7 @@ Pure functions — zero IO, zero Streamlit imports.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from engine import (
     AnalysisReport,
@@ -212,7 +212,6 @@ def _build_benchmark_context(benchmark: BenchmarkComparison) -> str:
     alpha = benchmark.alpha
     beta = benchmark.beta
     te = benchmark.tracking_error
-    ir = benchmark.information_ratio
     port_ret = benchmark.portfolio_return
     bm_ret = benchmark.benchmark_return
     outperf = benchmark.outperformance_months
@@ -220,7 +219,7 @@ def _build_benchmark_context(benchmark: BenchmarkComparison) -> str:
 
     beta_lvl = _beta_level(beta)
 
-    alpha_str = f"outperformed" if alpha >= 0 else f"underperformed"
+    alpha_str = "outperformed" if alpha >= 0 else "underperformed"
 
     parts = [
         f"Your portfolio returned {port_ret:.1f}% vs the benchmark's {bm_ret:.1f}%, "

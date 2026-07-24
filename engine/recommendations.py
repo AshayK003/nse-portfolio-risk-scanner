@@ -72,7 +72,7 @@ def generate_recommendations(
     Args:
         profile: Risk appetite profile controlling recommendation thresholds.
     """
-    from engine.__init__ import MODERATE, RiskProfile
+    from engine.__init__ import MODERATE
 
     if profile is None:
         profile = MODERATE

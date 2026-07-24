@@ -35,7 +35,7 @@ def sample_portfolio(sample_holdings):
 def sample_prices():
     """Generate 252 days of synthetic price data for 3 stocks."""
     np.random.seed(42)
-    dates = pd.date_range(end=datetime.now(), periods=252, freq="B")
+    dates = pd.date_range(end=datetime(2024, 1, 1), periods=252, freq="B")
     n_stocks = 3
 
     # Random walk with drift

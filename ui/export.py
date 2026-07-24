@@ -5,8 +5,6 @@ Streamlit-dependent presentation layer; chart/render logic lives in charts_pdf.p
 
 from __future__ import annotations
 
-import io
-
 import pandas as pd
 import streamlit as st
 

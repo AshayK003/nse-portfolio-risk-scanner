@@ -187,7 +187,7 @@ class TestParsePortfolio:
 
     def test_atp_with_currency_suffix(self):
         """'ATP (₹)' column is matched via suffix stripping."""
-        csv = "Stock,Shares,ATP (₹),Cost (₹),Price (₹)\nRELIANCE,10,2500,25000,2750\n".encode("utf-8")
+        csv = "Stock,Shares,ATP (₹),Cost (₹),Price (₹)\nRELIANCE,10,2500,25000,2750\n".encode()
         portfolio = parse_portfolio_csv(csv)
         assert portfolio.holdings[0].avg_price == 2500.0
 
