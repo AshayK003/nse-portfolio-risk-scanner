@@ -70,5 +70,8 @@ jobs:
       - name: Install core dependencies only
         run: uv sync --dev
 
+      - name: Install pytest
+        run: uv pip install pytest
+
       - name: Core Tests (no optional deps)
         run: uv run pytest tests/test_risk.py tests/test_scoring.py tests/test_optimization.py tests/test_regime.py tests/test_scenario.py tests/test_factors.py tests/test_fundamentals.py tests/test_backtesting.py tests/test_garch_var.py tests/test_portfolio.py tests/test_benchmark.py -v --tb=short -q
