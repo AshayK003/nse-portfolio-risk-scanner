@@ -9,7 +9,17 @@ from datetime import datetime
 from io import BytesIO
 
 import pandas as pd
-from matplotlib.figure import Figure
+
+# matplotlib: guarded import — Figure is used only in type annotations
+# (which are lazy strings under from __future__ import annotations).
+# The actual rendering uses the lazy _import_matplotlib() helper below.
+try:
+    from matplotlib.figure import Figure
+
+    _MATPLOTLIB_OK = True
+except ImportError:
+    Figure = None  # type: ignore[assignment, misc]
+    _MATPLOTLIB_OK = False
 
 from engine import Portfolio, RiskMetrics
 from engine.recommendations import RecommendationReport
