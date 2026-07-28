@@ -7,14 +7,31 @@ import sys
 import warnings
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
 warnings.filterwarnings("ignore")
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-import numpy as np
-import pandas as pd
-from typing import List, Dict, Any
+from data.prices import fetch_prices  # noqa: E402
+from engine import RISK_PROFILES, Holding  # noqa: E402
+from engine.factors import compute_factor_exposures, estimate_macro_sensitivities  # noqa: E402
+from engine.optimization import optimize_hrp, optimize_min_volatility  # noqa: E402
+from engine.recommendations import generate_recommendations  # noqa: E402
+from engine.regime import detect_regimes  # noqa: E402
+from engine.risk import (  # noqa: E402
+    compute_correlation_matrix,
+    compute_risk_metrics,
+    compute_stock_risk_attribution,
+    denoise_correlation,
+    monte_carlo_simulation,
+)
+from engine.scenario import run_default_scenarios  # noqa: E402
+from engine.scoring import compute_institutional_scores  # noqa: E402
+from engine.sector import classify_holdings, compute_sector_exposure  # noqa: E402
+
 
 def _score_to_tier(score: float) -> str:
     """Convert overall risk score to risk tier."""
@@ -26,21 +43,6 @@ def _score_to_tier(score: float) -> str:
         return "LOW"
     return "VERY LOW"
 
-from engine import Holding, RISK_PROFILES
-from engine.risk import (
-    compute_risk_metrics, monte_carlo_simulation,
-    compute_correlation_matrix, denoise_correlation,
-    compute_stock_risk_attribution,
-)
-from engine.regime import detect_regimes
-from engine.factors import compute_factor_exposures, estimate_macro_sensitivities
-from engine.scoring import compute_institutional_scores
-from engine.optimization import optimize_hrp, optimize_min_volatility
-from engine.scenario import run_default_scenarios
-from engine.recommendations import generate_recommendations
-from engine.sector import classify_holdings, compute_sector_exposure, load_sector_map
-from engine.benchmark import BENCHMARK_TICKERS, compare_to_benchmark
-from data.prices import fetch_prices
 
 # ─── Portfolio Data ──────────────────────────────────────────────
 ASHAY_HOLDINGS = [
@@ -106,6 +108,7 @@ PROPOSED_TRADES_RISHU = {
     "TRIM": {"TMCV": 15},
 }
 
+
 def build_holdings(holdings_data):
     """Convert holdings data to engine Holding objects with current prices."""
     holdings = []
@@ -124,11 +127,12 @@ def build_holdings(holdings_data):
         holdings.append(holding)
     return holdings
 
+
 def apply_proposed_trades(holdings, trades):
     """Apply proposed trades to holdings for what-if analysis."""
     holdings = [h for h in holdings]  # copy
     h_dict = {h.ticker: h for h in holdings}
-    
+
     for action, tickers in trades.items():
         for ticker, qty in tickers.items():
             if ticker in h_dict:
@@ -149,43 +153,44 @@ def apply_proposed_trades(holdings, trades):
                 )
     return list(h_dict.values())
 
+
 def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", proposed_trades=None):
     """Run full institutional analysis on a portfolio."""
     profile = RISK_PROFILES[profile_name]
-    
+
     print(f"\n{'='*70}")
     print(f"  {portfolio_name.upper()} PORTFOLIO — INSTITUTIONAL ANALYSIS ({profile.name})")
     if proposed_trades:
-        print(f"  [WITH PROPOSED TRADES APPLIED]")
+        print("  [WITH PROPOSED TRADES APPLIED]")
     print(f"{'='*70}")
-    
+
     # Apply proposed trades if given
     if proposed_trades:
         holdings = apply_proposed_trades(holdings, proposed_trades)
-    
+
     # ─── Basic Metrics ─────────────────────────────────────────────
     total_invested = sum(h.invested_value for h in holdings)
     total_current = sum(h.current_value for h in holdings)
     total_pnl = total_current - total_invested
     total_return = (total_pnl / total_invested) * 100 if total_invested > 0 else 0
-    
-    print(f"\n📊 PORTFOLIO SUMMARY")
+
+    print("\n📊 PORTFOLIO SUMMARY")
     print(f"   Holdings: {len(holdings)}")
     print(f"   Invested: ₹{total_invested:,.0f}")
     print(f"   Current:  ₹{total_current:,.0f}")
     print(f"   P&L:      ₹{total_pnl:+,.0f} ({total_return:+.2f}%)")
-    
+
     # ─── Sector Classification ─────────────────────────────────────
     holdings = classify_holdings(holdings)
     sector_exposure = compute_sector_exposure(holdings)
-    
-    print(f"\n🏭 SECTOR ALLOCATION (by current value)")
+
+    print("\n🏭 SECTOR ALLOCATION (by current value)")
     for sector, pct in sorted(sector_exposure.sector_allocation.items(), key=lambda x: -x[1]):
         flag = " ⚠️ CONCENTRATED" if sector in sector_exposure.concentrated_sectors else ""
         print(f"   {sector:22s}: {pct:6.2f}%{flag}")
     print(f"   Diversification Score: {sector_exposure.diversification_score:.1f}/100")
     print(f"   Herfindahl Index: {sector_exposure.herfindahl_index:.3f}")
-    
+
     # ─── Fetch Price History ───────────────────────────────────────
     print(f"\n📈 Fetching 1Y price history for {len(holdings)} holdings...")
     try:
@@ -198,21 +203,21 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     except Exception as e:
         print(f"   ❌ Price fetch failed: {e}")
         return
-    
+
     # Align holdings with price data
     holdings = [h for h in holdings if h.ticker in valid_tickers]
-    
+
     if len(holdings) < 2:
         print("   ❌ Need at least 2 holdings with price data")
         return
-    
+
     weights = np.array([h.current_value / total_current for h in holdings])
     weights = weights / weights.sum()
-    
+
     # ─── Risk Metrics ──────────────────────────────────────────────
-    print(f"\n⚠️  RISK METRICS (1Y, 252 trading days, rf=7%)")
+    print("\n⚠️  RISK METRICS (1Y, 252 trading days, rf=7%)")
     risk = compute_risk_metrics(prices_df[valid_tickers], weights, risk_free_rate=0.07)
-    
+
     print(f"   Annualized Volatility:     {risk.volatility_annual:6.2f}%")
     print(f"   VaR (95%, 1D):             {risk.var_95:6.2f}%")
     print(f"   CVaR (95%, 1D):            {risk.cvar_95:6.2f}%")
@@ -223,18 +228,18 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     print(f"   Max Drawdown:              {risk.max_drawdown:6.2f}%")
     print(f"   Portfolio Beta (vs Nifty): {risk.beta:6.2f}")
     print(f"   Correlation to Nifty:      {risk.correlation_to_benchmark:6.2f}")
-    
+
     # Portfolio-level VaR in rupees
     var_95_1d_rs = total_current * risk.var_95 / 100
     cvar_95_1d_rs = total_current * risk.cvar_95 / 100
     var_95_1y_rs = total_current * risk.var_95 * np.sqrt(252) / 100
-    print(f"\n   💰 PORTFOLIO VaR IN RUPEES")
+    print("\n   💰 PORTFOLIO VaR IN RUPEES")
     print(f"      1-Day 95% VaR:  ₹{var_95_1d_rs:,.0f}")
     print(f"      1-Day 95% CVaR: ₹{cvar_95_1d_rs:,.0f}")
     print(f"      1-Year 95% VaR: ₹{var_95_1y_rs:,.0f}")
-    
+
     # ─── Monte Carlo (10K paths) ───────────────────────────────────
-    print(f"\n🎲 MONTE CARLO SIMULATION (10,000 paths, 1Y horizon)")
+    print("\n🎲 MONTE CARLO SIMULATION (10,000 paths, 1Y horizon)")
     returns = prices_df[valid_tickers].pct_change().dropna()
     portfolio_returns = returns.dot(weights)
     mc = monte_carlo_simulation(portfolio_returns, n_simulations=10000, horizon_days=252)
@@ -244,14 +249,14 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     print(f"   Probability of Profit:     {mc.prob_profit:6.2f}%")
     print(f"   CI Lower (5%):             {mc.ci_lower:6.2f}%")
     print(f"   CI Upper (95%):            {mc.ci_upper:6.2f}%")
-    
+
     mc_var_rs = total_current * mc.var_95 / 100
     mc_cvar_rs = total_current * mc.cvar_95 / 100
     print(f"   💰 1Y 95% VaR:  ₹{mc_var_rs:,.0f}")
     print(f"   💰 1Y 95% CVaR: ₹{mc_cvar_rs:,.0f}")
-    
+
     # ─── Regime Detection (HMM) ────────────────────────────────────
-    print(f"\n🔄 REGIME DETECTION (HMM, 3 states)")
+    print("\n🔄 REGIME DETECTION (HMM, 3 states)")
     regime = detect_regimes(portfolio_returns, n_states=3)
     if regime:
         current_regime = regime.state_sequence[-1] if regime.state_sequence else "Unknown"
@@ -266,26 +271,26 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         print(f"   Regime Means (annual):     {mean_returns}")
         print(f"   Regime Vols (annual):      {annual_vols}")
     else:
-        print(f"   ❌ Regime detection failed (insufficient data)")
-    
+        print("   ❌ Regime detection failed (insufficient data)")
+
     # ─── Factor Exposures ──────────────────────────────────────────
-    print(f"\n📐 FACTOR EXPOSURES (Fama-French 5-factor + Momentum)")
+    print("\n📐 FACTOR EXPOSURES (Fama-French 5-factor + Momentum)")
     factor_report = compute_factor_exposures(prices_df[valid_tickers], weights)
     for factor in factor_report.factors:
         print(f"   {factor.name:15s}: {factor.exposure:+.3f}  Risk%: {factor.risk_contribution_pct:.1f}%")
     print(f"   R² (Factor Model): {factor_report.total_factor_risk_pct:.1f}%")
     print(f"   Idiosyncratic Risk: {factor_report.idiosyncratic_risk_pct:.1f}%")
     print(f"   Dominant Factor: {factor_report.dominant_factor}")
-    
+
     # ─── Macro Sensitivities ───────────────────────────────────────
-    print(f"\n🌍 MACRO SENSITIVITIES")
+    print("\n🌍 MACRO SENSITIVITIES")
     macro = estimate_macro_sensitivities(portfolio_returns, prices_df[valid_tickers], weights)
     for driver in macro:
         print(f"   {driver.name:20s}: {driver.sensitivity:+.3f} | Regime: {driver.current_regime} | Risk: {driver.risk_level}")
         print(f"      → {driver.reasoning}")
-    
+
     # ─── Institutional Scoring ─────────────────────────────────────
-    print(f"\n🏛️  INSTITUTIONAL RISK SCORES (P×I×C)")
+    print("\n🏛️  INSTITUTIONAL RISK SCORES (P×I×C)")
     # Build sector allocation dict
     sector_allocation = {sector: pct for sector, pct in sector_exposure.sector_allocation.items()}
     # Correlation matrix for hidden correlation scoring
@@ -304,12 +309,12 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     print(f"   Tail Risk Score:            {scores.tail_risk_score:.1f}/100")
     print(f"   Risk Tier:                  {_score_to_tier(scores.overall_risk_score)}")
     print(f"   Interpretation:             {scores.score_interpretation}")
-    print(f"   Top 5 Risk Factors:")
+    print("   Top 5 Risk Factors:")
     for i, rf in enumerate(scores.top_5_insights, 1):
         print(f"      {i}. {rf.name}: {rf.composite:.1f} — {rf.reasoning[:80]}...")
-    
+
     # ─── Stock Risk Attribution ────────────────────────────────────
-    print(f"\n🎯 STOCK RISK ATTRIBUTION (top 7 contributors)")
+    print("\n🎯 STOCK RISK ATTRIBUTION (top 7 contributors)")
     attribution = compute_stock_risk_attribution(prices_df[valid_tickers], weights)
     if not attribution.empty:
         for idx, row in attribution.head(7).iterrows():
@@ -319,9 +324,9 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
             print(f"   {idx+1}. {row['Ticker']:12s}: {row['Risk Contrib (%)']:+.3f}% vol ({pct:+.1f}% of total) | wt: {w:.1f}%")
     else:
         print("   No attribution data available")
-    
+
     # ─── Correlation (denoised) ────────────────────────────────────
-    print(f"\n🔗 HIGH CORRELATIONS (denoised, >0.7)")
+    print("\n🔗 HIGH CORRELATIONS (denoised, >0.7)")
     corr = compute_correlation_matrix(prices_df[valid_tickers])
     n_samples = len(prices_df[valid_tickers].pct_change().dropna())
     try:
@@ -340,26 +345,26 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
             print(f"   {a:12s} ↔ {b:12s}: {c:.2f}")
     else:
         print("   No pairs > 0.7 correlation")
-    
+
     # ─── Optimization ──────────────────────────────────────────────
-    print(f"\n⚖️  OPTIMIZATION")
+    print("\n⚖️  OPTIMIZATION")
     hrp = optimize_hrp(prices_df[valid_tickers])
     minvol = optimize_min_volatility(prices_df[valid_tickers])
-    
-    print(f"   HRP Weights (top 7):")
+
+    print("   HRP Weights (top 7):")
     for t, w in sorted(hrp.weights.items(), key=lambda x: -x[1])[:7]:
         curr_w = next((h.current_value/total_current*100 for h in holdings if h.ticker==t), 0)
         diff = w*100 - curr_w
         print(f"      {t:12s}: HRP={w*100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
-    
-    print(f"   Min-Vol Weights (top 7):")
+
+    print("   Min-Vol Weights (top 7):")
     for t, w in sorted(minvol.weights.items(), key=lambda x: -x[1])[:7]:
         curr_w = next((h.current_value/total_current*100 for h in holdings if h.ticker==t), 0)
         diff = w*100 - curr_w
         print(f"      {t:12s}: MinVol={w*100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
-    
+
     # ─── Scenario Analysis ─────────────────────────────────────────
-    print(f"\n🌪️  SCENARIO ANALYSIS (standard scenarios)")
+    print("\n🌪️  SCENARIO ANALYSIS (standard scenarios)")
     # Compute betas for scenario analysis
     returns = prices_df[valid_tickers].pct_change().dropna()
     portfolio_returns = returns.dot(weights)
@@ -378,9 +383,9 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         pnl_pct = result.portfolio_impact_pct
         pnl_rs = total_current * pnl_pct / 100
         print(f"   {result.name:25s}: {pnl_pct:+.2f}%  (₹{pnl_rs:+,.0f})")
-    
+
     # ─── Recommendations ───────────────────────────────────────────
-    print(f"\n🎯 INSTITUTIONAL RECOMMENDATIONS")
+    print("\n🎯 INSTITUTIONAL RECOMMENDATIONS")
     # Create a proper portfolio object for recommendations
     from engine import Portfolio
     portfolio_obj = Portfolio(holdings=holdings, name=portfolio_name)
@@ -391,10 +396,10 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         portfolio=portfolio_obj,
         profile=profile,
     )
-    
+
     print(f"   Summary: {recs.summary}")
     print(f"   Total Risk Reduction Potential: {recs.risk_reduction_potential:.1f}%")
-    print(f"   Priority Actions:")
+    print("   Priority Actions:")
     for i, r in enumerate(recs.priority_actions[:5], 1):
         print(f"      {i}. [{r.urgency.upper()}] {r.action.value.upper()} {r.target}")
         print(f"         Confidence: {r.confidence:.0%} | Risk Reduction: {r.expected_risk_reduction:.1f}%")
@@ -402,19 +407,19 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         print(f"         Trade-off: {r.trade_off}")
         if r.details:
             print(f"         Details: {r.details}")
-    
+
     # ─── What-if: Proposed Trades Impact ───────────────────────────
     if proposed_trades:
-        print(f"\n🔮 WHAT-IF: PROPOSED TRADES IMPACT")
+        print("\n🔮 WHAT-IF: PROPOSED TRADES IMPACT")
         # Current risk
         curr_var = total_current * risk.var_95 / 100
         curr_sharpe = risk.sharpe
         curr_cvar = total_current * risk.cvar_95 / 100
-        
+
         print(f"   Current 1D 95% VaR:  ₹{curr_var:,.0f}")
         print(f"   Current 1D 95% CVaR: ₹{curr_cvar:,.0f}")
         print(f"   Current Sharpe:      {curr_sharpe:.2f}")
-        
+
         # Simulate proposed portfolio
         new_holdings = apply_proposed_trades(holdings, proposed_trades)
         new_total = sum(h.current_value for h in new_holdings)
@@ -423,20 +428,20 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         new_holdings_aligned = [h for h in new_holdings if h.ticker in new_valid]
         new_weights = np.array([h.current_value / sum(h.current_value for h in new_holdings_aligned) for h in new_holdings_aligned])
         new_weights = new_weights / new_weights.sum()
-        
+
         try:
             new_risk = compute_risk_metrics(prices_df[new_valid], new_weights, risk_free_rate=0.07)
             new_var = new_total * new_risk.var_95 / 100
             new_cvar = new_total * new_risk.cvar_95 / 100
             new_sharpe = new_risk.sharpe
-            
+
             print(f"   Proposed 1D 95% VaR:  ₹{new_var:,.0f}  (Δ ₹{new_var-curr_var:+,.0f})")
             print(f"   Proposed 1D 95% CVaR: ₹{new_cvar:,.0f}  (Δ ₹{new_cvar-curr_cvar:+,.0f})")
             print(f"   Proposed Sharpe:      {new_sharpe:.2f}  (Δ {new_sharpe-curr_sharpe:+.2f})")
             print(f"   Portfolio Value:      ₹{new_total:,.0f}  (Δ ₹{new_total-total_current:+,.0f})")
         except Exception as e:
             print(f"   ❌ What-if failed: {e}")
-    
+
     return {
         "holdings": holdings,
         "risk": risk,
@@ -453,63 +458,74 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         "total_invested": total_invested,
     }
 
+
 # ─── Main ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("="*70)
     print("  NSE PORTFOLIO RISK SCANNER — INSTITUTIONAL ANALYSIS")
     print("  Ashay & Rishu Portfolios | Jul 28, 2026 | Live Prices")
     print("="*70)
-    
+
     # Build holdings
     ashay_holdings = build_holdings(ASHAY_HOLDINGS)
     rishu_holdings = build_holdings(RISHU_HOLDINGS)
-    
+
     # Analyze current portfolios
     ashay_result = analyze_portfolio(ashay_holdings, "ASHAY", "moderate")
     rishu_result = analyze_portfolio(rishu_holdings, "RISHU", "moderate")
-    
+
     # Analyze with proposed trades
     print(f"\n\n{'='*70}")
     print("  WHAT-IF ANALYSIS: PROPOSED TRADES")
     print(f"{'='*70}")
-    
+
     ashay_proposed = analyze_portfolio(
         ashay_holdings, "ASHAY (PROPOSED)", "moderate", PROPOSED_TRADES_ASHAY
     )
     rishu_proposed = analyze_portfolio(
         rishu_holdings, "RISHU (PROPOSED)", "moderate", PROPOSED_TRADES_RISHU
     )
-    
+
     # Summary comparison
     print(f"\n\n{'='*70}")
     print("  SUMMARY COMPARISON")
     print(f"{'='*70}")
     print(f"\n{'Metric':30s} | {'Ashay Current':>15s} | {'Ashay Proposed':>15s} | {'Rishu Current':>15s} | {'Rishu Proposed':>15s}")
     print(f"{'-'*95}")
-    
+
     def get_val(r, key, fmt="{:.2f}"):
-        if key == "var_rs": return fmt.format(r["total_current"] * r["risk"].var_95 / 100)
-        if key == "cvar_rs": return fmt.format(r["total_current"] * r["risk"].cvar_95 / 100)
-        if key == "sharpe": return fmt.format(r["risk"].sharpe)
-        if key == "sortino": return fmt.format(r["risk"].sortino)
-        if key == "max_dd": return fmt.format(r["risk"].max_drawdown * 100) + "%"
-        if key == "vol": return fmt.format(r["risk"].volatility_annual * 100) + "%"
-        if key == "beta": return fmt.format(r["risk"].beta)
-        if key == "composite": return fmt.format(r["scores"].overall_risk_score)
-        if key == "tier": return _score_to_tier(r["scores"].overall_risk_score)
-        if key == "value": return "₹{:,.0f}".format(r["total_current"])
+        if key == "var_rs":
+            return fmt.format(r["total_current"] * r["risk"].var_95 / 100)
+        if key == "cvar_rs":
+            return fmt.format(r["total_current"] * r["risk"].cvar_95 / 100)
+        if key == "sharpe":
+            return fmt.format(r["risk"].sharpe)
+        if key == "sortino":
+            return fmt.format(r["risk"].sortino)
+        if key == "max_dd":
+            return fmt.format(r["risk"].max_drawdown * 100) + "%"
+        if key == "vol":
+            return fmt.format(r["risk"].volatility_annual * 100) + "%"
+        if key == "beta":
+            return fmt.format(r["risk"].beta)
+        if key == "composite":
+            return fmt.format(r["scores"].overall_risk_score)
+        if key == "tier":
+            return _score_to_tier(r["scores"].overall_risk_score)
+        if key == "value":
+            return "₹{:,.0f}".format(r["total_current"])
         return "N/A"
-    
+
     for key, label in [
         ("value", "Portfolio Value"),
-        ("vol", "Annual Volatility"),
         ("var_rs", "1D 95% VaR (₹)"),
         ("cvar_rs", "1D 95% CVaR (₹)"),
         ("sharpe", "Sharpe Ratio"),
         ("sortino", "Sortino Ratio"),
         ("max_dd", "Max Drawdown"),
-        ("beta", "Beta vs Nifty"),
-        ("composite", "P×I×C Score"),
+        ("vol", "Ann. Volatility"),
+        ("beta", "Beta"),
+        ("composite", "Risk Score"),
         ("tier", "Risk Tier"),
     ]:
         a_c = get_val(ashay_result, key)
@@ -517,5 +533,5 @@ if __name__ == "__main__":
         r_c = get_val(rishu_result, key)
         r_p = get_val(rishu_proposed, key)
         print(f"{label:30s} | {a_c:>15s} | {a_p:>15s} | {r_c:>15s} | {r_p:>15s}")
-    
-    print(f"\n✅ Analysis complete. Engine: NSE Portfolio Risk Scanner v2.10+")
+
+    print("\n✅ Analysis complete. Engine: NSE Portfolio Risk Scanner v2.10+")

@@ -155,17 +155,14 @@ _DEFAULT_SECTORS: dict[str, str] = {
         "LIQUIDBEES": "Liquid / Money Market",
         "BANKBEES": "Equity: Banking",
         # Additional stocks from portfolios
-                "TMCV": "Automobile",
-                "EXIDEIND": "Auto Components",
-                "SRF": "Chemicals",
-                "IEX": "Financial Services",
-                "MAFANG": "Equity: International",
-                "LIQUIDCASE": "Liquid / Money Market",
-                "CASTROLIND": "Auto Components",
-                "METAL": "Commodities",
-                "SILVERBEES": "Commodities",
-                "GROWW": "Financial Services",
-                "HDFCSML250": "Equity: Small Cap",
+                        "TMCV": "Automobile",
+                        "EXIDEIND": "Auto Components",
+                        "MAFANG": "Equity: International",
+                        "LIQUIDCASE": "Liquid / Money Market",
+                        "CASTROLIND": "Auto Components",
+                        "METAL": "Commodities",
+                        "SILVERBEES": "Commodities",
+                        "GROWW": "Financial Services",
         }
 
 
