@@ -219,7 +219,15 @@ def compute_stock_risk_attribution(prices, weights, stock_betas=None):
     Returns a DataFrame with columns:
     Ticker, Weight (%), Beta, Ann. Vol (%), Avg Corr, MRC, Risk Contrib (%), VaR 95%
     """
-    if prices.empty or not weights or len(prices.columns) != len(weights):
+    if prices is None:
+        return pd.DataFrame()
+    if hasattr(prices, 'empty') and prices.empty:
+        return pd.DataFrame()
+    if weights is None:
+        return pd.DataFrame()
+    if hasattr(weights, '__len__') and len(weights) == 0:
+        return pd.DataFrame()
+    if hasattr(prices, 'columns') and len(prices.columns) != len(weights):
         return pd.DataFrame()
 
     returns = prices.pct_change().dropna()

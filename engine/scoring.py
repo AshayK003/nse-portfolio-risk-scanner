@@ -114,7 +114,7 @@ def _score_concentration_risk(sector_allocation: dict[str, float], weights: list
     w = np.array(weights, dtype=float)
     hhi = float(np.sum(w**2))
     max_sector = max(sector_allocation.values()) if sector_allocation else 0
-    max_stock = max(weights) if weights else 0
+    max_stock = float(np.max(w)) if len(w) > 0 else 0
 
     prob = _clamp(max(max_sector / 40, max_stock / 0.30, hhi * 5))
     impact = _clamp(max_sector / 35)

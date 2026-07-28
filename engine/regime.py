@@ -89,7 +89,7 @@ def _detect_statistical(returns: pd.Series, n_states: int) -> RegimeResult | Non
     thresholds = [valid.quantile(q) for q in edges]
     state_seq_raw = np.full(len(returns), n_states - 1, dtype=int)
     for i, t in enumerate(thresholds):
-        state_seq_raw[rolling >= t] = i
+        state_seq_raw[rolling.values >= t] = i
     # fill early window with first valid state
     first_valid = int(rolling.notna().values.argmax()) if rolling.notna().any() else 0
     state_seq_raw[:first_valid] = state_seq_raw[first_valid]

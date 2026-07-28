@@ -171,6 +171,11 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
         )
 
     df = None
+    # Add .NS suffix for NSE tickers if not present
+    yf_ticker = ticker
+    if not ticker.startswith("^") and not ticker.endswith(".NS") and "." not in ticker:
+        yf_ticker = ticker + ".NS"
+
     if not ticker.startswith("^"):
         with _FETCH_SEMAPHORE:
             df = _fetch_via_nselib(ticker, period)
@@ -180,14 +185,14 @@ def _cached_fetch(ticker: str, period: str) -> pd.DataFrame | None:
             try:
                 import yfinance as yf
 
-                stock = yf.Ticker(ticker)
+                stock = yf.Ticker(yf_ticker)
                 hist = stock.history(period=period)
                 if hist is None or hist.empty:
-                    logger.warning("yfinance returned no data for {t}", t=ticker)
+                    logger.warning("yfinance returned no data for {t}", t=yf_ticker)
                     return None
                 df = hist
             except Exception as exc:
-                logger.warning("yfinance fetch failed for {t}: {e}", t=ticker, e=exc)
+                logger.warning("yfinance fetch failed for {t}: {e}", t=yf_ticker, e=exc)
                 return None
 
     if "Close" in df.columns:
