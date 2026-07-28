@@ -12,8 +12,8 @@
 
 ### Tests & Quality
 - All engine modules pass import/validation without errors
-- Sector map now covers 100% of Ashay & Rishu portfolio tickers
-- No "Unknown" sectors remain in either portfolio (was 56% for Rishu, 17% for Ashay)
+- Sector map now covers 100% of portfolio tickers
+- No "Unknown" sectors remain in either portfolio (was 56% and 17% respectively)
 
 ---
 
@@ -110,7 +110,7 @@
 ### Changed
 
 - **Sample portfolio prices reflect profit** — all 7 avg prices set 15-23% below live market close. Portfolio loads showing +21.59% total P&L with every holding in the green.
-- **No overlap with user data** — sample tickers (RELIANCE, TCS, INFY, ITC, ICICIBANK, BANKBEES, CPSEETF) are distinct from any holdings in Ashay's or Rishu's real portfolios.
+- **No overlap with user data** — sample tickers (RELIANCE, TCS, INFY, ITC, ICICIBANK, BANKBEES, CPSEETF) are distinct from any holdings in personal portfolios.
 
 ---
 
