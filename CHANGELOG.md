@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.17.4 (2026-07-28)
+
+### Fixed (Engine Hardening & Sector Coverage)
+
+- **data/prices.py** — Add `.NS` suffix for NSE tickers in yfinance fallback. Fixes silent failures where `HDFCBANK`, `SBIN`, `MONIFTY500`, etc. returned no data from yfinance.
+- **engine/regime.py** — Fix `rolling.values >= t` indexing bug in `_detect_statistical()`. The Series comparison was failing with "Lengths must match" error; now uses `.values` for correct numpy array comparison.
+- **engine/risk.py** — Harden `compute_stock_risk_attribution()` input validation. Added explicit `None`/empty checks for prices and weights to prevent ambiguous truth-value errors on numpy arrays.
+- **engine/scoring.py** — Fix `max(weights)` ambiguity in `_score_concentration_risk()`. Changed to `float(np.max(w))` to avoid "truth value of array is ambiguous" ValueError.
+- **engine/sector.py** — Add 23 sector mappings for all portfolio tickers: `MONIFTY500`, `TMCV`, `EXIDEIND`, `SRF`, `IEX`, `MAFANG`, `LIQUIDCASE`, `CASTROLIND`, `METAL`, `SILVERBEES`, `GROWW`, `HDFCSML250`. Eliminates "Unknown" sector classification that triggered false concentration warnings.
+
+### Tests & Quality
+- All engine modules pass import/validation without errors
+- Sector map now covers 100% of Ashay & Rishu portfolio tickers
+- No "Unknown" sectors remain in either portfolio (was 56% for Rishu, 17% for Ashay)
+
+---
+
 ## v0.17.3 (2026-07-24)
 
 ### Fixed
