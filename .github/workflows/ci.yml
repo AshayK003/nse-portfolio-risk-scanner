@@ -24,12 +24,12 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@2af22b5b2dcfc0729ee842c635f300f1fc5a9e9a # v5.0.0
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -47,33 +47,12 @@ jobs:
         run: uv run ruff format --check engine/ ui/ data/ storage/ tests/ app.py
 
       - name: Test (pytest)
+        env:
+          PYTHONPATH: ""
         run: uv run pytest tests/ -v --tb=short -q --cov=engine --cov-report=xml
 
       - name: Upload coverage
-        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
-
-  core-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          fetch-depth: 1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@2af22b5b2dcfc0729ee842c635f300f1fc5a9e9a # v5.0.0
-        with:
-          enable-cache: true
-          cache-dependency-glob: pyproject.toml
-
-      - name: Set up Python 3.12
-        run: uv python pin 3.12
-
-      - name: Install dependencies (all extras + dev)
-        run: uv sync --all-extras --dev
-
-      - name: Core Tests (no optional deps)
-        run: uv run pytest tests/test_risk.py tests/test_scoring.py tests/test_optimization.py tests/test_regime.py tests/test_scenario.py tests/test_factors.py tests/test_fundamentals.py tests/test_backtesting.py tests/test_garch_var.py tests/test_portfolio.py tests/test_benchmark.py -v --tb=short -q
