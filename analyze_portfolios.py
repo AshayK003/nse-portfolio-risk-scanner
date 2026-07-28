@@ -47,54 +47,252 @@ def _score_to_tier(score: float) -> str:
 # ─── Portfolio Data ──────────────────────────────────────────────
 ASHAY_HOLDINGS = [
     {"ticker": "HDFCBANK", "name": "HDFC Bank Ltd", "quantity": 24, "avg_price": 765.36, "sector": "Banking"},
-    {"ticker": "NEXT50IETF", "name": "ICICI Prudential Nifty Next 50 ETF", "quantity": 250, "avg_price": 74.73, "sector": "Large-cap Blend"},
-    {"ticker": "NIFTYBEES", "name": "Nippon India ETF Nifty 50 BeES", "quantity": 60, "avg_price": 257.11, "sector": "Large-cap Blend"},
+    {
+        "ticker": "NEXT50IETF",
+        "name": "ICICI Prudential Nifty Next 50 ETF",
+        "quantity": 250,
+        "avg_price": 74.73,
+        "sector": "Large-cap Blend",
+    },
+    {
+        "ticker": "NIFTYBEES",
+        "name": "Nippon India ETF Nifty 50 BeES",
+        "quantity": 60,
+        "avg_price": 257.11,
+        "sector": "Large-cap Blend",
+    },
     {"ticker": "VEDL", "name": "Vedanta Ltd", "quantity": 55, "avg_price": 293.92, "sector": "Metals"},
-    {"ticker": "MIDCAPETF", "name": "Mirae Asset Nifty Midcap 150 ETF", "quantity": 500, "avg_price": 20.51, "sector": "Mid-cap Blend"},
-    {"ticker": "ENERGY", "name": "Mirae Asset Nifty Energy ETF", "quantity": 279, "avg_price": 40.49, "sector": "Energy"},
-    {"ticker": "GOLDBEES", "name": "Nippon India ETF Gold BeES", "quantity": 65, "avg_price": 126.29, "sector": "Gold"},
-    {"ticker": "MODEFENCE", "name": "Motilal Oswal Nifty India Defence ETF", "quantity": 70, "avg_price": 101.21, "sector": "Defence"},
-    {"ticker": "LIQUIDCASE", "name": "Zerodha Nifty 1D Rate Liquid ETF", "quantity": 62, "avg_price": 114.80, "sector": "Cash Eq"},
-    {"ticker": "MONIFTY500", "name": "Motilal Oswal Nifty 500 ETF", "quantity": 280, "avg_price": 23.61, "sector": "Broad Market"},
-    {"ticker": "MAKEINDIA", "name": "Mirae Asset Nifty India Manufacturing ETF", "quantity": 40, "avg_price": 161.49, "sector": "Manufacturing"},
-    {"ticker": "POWERGRID", "name": "Power Grid Corporation of India Ltd", "quantity": 21, "avg_price": 287.87, "sector": "Power/Utility"},
-    {"ticker": "MASPTOP50", "name": "Mirae Asset S&P 500 Top 50 ETF", "quantity": 64, "avg_price": 79.00, "sector": "US Large-cap"},
-    {"ticker": "COALINDIA", "name": "Coal India Ltd", "quantity": 9, "avg_price": 430.85, "sector": "Coal/Mining"},
-    {"ticker": "GROWW", "name": "Billionbrains Garage Ventures Ltd", "quantity": 15, "avg_price": 192.10, "sector": "Fintech"},
-    {"ticker": "SILVERBEES", "name": "Nippon India Silver ETF", "quantity": 10, "avg_price": 208.92, "sector": "Silver"},
-    {"ticker": "METAL", "name": "Mirae Asset Nifty Metal ETF", "quantity": 20, "avg_price": 13.64, "sector": "Metals"},
+    {
+        "ticker": "MIDCAPETF",
+        "name": "Mirae Asset Nifty Midcap 150 ETF",
+        "quantity": 500,
+        "avg_price": 20.51,
+        "sector": "Mid-cap Blend",
+    },
+    {
+        "ticker": "ENERGY",
+        "name": "Mirae Asset Nifty Energy ETF",
+        "quantity": 279,
+        "avg_price": 40.49,
+        "sector": "Energy",
+    },
+    {
+        "ticker": "GOLDBEES",
+        "name": "Nippon India ETF Gold BeES",
+        "quantity": 65,
+        "avg_price": 126.29,
+        "sector": "Gold",
+    },
+    {
+        "ticker": "MODEFENCE",
+        "name": "Motilal Oswal Nifty India Defence ETF",
+        "quantity": 70,
+        "avg_price": 101.21,
+        "sector": "Defence",
+    },
+    {
+        "ticker": "LIQUIDCASE",
+        "name": "Zerodha Nifty 1D Rate Liquid ETF",
+        "quantity": 62,
+        "avg_price": 114.80,
+        "sector": "Cash Eq",
+    },
+    {
+        "ticker": "MONIFTY500",
+        "name": "Motilal Oswal Nifty 500 ETF",
+        "quantity": 280,
+        "avg_price": 23.61,
+        "sector": "Broad Market",
+    },
+    {
+        "ticker": "MAKEINDIA",
+        "name": "Mirae Asset Nifty India Manufacturing ETF",
+        "quantity": 40,
+        "avg_price": 161.49,
+        "sector": "Manufacturing",
+    },
+    {
+        "ticker": "POWERGRID",
+        "name": "Power Grid Corporation of India Ltd",
+        "quantity": 21,
+        "avg_price": 287.87,
+        "sector": "Power/Utility",
+    },
+    {
+        "ticker": "MASPTOP50",
+        "name": "Mirae Asset S&P 500 Top 50 ETF",
+        "quantity": 64,
+        "avg_price": 79.00,
+        "sector": "US Large-cap",
+    },
+    {
+        "ticker": "COALINDIA",
+        "name": "Coal India Ltd",
+        "quantity": 9,
+        "avg_price": 430.85,
+        "sector": "Coal/Mining",
+    },
+    {
+        "ticker": "GROWW",
+        "name": "Billionbrains Garage Ventures Ltd",
+        "quantity": 15,
+        "avg_price": 192.10,
+        "sector": "Fintech",
+    },
+    {
+        "ticker": "SILVERBEES",
+        "name": "Nippon India Silver ETF",
+        "quantity": 10,
+        "avg_price": 208.92,
+        "sector": "Silver",
+    },
+    {
+        "ticker": "METAL",
+        "name": "Mirae Asset Nifty Metal ETF",
+        "quantity": 20,
+        "avg_price": 13.64,
+        "sector": "Metals",
+    },
 ]
 
 RISHU_HOLDINGS = [
-    {"ticker": "SBIN", "name": "State Bank of India", "quantity": 120, "avg_price": 881.35, "sector": "Banking"},
-    {"ticker": "MONIFTY500", "name": "Motilal Oswal Nifty 500 ETF", "quantity": 9246, "avg_price": 23.62, "sector": "Broad Market"},
+    {
+        "ticker": "SBIN",
+        "name": "State Bank of India",
+        "quantity": 120,
+        "avg_price": 881.35,
+        "sector": "Banking",
+    },
+    {
+        "ticker": "MONIFTY500",
+        "name": "Motilal Oswal Nifty 500 ETF",
+        "quantity": 9246,
+        "avg_price": 23.62,
+        "sector": "Broad Market",
+    },
     {"ticker": "TMCV", "name": "Tata Motors Ltd", "quantity": 225, "avg_price": 319.60, "sector": "Auto"},
-    {"ticker": "EXIDEIND", "name": "Exide Industries Ltd", "quantity": 70, "avg_price": 562.67, "sector": "Auto Components"},
+    {
+        "ticker": "EXIDEIND",
+        "name": "Exide Industries Ltd",
+        "quantity": 70,
+        "avg_price": 562.67,
+        "sector": "Auto Components",
+    },
     {"ticker": "NMDC", "name": "NMDC Ltd", "quantity": 566, "avg_price": 88.37, "sector": "Metals & Mining"},
-    {"ticker": "GOLDBEES", "name": "Nippon India ETF Gold BeES", "quantity": 324, "avg_price": 120.33, "sector": "Gold"},
-    {"ticker": "ENERGY", "name": "Mirae Asset Nifty Energy ETF", "quantity": 1484, "avg_price": 40.44, "sector": "Energy"},
-    {"ticker": "CASTROLIND", "name": "Castrol India Ltd", "quantity": 135, "avg_price": 185.29, "sector": "Lubricants"},
-    {"ticker": "POWERGRID", "name": "Power Grid Corporation of India Ltd", "quantity": 216, "avg_price": 289.39, "sector": "Power/Utility"},
-    {"ticker": "MIDCAPETF", "name": "Mirae Asset Nifty Midcap 150 ETF", "quantity": 989, "avg_price": 20.42, "sector": "Mid-cap Blend"},
-    {"ticker": "NEXT50IETF", "name": "ICICI Prudential Nifty Next 50 ETF", "quantity": 198, "avg_price": 75.51, "sector": "Large-cap Blend"},
-    {"ticker": "COALINDIA", "name": "Coal India Ltd", "quantity": 22, "avg_price": 452.70, "sector": "Coal/Mining"},
-    {"ticker": "HDFCSML250", "name": "HDFC NIFTY Smallcap 250 ETF", "quantity": 65, "avg_price": 150.67, "sector": "Small-cap Blend"},
+    {
+        "ticker": "GOLDBEES",
+        "name": "Nippon India ETF Gold BeES",
+        "quantity": 324,
+        "avg_price": 120.33,
+        "sector": "Gold",
+    },
+    {
+        "ticker": "ENERGY",
+        "name": "Mirae Asset Nifty Energy ETF",
+        "quantity": 1484,
+        "avg_price": 40.44,
+        "sector": "Energy",
+    },
+    {
+        "ticker": "CASTROLIND",
+        "name": "Castrol India Ltd",
+        "quantity": 135,
+        "avg_price": 185.29,
+        "sector": "Lubricants",
+    },
+    {
+        "ticker": "POWERGRID",
+        "name": "Power Grid Corporation of India Ltd",
+        "quantity": 216,
+        "avg_price": 289.39,
+        "sector": "Power/Utility",
+    },
+    {
+        "ticker": "MIDCAPETF",
+        "name": "Mirae Asset Nifty Midcap 150 ETF",
+        "quantity": 989,
+        "avg_price": 20.42,
+        "sector": "Mid-cap Blend",
+    },
+    {
+        "ticker": "NEXT50IETF",
+        "name": "ICICI Prudential Nifty Next 50 ETF",
+        "quantity": 198,
+        "avg_price": 75.51,
+        "sector": "Large-cap Blend",
+    },
+    {
+        "ticker": "COALINDIA",
+        "name": "Coal India Ltd",
+        "quantity": 22,
+        "avg_price": 452.70,
+        "sector": "Coal/Mining",
+    },
+    {
+        "ticker": "HDFCSML250",
+        "name": "HDFC NIFTY Smallcap 250 ETF",
+        "quantity": 65,
+        "avg_price": 150.67,
+        "sector": "Small-cap Blend",
+    },
     {"ticker": "SRF", "name": "SRF Ltd", "quantity": 4, "avg_price": 2312.09, "sector": "Chemicals"},
-    {"ticker": "IEX", "name": "Indian Energy Exchange Ltd", "quantity": 45, "avg_price": 198.36, "sector": "Power Exchange"},
-    {"ticker": "NIFTYBEES", "name": "Nippon India ETF Nifty 50 BeES", "quantity": 90, "avg_price": 275.90, "sector": "Large-cap Blend"},
-    {"ticker": "LIQUIDCASE", "name": "Zerodha Nifty 1D Rate Liquid ETF", "quantity": 431, "avg_price": 114.89, "sector": "Cash Eq"},
-    {"ticker": "MAFANG", "name": "Mirae Asset NYSE FANG+ ETF", "quantity": 103, "avg_price": 194.20, "sector": "US Tech"},
+    {
+        "ticker": "IEX",
+        "name": "Indian Energy Exchange Ltd",
+        "quantity": 45,
+        "avg_price": 198.36,
+        "sector": "Power Exchange",
+    },
+    {
+        "ticker": "NIFTYBEES",
+        "name": "Nippon India ETF Nifty 50 BeES",
+        "quantity": 90,
+        "avg_price": 275.90,
+        "sector": "Large-cap Blend",
+    },
+    {
+        "ticker": "LIQUIDCASE",
+        "name": "Zerodha Nifty 1D Rate Liquid ETF",
+        "quantity": 431,
+        "avg_price": 114.89,
+        "sector": "Cash Eq",
+    },
+    {
+        "ticker": "MAFANG",
+        "name": "Mirae Asset NYSE FANG+ ETF",
+        "quantity": 103,
+        "avg_price": 194.20,
+        "sector": "US Tech",
+    },
 ]
 
 # Current prices (Jul 28, 2026 - live)
 CURRENT_PRICES = {
-    "HDFCBANK": 735.05, "NEXT50IETF": 76.11, "NIFTYBEES": 273.47, "VEDL": 259.25,
-    "MIDCAPETF": 23.44, "ENERGY": 38.40, "GOLDBEES": 116.88, "MODEFENCE": 101.30,
-    "LIQUIDCASE": 115.20, "MONIFTY500": 23.65, "MAKEINDIA": 162.13, "POWERGRID": 285.30,
-    "MASPTOP50": 77.90, "COALINDIA": 410.45, "GROWW": 195.35, "SILVERBEES": 206.04,
+    "HDFCBANK": 735.05,
+    "NEXT50IETF": 76.11,
+    "NIFTYBEES": 273.47,
+    "VEDL": 259.25,
+    "MIDCAPETF": 23.44,
+    "ENERGY": 38.40,
+    "GOLDBEES": 116.88,
+    "MODEFENCE": 101.30,
+    "LIQUIDCASE": 115.20,
+    "MONIFTY500": 23.65,
+    "MAKEINDIA": 162.13,
+    "POWERGRID": 285.30,
+    "MASPTOP50": 77.90,
+    "COALINDIA": 410.45,
+    "GROWW": 195.35,
+    "SILVERBEES": 206.04,
     "METAL": 12.53,
-    "SBIN": 1010.10, "TMCV": 417.20, "EXIDEIND": 425.30, "NMDC": 83.70,
-    "CASTROLIND": 184.19, "HDFCSML250": 179.02, "SRF": 2639.40, "IEX": 132.11,
+    "SBIN": 1010.10,
+    "TMCV": 417.20,
+    "EXIDEIND": 425.30,
+    "NMDC": 83.70,
+    "CASTROLIND": 184.19,
+    "HDFCSML250": 179.02,
+    "SRF": 2639.40,
+    "IEX": 132.11,
     "MAFANG": 191.12,
 }
 
@@ -122,7 +320,7 @@ def build_holdings(holdings_data):
             avg_price=h["avg_price"],
             sector=h["sector"],
             current_price=current_price,
-            change_pct=0.0
+            change_pct=0.0,
         )
         holdings.append(holding)
     return holdings
@@ -149,7 +347,7 @@ def apply_proposed_trades(holdings, trades):
                     avg_price=CURRENT_PRICES.get(ticker, 0),
                     sector="",
                     current_price=CURRENT_PRICES.get(ticker, 0),
-                    change_pct=0.0
+                    change_pct=0.0,
                 )
     return list(h_dict.values())
 
@@ -158,11 +356,11 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     """Run full institutional analysis on a portfolio."""
     profile = RISK_PROFILES[profile_name]
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  {portfolio_name.upper()} PORTFOLIO — INSTITUTIONAL ANALYSIS ({profile.name})")
     if proposed_trades:
         print("  [WITH PROPOSED TRADES APPLIED]")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     # Apply proposed trades if given
     if proposed_trades:
@@ -263,7 +461,9 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         print(f"   Current Regime:            {current_regime}")
         print(f"   Regime Labels:             {regime.labels}")
         # Calculate regime probabilities from recent state sequence
-        recent_states = regime.state_sequence[-60:] if len(regime.state_sequence) >= 60 else regime.state_sequence
+        recent_states = (
+            regime.state_sequence[-60:] if len(regime.state_sequence) >= 60 else regime.state_sequence
+        )
         probs = {label: recent_states.count(label) / len(recent_states) for label in regime.labels}
         print(f"   Regime Probabilities (60D): {probs}")
         mean_returns = [f"{s['mean_return']:.1f}%" for s in regime.stats]
@@ -286,7 +486,9 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     print("\n🌍 MACRO SENSITIVITIES")
     macro = estimate_macro_sensitivities(portfolio_returns, prices_df[valid_tickers], weights)
     for driver in macro:
-        print(f"   {driver.name:20s}: {driver.sensitivity:+.3f} | Regime: {driver.current_regime} | Risk: {driver.risk_level}")
+        print(
+            f"   {driver.name:20s}: {driver.sensitivity:+.3f} | Regime: {driver.current_regime} | Risk: {driver.risk_level}"
+        )
         print(f"      → {driver.reasoning}")
 
     # ─── Institutional Scoring ─────────────────────────────────────
@@ -321,7 +523,9 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
             pct = (row["Risk Contrib (%)"] / risk.volatility_annual) * 100
             h = next((h for h in holdings if h.ticker == row["Ticker"]), None)
             w = h.current_value / total_current * 100 if h else 0
-            print(f"   {idx+1}. {row['Ticker']:12s}: {row['Risk Contrib (%)']:+.3f}% vol ({pct:+.1f}% of total) | wt: {w:.1f}%")
+            print(
+                f"   {idx + 1}. {row['Ticker']:12s}: {row['Risk Contrib (%)']:+.3f}% vol ({pct:+.1f}% of total) | wt: {w:.1f}%"
+            )
     else:
         print("   No attribution data available")
 
@@ -336,7 +540,7 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         corr_denoised = corr
     high_corr = []
     for i in range(len(valid_tickers)):
-        for j in range(i+1, len(valid_tickers)):
+        for j in range(i + 1, len(valid_tickers)):
             c = corr_denoised.iloc[i, j]
             if c > 0.7:
                 high_corr.append((valid_tickers[i], valid_tickers[j], c))
@@ -353,15 +557,15 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
 
     print("   HRP Weights (top 7):")
     for t, w in sorted(hrp.weights.items(), key=lambda x: -x[1])[:7]:
-        curr_w = next((h.current_value/total_current*100 for h in holdings if h.ticker==t), 0)
-        diff = w*100 - curr_w
-        print(f"      {t:12s}: HRP={w*100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
+        curr_w = next((h.current_value / total_current * 100 for h in holdings if h.ticker == t), 0)
+        diff = w * 100 - curr_w
+        print(f"      {t:12s}: HRP={w * 100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
 
     print("   Min-Vol Weights (top 7):")
     for t, w in sorted(minvol.weights.items(), key=lambda x: -x[1])[:7]:
-        curr_w = next((h.current_value/total_current*100 for h in holdings if h.ticker==t), 0)
-        diff = w*100 - curr_w
-        print(f"      {t:12s}: MinVol={w*100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
+        curr_w = next((h.current_value / total_current * 100 for h in holdings if h.ticker == t), 0)
+        diff = w * 100 - curr_w
+        print(f"      {t:12s}: MinVol={w * 100:5.1f}% | Current={curr_w:5.1f}% | Δ={diff:+.1f}%")
 
     # ─── Scenario Analysis ─────────────────────────────────────────
     print("\n🌪️  SCENARIO ANALYSIS (standard scenarios)")
@@ -388,11 +592,12 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
     print("\n🎯 INSTITUTIONAL RECOMMENDATIONS")
     # Create a proper portfolio object for recommendations
     from engine import Portfolio
+
     portfolio_obj = Portfolio(holdings=holdings, name=portfolio_name)
     recs = generate_recommendations(
         risk=risk,
         sector=sector_exposure,
-        benchmark=type('obj', (object,), {'excess_return': 0, 'tracking_error': 0, 'information_ratio': 0})(),
+        benchmark=type("obj", (object,), {"excess_return": 0, "tracking_error": 0, "information_ratio": 0})(),
         portfolio=portfolio_obj,
         profile=profile,
     )
@@ -426,7 +631,12 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         new_weights = np.array([h.current_value / new_total for h in new_holdings])
         new_valid = [h.ticker for h in new_holdings if h.ticker in prices_df.columns]
         new_holdings_aligned = [h for h in new_holdings if h.ticker in new_valid]
-        new_weights = np.array([h.current_value / sum(h.current_value for h in new_holdings_aligned) for h in new_holdings_aligned])
+        new_weights = np.array(
+            [
+                h.current_value / sum(h.current_value for h in new_holdings_aligned)
+                for h in new_holdings_aligned
+            ]
+        )
         new_weights = new_weights / new_weights.sum()
 
         try:
@@ -435,10 +645,10 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
             new_cvar = new_total * new_risk.cvar_95 / 100
             new_sharpe = new_risk.sharpe
 
-            print(f"   Proposed 1D 95% VaR:  ₹{new_var:,.0f}  (Δ ₹{new_var-curr_var:+,.0f})")
-            print(f"   Proposed 1D 95% CVaR: ₹{new_cvar:,.0f}  (Δ ₹{new_cvar-curr_cvar:+,.0f})")
-            print(f"   Proposed Sharpe:      {new_sharpe:.2f}  (Δ {new_sharpe-curr_sharpe:+.2f})")
-            print(f"   Portfolio Value:      ₹{new_total:,.0f}  (Δ ₹{new_total-total_current:+,.0f})")
+            print(f"   Proposed 1D 95% VaR:  ₹{new_var:,.0f}  (Δ ₹{new_var - curr_var:+,.0f})")
+            print(f"   Proposed 1D 95% CVaR: ₹{new_cvar:,.0f}  (Δ ₹{new_cvar - curr_cvar:+,.0f})")
+            print(f"   Proposed Sharpe:      {new_sharpe:.2f}  (Δ {new_sharpe - curr_sharpe:+.2f})")
+            print(f"   Portfolio Value:      ₹{new_total:,.0f}  (Δ ₹{new_total - total_current:+,.0f})")
         except Exception as e:
             print(f"   ❌ What-if failed: {e}")
 
@@ -461,10 +671,10 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
 
 # ─── Main ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("="*70)
+    print("=" * 70)
     print("  NSE PORTFOLIO RISK SCANNER — INSTITUTIONAL ANALYSIS")
     print("  Ashay & Rishu Portfolios | Jul 28, 2026 | Live Prices")
-    print("="*70)
+    print("=" * 70)
 
     # Build holdings
     ashay_holdings = build_holdings(ASHAY_HOLDINGS)
@@ -475,23 +685,21 @@ if __name__ == "__main__":
     rishu_result = analyze_portfolio(rishu_holdings, "RISHU", "moderate")
 
     # Analyze with proposed trades
-    print(f"\n\n{'='*70}")
+    print(f"\n\n{'=' * 70}")
     print("  WHAT-IF ANALYSIS: PROPOSED TRADES")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
-    ashay_proposed = analyze_portfolio(
-        ashay_holdings, "ASHAY (PROPOSED)", "moderate", PROPOSED_TRADES_ASHAY
-    )
-    rishu_proposed = analyze_portfolio(
-        rishu_holdings, "RISHU (PROPOSED)", "moderate", PROPOSED_TRADES_RISHU
-    )
+    ashay_proposed = analyze_portfolio(ashay_holdings, "ASHAY (PROPOSED)", "moderate", PROPOSED_TRADES_ASHAY)
+    rishu_proposed = analyze_portfolio(rishu_holdings, "RISHU (PROPOSED)", "moderate", PROPOSED_TRADES_RISHU)
 
     # Summary comparison
-    print(f"\n\n{'='*70}")
+    print(f"\n\n{'=' * 70}")
     print("  SUMMARY COMPARISON")
-    print(f"{'='*70}")
-    print(f"\n{'Metric':30s} | {'Ashay Current':>15s} | {'Ashay Proposed':>15s} | {'Rishu Current':>15s} | {'Rishu Proposed':>15s}")
-    print(f"{'-'*95}")
+    print(f"{'=' * 70}")
+    print(
+        f"\n{'Metric':30s} | {'Ashay Current':>15s} | {'Ashay Proposed':>15s} | {'Rishu Current':>15s} | {'Rishu Proposed':>15s}"
+    )
+    print(f"{'-' * 95}")
 
     def get_val(r, key, fmt="{:.2f}"):
         if key == "var_rs":
