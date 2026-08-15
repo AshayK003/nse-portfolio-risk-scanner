@@ -2173,7 +2173,7 @@ wheels = [
 [[package]]
 name = "pdf-studio-py"
 version = "0.1.1"
-source = { git = "https://github.com/AshayK003/pdf-studio.git#924c7e1253c03921914902a06a40ff675dbe8ed4" }
+source = { git = "https://github.com/AshayK003/pdf-studio.git#15dc2547f2eb4c4adbfeaa34672f4e1b77ff0ee4" }
 dependencies = [
     { name = "reportlab" },
 ]
