@@ -27,7 +27,7 @@ dev = [
     "vcrpy>=8.0.0",
 ]
 pdf = [
-    "pdf-studio @ git+https://github.com/AshayK003/pdf-studio.git",
+    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git",
     "fpdf2>=2.7",
     "matplotlib>=3.8",
 ]
