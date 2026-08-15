@@ -432,9 +432,7 @@ def _generate_pdf_report(
 
     doc.add_heading("1. Executive Summary", level=1)
     doc.add_paragraph("Portfolio-wide risk metrics at a glance.", style=_body_style())
-    doc.add_paragraph("", style=_spacer(2))
     doc.add_table(_full_metrics(portfolio, risk))
-    doc.add_paragraph("", style=_spacer(16))
 
     if risk:
         doc.add_paragraph(
@@ -460,9 +458,7 @@ def _generate_pdf_report(
     )
 
     if risk:
-        doc.add_paragraph("", style=_spacer(2))
         doc.add_table(_risk_metrics_table(risk, portfolio))
-        doc.add_paragraph("", style=_spacer(16))
 
     if portfolio_cum is not None and not portfolio_cum.empty:
         dd_fig = _drawdown_chart(portfolio_cum, plt)
@@ -506,9 +502,7 @@ def _generate_pdf_report(
     if "P&L %" in display_df.columns:
         display_df["P&L %"] = display_df["P&L %"].apply(lambda x: f"{x:+.1f}%" if pd.notna(x) else "")
     # Quantity(2), Avg Price(3), Current Price(4), P&L %(5) — right-aligned
-    doc.add_paragraph("", style=_spacer(2))
     doc.add_table(display_df, caption="Holdings Detail", right_align_cols=[2, 3, 4, 5])
-    doc.add_paragraph("", style=_spacer(16))
 
     doc.add_paragraph(
         "Disclaimer: This report is for informational purposes only and does not "

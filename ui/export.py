@@ -162,12 +162,12 @@ def render_export_section(
     # ── Rich CSV ──
     csv_bytes = _to_rich_csv(portfolio, risk, sector_data, recommendations, risk_data)
     st.download_button(
-        label="Download CSV Report (Rich)",
-        data=csv_bytes,
-        file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
+            label="Download CSV Report (Rich)",
+            data=csv_bytes,
+            file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.csv",
+            mime="text/csv",
+            width='stretch',
+        )
 
     # ── PDF ──
     # Build the legacy holdings DataFrame for the PDF generator
@@ -195,12 +195,12 @@ def render_export_section(
                 portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
             )
         st.download_button(
-            label="Download PDF Report",
-            data=pdf_bytes,
-            file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
+                    label="Download PDF Report",
+                    data=pdf_bytes,
+                    file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    width='stretch',
+                )
     except ImportError:
         st.caption("PDF export uses pdf-studio (ReportLab backend)")
     except Exception as e:

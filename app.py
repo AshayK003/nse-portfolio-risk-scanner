@@ -585,7 +585,7 @@ with tabs[0]:
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(
-            volatility_gauge(report.risk.volatility_annual), use_container_width=True, key="vol_gauge"
+            volatility_gauge(report.risk.volatility_annual), width='stretch', key="vol_gauge"
         )
     with col2:
         rv = rolling_volatility(portfolio_returns)
@@ -696,7 +696,7 @@ with tabs[0]:
 with tabs[1]:
     render_sector_section(report.sector)
     st.plotly_chart(
-        sector_treemap(report.sector.sector_allocation), use_container_width=True, key="sector_treemap"
+        sector_treemap(report.sector.sector_allocation), width='stretch', key="sector_treemap"
     )
 
 # ── Tab 2: vs Nifty 50 ──
@@ -706,10 +706,10 @@ with tabs[2]:
     else:
         st.info("Benchmark data is not available for the selected index.")
     st.plotly_chart(
-        benchmark_chart(portfolio_cum, benchmark_cum),
-        use_container_width=True,
-        key="benchmark_chart",
-    )
+            benchmark_chart(portfolio_cum, benchmark_cum),
+            width='stretch',
+            key="benchmark_chart",
+        )
 
 # ── Tab 3: Charts ──
 with tabs[3]:
@@ -723,10 +723,10 @@ with tabs[3]:
         running_max = portfolio_cum.cummax()
         drawdown_series = (portfolio_cum - running_max) / running_max
         st.plotly_chart(
-            drawdown_chart(drawdown_series),
-            use_container_width=True,
-            key="drawdown_chart",
-        )
+                    drawdown_chart(drawdown_series),
+                    width='stretch',
+                    key="drawdown_chart",
+                )
     with col2:
         corr = (
             raw_corr
@@ -734,18 +734,18 @@ with tabs[3]:
             else (compute_correlation_matrix(prices) if not prices.empty else pd.DataFrame())
         )
         st.plotly_chart(
-            correlation_heatmap(corr),
-            use_container_width=True,
-            key="corr_heatmap",
-        )
+                    correlation_heatmap(corr),
+                    width='stretch',
+                    key="corr_heatmap",
+                )
     if denoised_corr is not None and not denoised_corr.empty:
         with st.expander("Denoised Correlation (Marchenko-Pastur)"):
-            st.plotly_chart(correlation_heatmap(denoised_corr), use_container_width=True, key="corr_denoised")
+                    st.plotly_chart(correlation_heatmap(denoised_corr), width='stretch', key="corr_denoised")
 
     st.divider()
     render_monte_carlo_section(mc_result)
     if mc_paths is not None:
-        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), use_container_width=True, key="mc_chart")
+        st.plotly_chart(monte_carlo_chart(mc_paths, (5, 95)), width='stretch', key="mc_chart")
 
 # ── Tab 4: Holdings ──
 with tabs[4]:
@@ -785,7 +785,7 @@ with tabs[5]:
                             for s, imp in sorted(scenario.sector_impacts.items(), key=lambda x: x[1])
                         ],
                     )
-                    st.dataframe(sector_df, use_container_width=True, hide_index=True)
+                    st.dataframe(sector_df, width='stretch', hide_index=True)
 
                 if scenario.holding_impacts:
                     st.markdown("**Top 5 Most Affected Holdings:**")
@@ -803,10 +803,10 @@ with tabs[5]:
     render_regime_section(regime_result)
     if regime_result:
         st.plotly_chart(
-            regime_chart(portfolio_returns, regime_result.state_sequence),
-            use_container_width=True,
-            key="regime_chart",
-        )
+                    regime_chart(portfolio_returns, regime_result.state_sequence),
+                    width='stretch',
+                    key="regime_chart",
+                )
 
 # ── Per-stock risk data for explainability ──
 risk_data = {}

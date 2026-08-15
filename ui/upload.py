@@ -48,7 +48,7 @@ def render_sidebar():
                 options=["— Select —"] + list(options.keys()),
                 key="delete_portfolio",
             )
-            if delete_name != "— Select —" and st.sidebar.button("Delete", use_container_width=True):
+            if delete_name != "— Select —" and st.sidebar.button("Delete", width='stretch'):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
                 st.sidebar.success("Portfolio deleted.")
@@ -127,7 +127,7 @@ def render_manual_entry() -> list[Holding]:
                 format="%.2f",
                 placeholder="e.g. 2500.00",
             )
-        submitted = st.form_submit_button("Add Stock", use_container_width=True)
+        submitted = st.form_submit_button("Add Stock", width='stretch')
 
         if submitted:
             if not ticker:
@@ -156,8 +156,8 @@ def render_manual_entry() -> list[Holding]:
                 st.text(f"{h.quantity} shares")
             with col_c:
                 if st.button(
-                    "Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", use_container_width=True
-                ):
+                                    "Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", width='stretch'
+                                ):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 
@@ -250,7 +250,7 @@ def render_upload_tab() -> Portfolio | None:
         )
 
         # Quick-launch sample portfolio (auto-analyzed on click)
-        if st.button("Try Sample Portfolio", use_container_width=True, type="primary"):
+        if st.button("Try Sample Portfolio", width='stretch', type="primary"):
             portfolio = Portfolio(
                 holdings=[
                     Holding(ticker="RELIANCE.NS", name="RELIANCE", quantity=10, avg_price=1100.00),
@@ -298,7 +298,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
 
         df = st.data_editor(
             data,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             num_rows="dynamic",
             column_config={
@@ -309,7 +309,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if st.button("Update from Editor", use_container_width=True):
+        if st.button("Update from Editor", width='stretch'):
             if not isinstance(df, pd.DataFrame) or df.empty:
                 st.warning("Add rows in the data editor, then click Update.")
             else:
@@ -343,7 +343,7 @@ def render_save_button(portfolio: Portfolio):
     """Show save portfolio button."""
     with st.expander("Save Portfolio", expanded=False):
         save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
-        if st.button("Save to Database", use_container_width=True):
+        if st.button("Save to Database", width='stretch'):
             try:
                 from storage.db import save_portfolio
                 from storage.models import portfolio_to_saved
