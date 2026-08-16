@@ -16,7 +16,7 @@ dependencies = [
     "scipy>=1.13,<2",
     "loguru>=0.7.2,<1",
     "diskcache>=5.6.0,<6",
-    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git",
+    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git@0ffdaff",
     "fpdf2>=2.7",
     "matplotlib>=3.8",
 ]
@@ -30,7 +30,7 @@ dev = [
     "vcrpy>=8.0.0",
 ]
 pdf = [
-    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git",
+    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git@0ffdaff",
     "fpdf2>=2.7",
     "matplotlib>=3.8",
 ]
