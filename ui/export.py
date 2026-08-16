@@ -219,11 +219,10 @@ def render_export_section(
         import os
         os.unlink(tmp.name)
 
-    except ImportError:
-        pass  # Will fall back to legacy
+    except ImportError as e:
+        st.warning(f"Template import failed: {e}")
     except Exception as e:
-        st.warning(f"Template PDF failed, trying legacy: {e}")
-        pass
+        st.warning(f"Template PDF failed: {e}")
 
     # Fallback: legacy generator
     if pdf_bytes is None:
@@ -232,7 +231,8 @@ def render_export_section(
                 pdf_bytes = _generate_pdf_report(
                     portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
                 )
-        except ImportError:
+        except ImportError as e:
+            st.warning(f"Legacy import failed: {e}")
             st.caption("PDF export uses pdf-studio (ReportLab backend)")
         except Exception as e:
             st.error(f"PDF generation failed: {e}")
