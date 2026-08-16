@@ -1869,7 +1869,7 @@ wheels = [
 
 [[package]]
 name = "nse-risk-scanner"
-version = "0.17.3"
+version = "0.17.4"
 source = { virtual = "." }
 dependencies = [
     { name = "diskcache" },
@@ -1881,6 +1881,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pdf-studio-py" },
     { name = "plotly" },
+    { name = "reportlab" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "streamlit" },
@@ -1926,12 +1927,13 @@ requires-dist = [
     { name = "nselib", marker = "extra == 'nse'", specifier = ">=2.5.0" },
     { name = "numpy", specifier = ">=1.26,<2" },
     { name = "pandas", specifier = ">=2.2,<3" },
-    { name = "pdf-studio-py", git = "https://github.com/AshayK003/pdf-studio.git" },
-    { name = "pdf-studio-py", marker = "extra == 'pdf'", git = "https://github.com/AshayK003/pdf-studio.git" },
+    { name = "pdf-studio-py", git = "https://github.com/AshayK003/pdf-studio.git?rev=0ffdaff" },
+    { name = "pdf-studio-py", marker = "extra == 'pdf'", git = "https://github.com/AshayK003/pdf-studio.git?rev=0ffdaff" },
     { name = "plotly", specifier = ">=5.20,<7" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "reportlab", specifier = ">=4" },
     { name = "riskfolio-lib", marker = "extra == 'advanced'", specifier = ">=2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.0" },
     { name = "scipy", specifier = ">=1.13,<2" },
@@ -2179,8 +2181,8 @@ wheels = [
 
 [[package]]
 name = "pdf-studio-py"
-version = "0.1.1"
-source = { git = "https://github.com/AshayK003/pdf-studio.git#15dc2547f2eb4c4adbfeaa34672f4e1b77ff0ee4" }
+version = "0.1.2"
+source = { git = "https://github.com/AshayK003/pdf-studio.git?rev=0ffdaff#0ffdaff6f3e8ea686269ebe63771cce2af1cdb06" }
 dependencies = [
     { name = "reportlab" },
 ]

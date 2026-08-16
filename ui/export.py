@@ -1,13 +1,11 @@
 """
 Report export — CSV download and PDF report generation.
-Streamlit-dependent presentation layer; chart/render logic lives in charts_pdf.py.
+Streamlit-dependent presentation layer; chart/render logic lives in pdf_reportlab.py.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
-import tempfile
-import os
 
 import pandas as pd
 import streamlit as st
@@ -15,7 +13,7 @@ import streamlit as st
 from engine import Portfolio, RiskMetrics
 from engine.recommendations import RecommendationReport
 from engine.risk import MonteCarloResult
-from ui.charts_pdf import _generate_pdf_report
+from ui.pdf_reportlab import generate_pdf_report
 from ui.icons import DOWNLOAD, icon_text
 
 
@@ -174,7 +172,7 @@ def render_export_section(
     )
 
     # ── PDF ──
-    # Build the legacy holdings DataFrame for the PDF generator
+    # Build the holdings DataFrame for the PDF generator
     rows = []
     for h in portfolio.holdings:
         rows.append(
@@ -193,49 +191,15 @@ def render_export_section(
         )
     df = pd.DataFrame(rows)
 
-    # Try new template-based approach first (portfolio_risk with ledger theme)
+    # Self-contained reportlab generator (no external pdf_studio dependency)
     pdf_bytes = None
     try:
-        from pdf_studio import Document
-        from pdf_studio.templates import build
-        from pdf_studio.themes import Theme
-
-        doc = build('portfolio_risk', {
-            'portfolio': portfolio,
-            'risk': risk,
-            'sector_data': sector_data,
-            'df': df,
-            'mc_result': mc_result,
-            'portfolio_cum': portfolio_cum,
-            'recommendations': recommendations,
-            'generated_at': datetime.now().strftime('%d %b %Y, %I:%M %p'),
-        }, theme=Theme.ledger())
-
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
-            doc.render(tmp.name)
-            with open(tmp.name, 'rb') as f:
-                pdf_bytes = f.read()
-        import os
-        os.unlink(tmp.name)
-
-    except ImportError as e:
-        st.warning(f"Template import failed: {e}")
+        with st.spinner("Generating PDF report..."):
+            pdf_bytes = generate_pdf_report(
+                portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
+            )
     except Exception as e:
-        st.warning(f"Template PDF failed: {e}")
-
-    # Fallback: legacy generator
-    if pdf_bytes is None:
-        try:
-            with st.spinner("Generating PDF report..."):
-                pdf_bytes = _generate_pdf_report(
-                    portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
-                )
-        except ImportError as e:
-            st.warning(f"Legacy import failed: {e}")
-            st.caption("PDF export uses pdf-studio (ReportLab backend)")
-        except Exception as e:
-            st.error(f"PDF generation failed: {e}")
+        st.error(f"PDF generation failed: {e}")
 
     if pdf_bytes:
         st.download_button(
@@ -246,7 +210,7 @@ def render_export_section(
             width='stretch',
         )
     else:
-        st.caption("PDF export unavailable — install pdf-studio-py")
+        st.caption("PDF export unavailable — reportlab required")
 
     st.caption(
         "CSV report includes portfolio summary, per-holding risk metrics, "
