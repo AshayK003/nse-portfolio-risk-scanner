@@ -14,3 +14,4 @@ pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git@0ffdaff
 fpdf2>=2.7
 svglib>=1.5
 reportlab>=4
+pillow>=12.3.0
