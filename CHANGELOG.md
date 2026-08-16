@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.17.5 (2026-08-16)
+
+### Changed (PDF Export — pdf-studio Ledger Theme)
+
+- **ui/pdf_reportlab.py** — Restyle the self-contained PDF generator to match `pdf-studio`'s **ledger** theme: deep-green foundation `#064E3B`, gold accent `#B45309`, light-green surface `#F0FDF4`, Lora-Bold display headings, Inter body. KPI cards, metric tables, holdings table (green header + gold underline rule, zebra striping), and matplotlib charts (green titles, light-green grid, theme series palette) all carry the pdf-studio chrome.
+- **ui/fonts/** — Bundle Inter / Lora Regular + Bold TTFs; registered with both reportlab and matplotlib so typography renders identically offline (no system-font dependency on Streamlit Cloud).
+- **tests/test_pdf_export.py** — Retarget to the live generator (previously skipped unless `pdf_studio` was installed). 14 tests cover chart figures, risk-assessment text, and full/minimal PDF assembly.
+
+### Docs
+
+- **docs/showcase/** — Add 4 rendered report pages + sample `portfolio-risk-report.pdf` for README showcase.
+- **README.md** — Demo section now previews the exported PDF inline (links to full PDF). Refreshed stale test counts (351/355 → 361).
+
+### Notes
+
+- PDF export uses reportlab + matplotlib directly — no external `pdf-studio` package at runtime — so the Export button stays reliable on Streamlit Cloud.
+
+---
+
 ## v0.17.4 (2026-07-28)
 
 ### Fixed (Engine Hardening & Sector Coverage)
