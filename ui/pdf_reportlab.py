@@ -11,7 +11,6 @@ installable cleanly anywhere) while matching the brand look the user expects.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -31,7 +30,6 @@ except ImportError:
 from engine import Portfolio, RiskMetrics
 from engine.recommendations import RecommendationReport
 from engine.risk import MonteCarloResult
-
 
 # ── Ledger theme tokens (mirrors pdf_studio.themes.Theme.ledger) ──
 
@@ -67,9 +65,9 @@ def _register_fonts() -> None:
     with _FONT_LOCK:
         if _FONTS_REGISTERED:
             return
+        from reportlab.lib.fonts import addMapping
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.lib.fonts import addMapping
 
         for reg_name, filename in _BUILTIN_FONTS.items():
             ttf = _FONT_DIR / filename
@@ -105,7 +103,7 @@ def _register_mpl_fonts():
         try:
             import matplotlib.font_manager as fm
 
-            for reg_name, filename in _MPL_FONT_FILES.items():
+            for _, filename in _MPL_FONT_FILES.items():
                 ttf = _FONT_DIR / filename
                 if ttf.exists():
                     fm.fontManager.addfont(str(ttf))
@@ -339,12 +337,19 @@ def generate_pdf_report(
 ) -> bytes:
     """Generate a 4-page PDF report using reportlab, styled to pdf-studio's ledger theme."""
     from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
     from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, HRFlowable,
+        HRFlowable,
+        Image,
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
     )
 
     _register_fonts()
