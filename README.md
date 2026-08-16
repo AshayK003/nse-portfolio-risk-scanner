@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-351%20total-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-361%20total-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 351 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 361 tests.
 
 ---
 
@@ -45,7 +45,26 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 
 ## Demo
 
+### Exported PDF Report
 
+The Export tab produces a 4-page PDF styled to the **pdf-studio ledger theme** — deep-green foundation, gold accents, Lora headings, Inter body. Generated with reportlab + matplotlib (self-contained, no external service).
+
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-1.png" width="48%" alt="Page 1 — Cover"/>
+    <img src="docs/showcase/report-page-2.png" width="48%" alt="Page 2 — Executive Summary"/>
+  </a>
+</p>
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-3.png" width="48%" alt="Page 3 — Risk Analysis"/>
+    <img src="docs/showcase/report-page-4.png" width="48%" alt="Page 4 — Holdings"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">📄 Download full sample report (PDF)</a>
+</p>
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
@@ -176,7 +195,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 355 tests
+├── tests/                    # 361 tests
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
@@ -232,7 +251,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-355 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
+361 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
 
 ```bash
 pytest tests/                           # Full suite
