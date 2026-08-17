@@ -37,7 +37,7 @@ INTELLIGENCE_MODULES: list[tuple[str, IntelligenceFn, list[str]]] = [
         "macro_scenarios",
         lambda ctx: (
             __import__("engine.scenario", fromlist=["run_macro_scenarios"]).run_macro_scenarios(
-                ctx["portfolio"], ctx["stock_betas"]
+                ctx["portfolio"].holdings, ctx["stock_betas"]
             )
             if ctx["stock_betas"]
             else []
