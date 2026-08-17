@@ -7,6 +7,8 @@ Falls back to yfinance sector info when a ticker isn't in the mapping.
 
 from __future__ import annotations
 
+import functools
+
 import numpy as np
 
 from . import Holding, SectorExposure
@@ -166,8 +168,9 @@ _DEFAULT_SECTORS: dict[str, str] = {
 }
 
 
+@functools.lru_cache(maxsize=1)
 def load_sector_map() -> dict[str, str]:
-    """Return the default ticker-to-sector mapping."""
+    """Return the default ticker-to-sector mapping (cached — static config)."""
     return dict(_DEFAULT_SECTORS)
 
 
