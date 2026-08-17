@@ -32,9 +32,7 @@ class TestBenchmarkTimezoneAlignment:
         # Equity returns are tz-naive (as produced by fetch_prices)
         port = pd.Series(np.random.normal(0.0008, 0.015, 252), index=dates, name="portfolio")
         # Benchmark returns arrive tz-aware (as produced by fetch_benchmark on some envs)
-        bench = _series(
-            np.random.normal(0.0005, 0.01, 252), dates, name="benchmark", tz="Asia/Kolkata"
-        )
+        bench = _series(np.random.normal(0.0005, 0.01, 252), dates, name="benchmark", tz="Asia/Kolkata")
         result = compare_to_benchmark(port, bench)
         # Must NOT be the silent all-zero placeholder
         assert result.total_months > 0
@@ -44,9 +42,7 @@ class TestBenchmarkTimezoneAlignment:
     def test_tz_mismatch_still_produces_real_metrics_not_zeros(self):
         dates = pd.date_range(end="2024-01-01", periods=252, freq="B")
         port = pd.Series(np.random.normal(0.0008, 0.015, 252), index=dates, name="portfolio")
-        bench = _series(
-            np.random.normal(0.0005, 0.01, 252), dates, name="benchmark", tz="UTC"
-        )
+        bench = _series(np.random.normal(0.0005, 0.01, 252), dates, name="benchmark", tz="UTC")
         result = compare_to_benchmark(port, bench)
         assert result.total_months > 0
         assert result.portfolio_return != 0.0 or result.benchmark_return != 0.0
