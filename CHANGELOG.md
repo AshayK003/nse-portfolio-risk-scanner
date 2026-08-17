@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.18.0 (2026-08-17)
+
+### Added — User Feedback Implementation
+
+- **Downloadable sample Excel/CSV template** — `ui/sample_template.py` generates exact column format; `engine/portfolio.py` added `parse_portfolio_excel`; download button in upload tab.
+- **Ticker autocomplete with NSE symbol mapping** — `engine/ticker_resolver.py` (318-entry offline map + 240 aliases + live Yahoo Finance fallback, ported from NSE Sentiment Analyzer). Type-to-filter selectbox in manual entry.
+- **Fundamentals tab** — Valuation (P/E, Forward P/E, PEG, P/B, Div Yield, Mkt Cap), Profitability (ROE, ROA, Profit/Operating Margin), Growth (Revenue/EPS Growth), Financial Health (Debt/Equity, Free Cash Flow). Per-stock expanders.
+- **News tab** — Yahoo Finance RSS per holding, de-duplicated, linked headlines with source/date.
+
+### Fixed — Critical Bug
+
+- **Ticker↔Name sync** — Editing ticker in data editor now re-resolves the canonical company name; Name column locked. Uses single `get_company_name` resolver so stale names can never persist.
+
+### Tests
+
+- Added `tests/test_ticker_resolver.py` (16 tests) and `tests/test_fundamentals_news.py` (10 tests). Full suite: 387 passed.
+
 ## v0.17.5 (2026-08-16)
 
 ### Changed (PDF Export — pdf-studio Ledger Theme)

@@ -11,7 +11,6 @@ installable cleanly anywhere) while matching the brand look the user expects.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -32,17 +31,16 @@ from engine import Portfolio, RiskMetrics
 from engine.recommendations import RecommendationReport
 from engine.risk import MonteCarloResult
 
-
 # ── Ledger theme tokens (mirrors pdf_studio.themes.Theme.ledger) ──
 
-FOUNDATION = "#064E3B"   # deep green — headings, table header
-SURFACE = "#F0FDF4"      # light green — KPI card / zebra bg
+FOUNDATION = "#064E3B"  # deep green — headings, table header
+SURFACE = "#F0FDF4"  # light green — KPI card / zebra bg
 BODY_TEXT = "#1F2937"
 MUTED_TEXT = "#374151"
-ACCENT = "#B45309"        # gold — rules, bullets, highlights
+ACCENT = "#B45309"  # gold — rules, bullets, highlights
 GOOD = "#047857"
 BAD = "#B91C1C"
-GRID = "#D1FAE5"          # light green gridlines / borders
+GRID = "#D1FAE5"  # light green gridlines / borders
 SERIES = [FOUNDATION, ACCENT, "#0F766E", MUTED_TEXT, "#166534"]
 
 
@@ -67,9 +65,9 @@ def _register_fonts() -> None:
     with _FONT_LOCK:
         if _FONTS_REGISTERED:
             return
+        from reportlab.lib.fonts import addMapping
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.lib.fonts import addMapping
 
         for reg_name, filename in _BUILTIN_FONTS.items():
             ttf = _FONT_DIR / filename
@@ -105,7 +103,7 @@ def _register_mpl_fonts():
         try:
             import matplotlib.font_manager as fm
 
-            for reg_name, filename in _MPL_FONT_FILES.items():
+            for _, filename in _MPL_FONT_FILES.items():
                 ttf = _FONT_DIR / filename
                 if ttf.exists():
                     fm.fontManager.addfont(str(ttf))
@@ -160,12 +158,31 @@ def _cover_banner(portfolio: Portfolio, plt) -> Figure | None:
     ax.axis("off")
 
     ax.add_patch(plt.Rectangle((0, 0.3), 6.3, 1.9, facecolor=FOUNDATION, edgecolor="none"))
-    ax.text(3.15, 1.9, "NSE Portfolio Risk Report", ha="center", va="center",
-            fontsize=20, fontweight="bold", color="white", fontfamily="Lora")
-    ax.text(3.15, 1.4, portfolio.name, ha="center", va="center", fontsize=13,
-            color="white", fontfamily="Inter")
-    ax.text(3.15, 0.95, datetime.now().strftime("%d %B %Y"), ha="center", va="center",
-            fontsize=9, fontstyle="italic", color="#bbbbbb", fontfamily="Inter")
+    ax.text(
+        3.15,
+        1.9,
+        "NSE Portfolio Risk Report",
+        ha="center",
+        va="center",
+        fontsize=20,
+        fontweight="bold",
+        color="white",
+        fontfamily="Lora",
+    )
+    ax.text(
+        3.15, 1.4, portfolio.name, ha="center", va="center", fontsize=13, color="white", fontfamily="Inter"
+    )
+    ax.text(
+        3.15,
+        0.95,
+        datetime.now().strftime("%d %B %Y"),
+        ha="center",
+        va="center",
+        fontsize=9,
+        fontstyle="italic",
+        color="#bbbbbb",
+        fontfamily="Inter",
+    )
     fig.tight_layout()
     return fig
 
@@ -185,13 +202,22 @@ def _gauge(risk: RiskMetrics | None, plt) -> Figure | None:
     val = min(risk.volatility_annual, 80)
     ax.plot([val, val], [0, 0.7], color=FOUNDATION, linewidth=2, zorder=3)
     ax.plot(val, 0.7, marker="v", color=FOUNDATION, markersize=5, zorder=3)
-    ax.text(val, -0.35, f"{risk.volatility_annual:.1f}%", ha="center", fontsize=9,
-            fontweight="bold", color=FOUNDATION, fontfamily="Inter")
+    ax.text(
+        val,
+        -0.35,
+        f"{risk.volatility_annual:.1f}%",
+        ha="center",
+        fontsize=9,
+        fontweight="bold",
+        color=FOUNDATION,
+        fontfamily="Inter",
+    )
     ax.text(7.5, 0.65, "LOW", ha="center", fontsize=6, color=GOOD, fontweight="bold")
     ax.text(22.5, 0.65, "MOD", ha="center", fontsize=6, color=ACCENT, fontweight="bold")
     ax.text(55, 0.65, "HIGH", ha="center", fontsize=6, color=BAD, fontweight="bold")
-    ax.set_title("Annual Volatility", fontsize=9, fontweight="bold", pad=6,
-                 color=FOUNDATION, fontfamily="Inter")
+    ax.set_title(
+        "Annual Volatility", fontsize=9, fontweight="bold", pad=6, color=FOUNDATION, fontfamily="Inter"
+    )
     fig.tight_layout()
     return fig
 
@@ -206,14 +232,20 @@ def _sector_weight_composite(sector_data: dict | None, portfolio: Portfolio, plt
         sizes = list(sector_data.values())
         colors = SERIES[: len(labels)]
         wedges, texts, autotexts = ax1.pie(
-            sizes, labels=None, autopct="%1.0f%%", startangle=90,
-            colors=colors, textprops={"fontsize": 7},
+            sizes,
+            labels=None,
+            autopct="%1.0f%%",
+            startangle=90,
+            colors=colors,
+            textprops={"fontsize": 7},
         )
         ax1.set_title("Sector Allocation", fontsize=10, fontweight="bold", color=FOUNDATION)
         ax1.legend(
             wedges,
             [f"{lab} ({s:.0f}%)" for lab, s in zip(labels, sizes, strict=False)],
-            loc="center left", bbox_to_anchor=(1, 0.5), fontsize=6,
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            fontsize=6,
             labelcolor=MUTED_TEXT,
         )
 
@@ -227,8 +259,15 @@ def _sector_weight_composite(sector_data: dict | None, portfolio: Portfolio, plt
     ax2.set_xlabel("Weight (%)", fontsize=7, color=MUTED_TEXT)
     ax2.tick_params(axis="x", labelsize=6)
     for bar, w in zip(bars, weights, strict=False):
-        ax2.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
-                 f"{w:.1f}%", va="center", fontsize=7, color=FOUNDATION, fontweight="bold")
+        ax2.text(
+            bar.get_width() + 0.3,
+            bar.get_y() + bar.get_height() / 2,
+            f"{w:.1f}%",
+            va="center",
+            fontsize=7,
+            color=FOUNDATION,
+            fontweight="bold",
+        )
     ax2.set_title("Top Holdings", fontsize=10, fontweight="bold", color=FOUNDATION)
     ax2.margins(x=0.15)
     _base_chart_style(fig, ax2)
@@ -266,17 +305,46 @@ def _monte_carlo_chart(mc_result: MonteCarloResult, plt) -> Figure | None:
 
     ci_lower = max(mc_result.ci_lower, -margin)
     ci_upper = min(mc_result.ci_upper, margin)
-    ax.barh(0.5, ci_upper - ci_lower, left=ci_lower, height=0.25,
-            color=ACCENT, alpha=0.2, ec=FOUNDATION, linewidth=0.5)
+    ax.barh(
+        0.5,
+        ci_upper - ci_lower,
+        left=ci_lower,
+        height=0.25,
+        color=ACCENT,
+        alpha=0.2,
+        ec=FOUNDATION,
+        linewidth=0.5,
+    )
     ax.plot(mc_result.expected_return, 0.5, "D", color=FOUNDATION, markersize=5, zorder=3)
-    ax.text(mc_result.expected_return, 0.75, f"Expected: {mc_result.expected_return:.1f}%",
-            ha="center", fontsize=7, color=FOUNDATION, fontfamily="Inter")
+    ax.text(
+        mc_result.expected_return,
+        0.75,
+        f"Expected: {mc_result.expected_return:.1f}%",
+        ha="center",
+        fontsize=7,
+        color=FOUNDATION,
+        fontfamily="Inter",
+    )
     ax.plot(mc_result.var_95, 0.25, "v", color=BAD, markersize=4, zorder=3)
-    ax.text(mc_result.var_95, 0.08, f"VaR 95%: {mc_result.var_95:.1f}%",
-            ha="center", fontsize=6, color=BAD, fontfamily="Inter")
-    ax.text(0, -0.05, f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, "
-                      f"{mc_result.horizon_days}d horizon", ha="center", fontsize=6,
-            color=MUTED_TEXT, fontfamily="Inter")
+    ax.text(
+        mc_result.var_95,
+        0.08,
+        f"VaR 95%: {mc_result.var_95:.1f}%",
+        ha="center",
+        fontsize=6,
+        color=BAD,
+        fontfamily="Inter",
+    )
+    ax.text(
+        0,
+        -0.05,
+        f"P(Profit): {mc_result.prob_profit:.1f}% | {mc_result.n_simulations:,} sims, "
+        f"{mc_result.horizon_days}d horizon",
+        ha="center",
+        fontsize=6,
+        color=MUTED_TEXT,
+        fontfamily="Inter",
+    )
     ax.set_title("Monte Carlo Projection", fontsize=10, fontweight="bold", color=FOUNDATION)
     fig.tight_layout()
     return fig
@@ -299,9 +367,16 @@ def _pnl_chart(df: pd.DataFrame, plt) -> Figure | None:
     ax.tick_params(axis="x", labelsize=7)
     for bar, val in zip(bars, pnl_values, strict=False):
         px = bar.get_width()
-        ax.text(px + (0.4 if px >= 0 else -0.4), bar.get_y() + bar.get_height() / 2,
-                f"{val:+.1f}%", va="center", fontsize=7, ha="left" if px >= 0 else "right",
-                color=FOUNDATION, fontweight="bold")
+        ax.text(
+            px + (0.4 if px >= 0 else -0.4),
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:+.1f}%",
+            va="center",
+            fontsize=7,
+            ha="left" if px >= 0 else "right",
+            color=FOUNDATION,
+            fontweight="bold",
+        )
     ax.set_title("Holdings P&L", fontsize=10, fontweight="bold", color=FOUNDATION)
     ax.margins(x=0.15)
     _base_chart_style(fig, ax)
@@ -322,7 +397,10 @@ def _risk_assessment_text(risk: RiskMetrics | None) -> tuple[str, str]:
     elif vol < 25 or sharpe > 0.5:
         return "MODERATE — moderate volatility with adequate compensation for risk taken.", "#FEF3C7"
     else:
-        return "HIGH — elevated volatility with weak risk-adjusted returns. Consider defensive positioning.", "#FEE2E2"
+        return (
+            "HIGH — elevated volatility with weak risk-adjusted returns. Consider defensive positioning.",
+            "#FEE2E2",
+        )
 
 
 # ── PDF assembly with reportlab ──
@@ -339,12 +417,19 @@ def generate_pdf_report(
 ) -> bytes:
     """Generate a 4-page PDF report using reportlab, styled to pdf-studio's ledger theme."""
     from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
     from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, HRFlowable,
+        HRFlowable,
+        Image,
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
     )
 
     _register_fonts()
@@ -354,30 +439,78 @@ def generate_pdf_report(
 
     buf = BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        leftMargin=2 * cm, rightMargin=2 * cm,
-        topMargin=2 * cm, bottomMargin=2 * cm,
+        buf,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
         title="NSE Portfolio Risk Report",
     )
 
     # Ledger-themed paragraph styles
-    h1 = ParagraphStyle("h1", fontName="Lora-Bold", fontSize=18, leading=21,
-                        spaceBefore=16, spaceAfter=10, textColor=colors.HexColor(FOUNDATION))
-    h2 = ParagraphStyle("h2", fontName="Lora-Bold", fontSize=14, leading=16,
-                        spaceBefore=12, spaceAfter=6, textColor=colors.HexColor(FOUNDATION))
-    body = ParagraphStyle("body", fontName="Inter", fontSize=9, leading=13,
-                          spaceAfter=6, textColor=colors.HexColor(BODY_TEXT))
-    muted = ParagraphStyle("muted", fontName="Inter", fontSize=7, leading=9,
-                           textColor=colors.HexColor(MUTED_TEXT), alignment=TA_CENTER)
+    h1 = ParagraphStyle(
+        "h1",
+        fontName="Lora-Bold",
+        fontSize=18,
+        leading=21,
+        spaceBefore=16,
+        spaceAfter=10,
+        textColor=colors.HexColor(FOUNDATION),
+    )
+    h2 = ParagraphStyle(
+        "h2",
+        fontName="Lora-Bold",
+        fontSize=14,
+        leading=16,
+        spaceBefore=12,
+        spaceAfter=6,
+        textColor=colors.HexColor(FOUNDATION),
+    )
+    body = ParagraphStyle(
+        "body", fontName="Inter", fontSize=9, leading=13, spaceAfter=6, textColor=colors.HexColor(BODY_TEXT)
+    )
+    muted = ParagraphStyle(
+        "muted",
+        fontName="Inter",
+        fontSize=7,
+        leading=9,
+        textColor=colors.HexColor(MUTED_TEXT),
+        alignment=TA_CENTER,
+    )
     disclaimer = ParagraphStyle("disclaimer", parent=muted, fontSize=7, spaceBefore=10)
-    kpi_label = ParagraphStyle("kpi_label", fontName="Inter", fontSize=8, leading=10,
-                               textColor=colors.HexColor(MUTED_TEXT), alignment=TA_CENTER)
-    kpi_value = ParagraphStyle("kpi_value", fontName="Inter-Bold", fontSize=18, leading=20,
-                               textColor=colors.HexColor(FOUNDATION), alignment=TA_CENTER)
-    kpi_delta_up = ParagraphStyle("kpi_delta_up", fontName="Inter-Bold", fontSize=8, leading=10,
-                                  textColor=colors.HexColor(GOOD), alignment=TA_CENTER)
-    kpi_delta_down = ParagraphStyle("kpi_delta_down", fontName="Inter-Bold", fontSize=8, leading=10,
-                                    textColor=colors.HexColor(BAD), alignment=TA_CENTER)
+    kpi_label = ParagraphStyle(
+        "kpi_label",
+        fontName="Inter",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor(MUTED_TEXT),
+        alignment=TA_CENTER,
+    )
+    kpi_value = ParagraphStyle(
+        "kpi_value",
+        fontName="Inter-Bold",
+        fontSize=18,
+        leading=20,
+        textColor=colors.HexColor(FOUNDATION),
+        alignment=TA_CENTER,
+    )
+    kpi_delta_up = ParagraphStyle(
+        "kpi_delta_up",
+        fontName="Inter-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor(GOOD),
+        alignment=TA_CENTER,
+    )
+    kpi_delta_down = ParagraphStyle(
+        "kpi_delta_down",
+        fontName="Inter-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor(BAD),
+        alignment=TA_CENTER,
+    )
 
     def fig_to_img(fig, width=17 * cm):
         b = BytesIO()
@@ -388,8 +521,9 @@ def generate_pdf_report(
         return img
 
     def heading_rule(level_after=0):
-        return HRFlowable(width="100%", thickness=0.6, color=colors.HexColor(ACCENT),
-                          spaceBefore=0, spaceAfter=10)
+        return HRFlowable(
+            width="100%", thickness=0.6, color=colors.HexColor(ACCENT), spaceBefore=0, spaceAfter=10
+        )
 
     def styled_metric_table(rows, col_widths, right_align=None, caption=None):
         """Two-column-pair metric table styled like pdf-studio (green header absent here,
@@ -434,21 +568,27 @@ def generate_pdf_report(
         n = len(cards)
         col_widths = [17 * cm / n] * n
         t = Table(data, colWidths=col_widths)
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SURFACE)),
-            ("LINEBEFORE", (1, 0), (-1, -1), 0.5, colors.HexColor(GRID)),
-            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor(GRID)),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SURFACE)),
+                    ("LINEBEFORE", (1, 0), (-1, -1), 0.5, colors.HexColor(GRID)),
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor(GRID)),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         return t
 
     def holdings_table(display_df):
-        header_style = ParagraphStyle("th", fontName="Inter-Bold", fontSize=9, leading=11,
-                                      textColor=colors.white)
-        body_style = ParagraphStyle("td", fontName="Inter", fontSize=9, leading=12,
-                                    textColor=colors.HexColor(BODY_TEXT))
+        header_style = ParagraphStyle(
+            "th", fontName="Inter-Bold", fontSize=9, leading=11, textColor=colors.white
+        )
+        body_style = ParagraphStyle(
+            "td", fontName="Inter", fontSize=9, leading=12, textColor=colors.HexColor(BODY_TEXT)
+        )
         body_right = ParagraphStyle("tdr", parent=body_style, alignment=1)
         header = [Paragraph(str(c), header_style) for c in display_df.columns]
         body_rows = []
@@ -506,15 +646,19 @@ def generate_pdf_report(
     if risk:
         text, bg = _risk_assessment_text(risk)
         rt = Table([[f"Risk Level: {text}"]], colWidths=[17 * cm])
-        rt.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(bg)),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("FONTNAME", (0, 0), (-1, -1), "Inter-Bold"),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        rt.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(bg)),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8),
+                    ("FONTNAME", (0, 0), (-1, -1), "Inter-Bold"),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         flow.append(rt)
 
     flow.append(Spacer(1, 6))
@@ -537,16 +681,19 @@ def generate_pdf_report(
             ["Backtest CAGR", f"{risk.cagr:.1f}%", "VaR (95%)", f"{risk.var_95:.2f}%"],
             ["CVaR (95%)", f"{risk.cvar_95:.2f}%", "Volatility", f"{risk.volatility_annual:.1f}%"],
         ]
-    flow.append(styled_metric_table(
-        full_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm]))
+    flow.append(styled_metric_table(full_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm]))
     flow.append(Spacer(1, 8))
 
     if risk:
-        flow.append(Paragraph(
-            f"Annualised volatility of {risk.volatility_annual:.1f}% with a Sharpe ratio "
-            f"of {risk.sharpe:.2f} indicates "
-            f"{'strong' if risk.sharpe > 1 else 'adequate' if risk.sharpe > 0.5 else 'weak'} "
-            f"risk-adjusted returns.", body))
+        flow.append(
+            Paragraph(
+                f"Annualised volatility of {risk.volatility_annual:.1f}% with a Sharpe ratio "
+                f"of {risk.sharpe:.2f} indicates "
+                f"{'strong' if risk.sharpe > 1 else 'adequate' if risk.sharpe > 0.5 else 'weak'} "
+                f"risk-adjusted returns.",
+                body,
+            )
+        )
 
     sw_fig = _sector_weight_composite(sector_data, portfolio, plt)
     if sw_fig:
@@ -556,8 +703,9 @@ def generate_pdf_report(
     # PAGE 3 — RISK ANALYSIS
     flow.append(Paragraph("2. Risk Analysis", h1))
     flow.append(heading_rule())
-    flow.append(Paragraph(
-        "Detailed risk metrics, historical drawdown, and forward-looking simulation.", body))
+    flow.append(
+        Paragraph("Detailed risk metrics, historical drawdown, and forward-looking simulation.", body)
+    )
 
     if risk:
         risk_rows = [
@@ -570,9 +718,11 @@ def generate_pdf_report(
             ["Calmar Ratio", f"{risk.calmar_ratio:.2f}", "Treynor Ratio", f"{risk.treynor_ratio:.2f}"],
             ["Skewness", f"{risk.skewness:.3f}", "Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"],
         ]
-        flow.extend(styled_metric_table(
-            risk_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm],
-            caption="Risk Metrics Detail"))
+        flow.extend(
+            styled_metric_table(
+                risk_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm], caption="Risk Metrics Detail"
+            )
+        )
         flow.append(Spacer(1, 8))
 
     if portfolio_cum is not None and not portfolio_cum.empty:
@@ -591,9 +741,13 @@ def generate_pdf_report(
         flow.append(Paragraph("Top Priority Actions", h2))
         flow.append(heading_rule())
         for rec in recommendations.priority_actions[:5]:
-            flow.append(Paragraph(
-                f"&bull; {rec.action.value.upper()} {rec.target}: {rec.reasoning} "
-                f"({rec.urgency}, {rec.confidence:.0%} confidence)", body))
+            flow.append(
+                Paragraph(
+                    f"&bull; {rec.action.value.upper()} {rec.target}: {rec.reasoning} "
+                    f"({rec.urgency}, {rec.confidence:.0%} confidence)",
+                    body,
+                )
+            )
     flow.append(PageBreak())
 
     # PAGE 4 — HOLDINGS BREAKDOWN
@@ -618,11 +772,14 @@ def generate_pdf_report(
     flow.append(holdings_table(display_df))
     flow.append(Spacer(1, 10))
 
-    flow.append(Paragraph(
-        "Disclaimer: This report is for informational purposes only and does not constitute financial advice. "
-        "Data sourced from public APIs (yfinance, NSE) may be delayed or inaccurate. Past performance is not "
-        "indicative of future results. Consult a SEBI-registered advisor before making investment decisions.",
-        disclaimer))
+    flow.append(
+        Paragraph(
+            "Disclaimer: This report is for informational purposes only and does not constitute financial advice. "
+            "Data sourced from public APIs (yfinance, NSE) may be delayed or inaccurate. Past performance is not "
+            "indicative of future results. Consult a SEBI-registered advisor before making investment decisions.",
+            disclaimer,
+        )
+    )
     flow.append(Paragraph("Generated by NSE Portfolio Risk Scanner", muted))
 
     doc.build(flow)

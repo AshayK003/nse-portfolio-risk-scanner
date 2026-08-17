@@ -11,7 +11,12 @@ import streamlit as st
 
 from engine import Holding, Portfolio
 from engine.__init__ import RISK_PROFILES
-from engine.portfolio import parse_portfolio_csv
+from engine.portfolio import normalize_ticker, parse_portfolio_csv
+from engine.ticker_resolver import (
+    build_ticker_options,
+    get_company_name,
+    parse_ticker_option,
+)
 from ui.icons import (
     UPLOAD,
     icon_html,
@@ -48,7 +53,7 @@ def render_sidebar():
                 options=["— Select —"] + list(options.keys()),
                 key="delete_portfolio",
             )
-            if delete_name != "— Select —" and st.sidebar.button("Delete", width='stretch'):
+            if delete_name != "— Select —" and st.sidebar.button("Delete", width="stretch"):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
                 st.sidebar.success("Portfolio deleted.")
@@ -98,28 +103,31 @@ def render_sidebar():
 
 
 def render_manual_entry() -> list[Holding]:
-    """Render manual stock entry form. Returns list of holdings entered so far."""
+    """Render manual stock entry form with ticker autocomplete. Returns holdings added."""
     st.subheader("Add Stocks Manually")
 
-    # Initialize manual holdings in session state
     if "manual_holdings" not in st.session_state:
         st.session_state.manual_holdings = []
 
-    # Form
+    ticker_options = build_ticker_options()
+
     with st.form("manual_entry_form", clear_on_submit=True):
-        cols = st.columns([2, 1, 1])
+        ticker_choice = st.selectbox(
+            "Ticker (autocomplete)",
+            options=["— Select or type —"] + ticker_options,
+            index=0,
+            help="Start typing to filter by ticker or company name. "
+            "Covers Nifty 50 + major NSE stocks and ETFs.",
+        )
+        custom_ticker = st.text_input(
+            "Or enter a custom ticker",
+            placeholder="e.g. RELIANCE",
+            help="Use this for stocks not in the list above.",
+        )
+        cols = st.columns([1, 1])
         with cols[0]:
-            ticker = (
-                st.text_input(
-                    "Ticker",
-                    placeholder="e.g. RELIANCE",
-                )
-                .strip()
-                .upper()
-            )
-        with cols[1]:
             qty = st.number_input("Quantity", min_value=1, step=1, placeholder="e.g. 10")
-        with cols[2]:
+        with cols[1]:
             price = st.number_input(
                 "Avg Price (Rs)",
                 min_value=0.01,
@@ -127,22 +135,24 @@ def render_manual_entry() -> list[Holding]:
                 format="%.2f",
                 placeholder="e.g. 2500.00",
             )
-        submitted = st.form_submit_button("Add Stock", width='stretch')
+        submitted = st.form_submit_button("Add Stock", width="stretch")
 
         if submitted:
-            if not ticker:
-                st.warning("Enter a ticker symbol.")
+            if custom_ticker.strip():
+                final_ticker = custom_ticker.strip().upper()
+            elif ticker_choice != "— Select or type —":
+                final_ticker = parse_ticker_option(ticker_choice)
             else:
-                from engine.portfolio import normalize_ticker
+                final_ticker = ""
 
-                normalized = normalize_ticker(ticker)
-                new_holding = Holding(
-                    ticker=normalized,
-                    name=ticker.strip().upper().replace(".NS", ""),
-                    quantity=int(qty),
-                    avg_price=round(price, 2),
+            if not final_ticker:
+                st.warning("Select a ticker or enter a custom one.")
+            else:
+                norm = normalize_ticker(final_ticker)
+                name = get_company_name(norm)
+                st.session_state.manual_holdings.append(
+                    Holding(ticker=norm, name=name, quantity=int(qty), avg_price=round(price, 2))
                 )
-                st.session_state.manual_holdings.append(new_holding)
 
     # Show entered stocks with remove button
     manual = st.session_state.manual_holdings
@@ -151,13 +161,11 @@ def render_manual_entry() -> list[Holding]:
         for i, h in enumerate(manual):
             col_a, col_b, col_c = st.columns([2, 1, 1])
             with col_a:
-                st.markdown(f"**{h.ticker.replace('.NS', '')}**")
+                st.markdown(f"**{h.ticker.replace('.NS', '')}** — {h.name}")
             with col_b:
                 st.text(f"{h.quantity} shares")
             with col_c:
-                if st.button(
-                                    "Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", width='stretch'
-                                ):
+                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", width="stretch"):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 
@@ -184,11 +192,8 @@ def render_upload_tab() -> Portfolio | None:
 
             holdings = []
             for item in data["holdings"]:
-                # Validate required fields
                 if not isinstance(item, dict) or "t" not in item or "q" not in item or "p" not in item:
                     raise ValueError("Invalid holding: missing required fields (t, q, p)")
-                from engine.portfolio import normalize_ticker
-
                 holdings.append(
                     Holding(
                         ticker=normalize_ticker(item["t"]),
@@ -206,10 +211,27 @@ def render_upload_tab() -> Portfolio | None:
     # ── CSV Upload Section ──
     st.subheader("Upload Portfolio CSV")
 
+    # Sample template download
+    try:
+        from ui.sample_template import build_sample_excel
+
+        xlsx_bytes = build_sample_excel()
+        st.download_button(
+            label="Download Sample Excel Template",
+            data=xlsx_bytes,
+            file_name="portfolio_sample_template.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            width="stretch",
+            help="Use this exact format for your CSV/Excel upload.",
+        )
+    except Exception:
+        # Template is optional — never block upload if it fails
+        pass
+
     uploaded = st.file_uploader(
-        "Upload portfolio CSV",
-        type="csv",
-        help="Upload a CSV exported from Zerodha, Groww, or any broker. "
+        "Upload portfolio CSV or Excel",
+        type=["csv", "xlsx", "xls"],
+        help="Upload a file exported from Zerodha, Groww, or any broker. "
         "Expected columns: ticker/symbol, quantity/qty, avg_price/price. "
         "Max file size: 10MB.",
     )
@@ -218,14 +240,19 @@ def render_upload_tab() -> Portfolio | None:
     if uploaded is not None:
         csv_bytes = uploaded.getvalue()
         if len(csv_bytes) > 10 * 1024 * 1024:
-            st.error("File too large (max 10MB). Please upload a smaller CSV.")
+            st.error("File too large (max 10MB). Please upload a smaller file.")
             st.stop()
 
         try:
-            csv_portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
+            if uploaded.name.lower().endswith((".xlsx", ".xls")):
+                from engine.portfolio import parse_portfolio_excel
+
+                csv_portfolio = parse_portfolio_excel(csv_bytes, portfolio_name=uploaded.name)
+            else:
+                csv_portfolio = parse_portfolio_csv(csv_bytes, portfolio_name=uploaded.name)
             st.success(f"Loaded {csv_portfolio.holding_count} holdings from {uploaded.name}.")
         except ValueError as e:
-            st.error(f"Could not parse CSV: {e}")
+            st.error(f"Could not parse file: {e}")
 
     # ── Manual Entry Section ──
     st.divider()
@@ -250,15 +277,20 @@ def render_upload_tab() -> Portfolio | None:
         )
 
         # Quick-launch sample portfolio (auto-analyzed on click)
-        if st.button("Try Sample Portfolio", width='stretch', type="primary"):
+        if st.button("Try Sample Portfolio", width="stretch", type="primary"):
             portfolio = Portfolio(
                 holdings=[
-                    Holding(ticker="RELIANCE.NS", name="RELIANCE", quantity=10, avg_price=1100.00),
-                    Holding(ticker="TCS.NS", name="TCS", quantity=5, avg_price=1700.00),
-                    Holding(ticker="INFY.NS", name="INFY", quantity=20, avg_price=850.00),
-                    Holding(ticker="ITC.NS", name="ITC", quantity=50, avg_price=240.00),
-                    Holding(ticker="ICICIBANK.NS", name="ICICIBANK", quantity=30, avg_price=1150.00),
-                    Holding(ticker="BANKBEES.NS", name="BANKBEES", quantity=50, avg_price=500.00),
+                    Holding(ticker="RELIANCE.NS", name="Reliance Industries", quantity=10, avg_price=1100.00),
+                    Holding(ticker="TCS.NS", name="Tata Consultancy Services", quantity=5, avg_price=1700.00),
+                    Holding(ticker="INFY.NS", name="Infosys", quantity=20, avg_price=850.00),
+                    Holding(ticker="ITC.NS", name="ITC Ltd", quantity=50, avg_price=240.00),
+                    Holding(ticker="ICICIBANK.NS", name="ICICI Bank", quantity=30, avg_price=1150.00),
+                    Holding(
+                        ticker="BANKBEES.NS",
+                        name="Nippon India ETF Nifty Bank BeES",
+                        quantity=50,
+                        avg_price=500.00,
+                    ),
                     Holding(ticker="CPSEETF.NS", name="CPSEETF", quantity=100, avg_price=80.00),
                 ],
                 name="Sample Portfolio",
@@ -283,7 +315,11 @@ def render_upload_tab() -> Portfolio | None:
 
 
 def render_data_editor(portfolio: Portfolio) -> Portfolio:
-    """Show an editable data editor for the portfolio holdings."""
+    """Show an editable data editor for the portfolio holdings.
+
+    On update, the stock name is always re-resolved from the ticker so the
+    two never drift apart (the bug reported by users).
+    """
     with st.expander("Edit Holdings", expanded=False):
         data = []
         for h in portfolio.holdings:
@@ -298,18 +334,18 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
 
         df = st.data_editor(
             data,
-            width='stretch',
+            width="stretch",
             hide_index=True,
             num_rows="dynamic",
             column_config={
                 "Ticker": st.column_config.TextColumn("Ticker", width="small"),
-                "Name": st.column_config.TextColumn("Name", width="medium"),
+                "Name": st.column_config.TextColumn("Name", width="medium", disabled=True),
                 "Quantity": st.column_config.NumberColumn("Quantity", min_value=1, step=1),
                 "Avg Price": st.column_config.NumberColumn("Avg Price", min_value=0.01, format="Rs %.2f"),
             },
         )
 
-        if st.button("Update from Editor", width='stretch'):
+        if st.button("Update from Editor", width="stretch"):
             if not isinstance(df, pd.DataFrame) or df.empty:
                 st.warning("Add rows in the data editor, then click Update.")
             else:
@@ -321,10 +357,13 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
                     ticker_str = str(ticker_val).strip()
                     if not ticker_str:
                         continue
+                    norm = normalize_ticker(ticker_str)
+                    # Always re-resolve the name from the (possibly edited) ticker
+                    name = get_company_name(norm)
                     new_holdings.append(
                         Holding(
-                            ticker=(ticker_str + ".NS") if not ticker_str.endswith(".NS") else ticker_str,
-                            name=row.get("Name", ticker_str),
+                            ticker=norm,
+                            name=name,
                             quantity=int(row["Quantity"]),
                             avg_price=float(row["Avg Price"]),
                         )
@@ -343,7 +382,7 @@ def render_save_button(portfolio: Portfolio):
     """Show save portfolio button."""
     with st.expander("Save Portfolio", expanded=False):
         save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
-        if st.button("Save to Database", width='stretch'):
+        if st.button("Save to Database", width="stretch"):
             try:
                 from storage.db import save_portfolio
                 from storage.models import portfolio_to_saved

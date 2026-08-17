@@ -6,6 +6,8 @@ pandas>=2.2,<3
 scipy>=1.13,<2
 loguru>=0.7.2,<1
 diskcache>=5.6.0,<6
+openpyxl>=3.1,<4
+feedparser>=6.0,<7
 
 matplotlib>=3.8
 
@@ -14,3 +16,4 @@ pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git@0ffdaff
 fpdf2>=2.7
 svglib>=1.5
 reportlab>=4
+pillow>=12.3.0

@@ -64,3 +64,4 @@ data/.price_cache/
 
 # Agent workflows
 _pdfcheck/
+coverage.xml
