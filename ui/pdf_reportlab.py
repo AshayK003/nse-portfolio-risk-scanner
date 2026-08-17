@@ -795,7 +795,12 @@ def generate_pdf_report(
 
         bench_rows = [
             ["Beta", f"{benchmark.beta:.2f}", "Alpha (ann.)", f"{benchmark.alpha:.2f}%"],
-            ["Information Ratio", f"{benchmark.information_ratio:.2f}", "Tracking Error", f"{benchmark.tracking_error:.2f}%"],
+            [
+                "Information Ratio",
+                f"{benchmark.information_ratio:.2f}",
+                "Tracking Error",
+                f"{benchmark.tracking_error:.2f}%",
+            ],
             ["Correlation", f"{benchmark.correlation:.2f}", "Up Capture", f"{benchmark.up_capture:.2f}%"],
             ["Down Capture", f"{benchmark.down_capture:.2f}%", "", ""],
         ]
@@ -809,9 +814,22 @@ def generate_pdf_report(
         # Benchmark returns chart
         if benchmark.benchmark_returns is not None and benchmark.portfolio_returns is not None:
             import matplotlib.pyplot as plt
+
             fig, ax = plt.subplots(figsize=(8.5, 3))
-            ax.plot(benchmark.benchmark_returns.index, benchmark.benchmark_returns.cumsum(), label="Nifty 50", color=MUTED_TEXT, linewidth=1.5)
-            ax.plot(benchmark.portfolio_returns.index, benchmark.portfolio_returns.cumsum(), label="Portfolio", color=FOUNDATION, linewidth=1.5)
+            ax.plot(
+                benchmark.benchmark_returns.index,
+                benchmark.benchmark_returns.cumsum(),
+                label="Nifty 50",
+                color=MUTED_TEXT,
+                linewidth=1.5,
+            )
+            ax.plot(
+                benchmark.portfolio_returns.index,
+                benchmark.portfolio_returns.cumsum(),
+                label="Portfolio",
+                color=FOUNDATION,
+                linewidth=1.5,
+            )
             ax.set_title("Cumulative Returns: Portfolio vs Benchmark", fontsize=11, color=FOUNDATION)
             ax.set_xlabel("")
             ax.set_ylabel("Cumulative Return", color=MUTED_TEXT)
@@ -828,7 +846,9 @@ def generate_pdf_report(
     if factor_risk:
         flow.append(Paragraph("5. Factor Risk Decomposition", h1))
         flow.append(heading_rule())
-        flow.append(Paragraph("Risk attribution across systematic factors and idiosyncratic component.", body))
+        flow.append(
+            Paragraph("Risk attribution across systematic factors and idiosyncratic component.", body)
+        )
 
         if factor_risk.factor_exposures:
             factor_rows = [["Factor", "Exposure", "Risk Contribution", "% of Total Risk"]]
@@ -838,16 +858,25 @@ def generate_pdf_report(
                 factor_rows.append([name, f"{exp:.2f}", f"{contrib:.4f}", f"{pct:.1f}%"])
             total_risk = factor_risk.specific_risk + sum(factor_risk.factor_contributions.values())
             spec_pct = (factor_risk.specific_risk / total_risk * 100) if total_risk > 0 else 0
-            factor_rows.append(["Specific (Idiosyncratic)", "—", f"{factor_risk.specific_risk:.4f}", f"{spec_pct:.1f}%"])
+            factor_rows.append(
+                ["Specific (Idiosyncratic)", "—", f"{factor_risk.specific_risk:.4f}", f"{spec_pct:.1f}%"]
+            )
             flow.extend(
                 styled_metric_table(
-                    factor_rows, [5 * cm, 3 * cm, 4.5 * cm, 4.5 * cm], caption="Factor Exposures & Contributions"
+                    factor_rows,
+                    [5 * cm, 3 * cm, 4.5 * cm, 4.5 * cm],
+                    caption="Factor Exposures & Contributions",
                 )
             )
             flow.append(Spacer(1, 8))
 
         if factor_risk.r_squared is not None:
-            flow.append(Paragraph(f"Model R²: {factor_risk.r_squared:.1%} — proportion of portfolio variance explained by factor model.", body))
+            flow.append(
+                Paragraph(
+                    f"Model R²: {factor_risk.r_squared:.1%} — proportion of portfolio variance explained by factor model.",
+                    body,
+                )
+            )
             flow.append(Spacer(1, 4))
 
     flow.append(PageBreak())
@@ -860,7 +889,9 @@ def generate_pdf_report(
     if macro_drivers:
         flow.append(Paragraph("Macro Factor Sensitivities", h2))
         flow.append(heading_rule())
-        flow.append(Paragraph("Portfolio sensitivity to key macroeconomic drivers (rolling regression).", body))
+        flow.append(
+            Paragraph("Portfolio sensitivity to key macroeconomic drivers (rolling regression).", body)
+        )
 
         macro_rows = [["Driver", "Beta", "p-value", "Ann. Contribution"]]
         for md in macro_drivers:
@@ -880,17 +911,21 @@ def generate_pdf_report(
 
         scen_rows = [["Scenario", "Portfolio Return", "Benchmark Return", "VaR 95%", "CVaR 95%", "Max DD"]]
         for s in scenario_results:
-            scen_rows.append([
-                s.scenario_name,
-                f"{s.portfolio_return:.2f}%",
-                f"{s.benchmark_return:.2f}%",
-                f"{s.var_95:.2f}%",
-                f"{s.cvar_95:.2f}%",
-                f"{s.max_drawdown:.2f}%"
-            ])
+            scen_rows.append(
+                [
+                    s.scenario_name,
+                    f"{s.portfolio_return:.2f}%",
+                    f"{s.benchmark_return:.2f}%",
+                    f"{s.var_95:.2f}%",
+                    f"{s.cvar_95:.2f}%",
+                    f"{s.max_drawdown:.2f}%",
+                ]
+            )
         flow.extend(
             styled_metric_table(
-                scen_rows, [3 * cm, 2.8 * cm, 2.8 * cm, 2.2 * cm, 2.2 * cm, 2.2 * cm], caption="Scenario Analysis"
+                scen_rows,
+                [3 * cm, 2.8 * cm, 2.8 * cm, 2.2 * cm, 2.2 * cm, 2.2 * cm],
+                caption="Scenario Analysis",
             )
         )
         flow.append(Spacer(1, 8))
@@ -902,8 +937,18 @@ def generate_pdf_report(
         flow.append(Paragraph("Multi-factor institutional scoring framework (higher = better).", body))
 
         score_rows = [
-            ["Quality", f"{institutional_scores.quality:.1f}", "Momentum", f"{institutional_scores.momentum:.1f}"],
-            ["Value", f"{institutional_scores.value:.1f}", "Volatility", f"{institutional_scores.volatility:.1f}"],
+            [
+                "Quality",
+                f"{institutional_scores.quality:.1f}",
+                "Momentum",
+                f"{institutional_scores.momentum:.1f}",
+            ],
+            [
+                "Value",
+                f"{institutional_scores.value:.1f}",
+                "Volatility",
+                f"{institutional_scores.volatility:.1f}",
+            ],
             ["Liquidity", f"{institutional_scores.liquidity:.1f}", "ESG", f"{institutional_scores.esg:.1f}"],
             ["Composite", f"{institutional_scores.composite:.1f}", "", ""],
         ]
@@ -939,7 +984,9 @@ def generate_pdf_report(
     if regime_result:
         flow.append(Paragraph("Market Regime Detection (HMM)", h2))
         flow.append(heading_rule())
-        flow.append(Paragraph("Hidden Markov Model regime identification and transition probabilities.", body))
+        flow.append(
+            Paragraph("Hidden Markov Model regime identification and transition probabilities.", body)
+        )
 
         if regime_result.current_regime is not None:
             flow.append(Paragraph(f"Current Regime: {regime_result.current_regime}", body))
@@ -949,17 +996,20 @@ def generate_pdf_report(
             regime_rows = [["Regime", "Probability"]]
             for r, p in regime_result.regime_probabilities.items():
                 regime_rows.append([str(r), f"{p:.1%}"])
-            flow.extend(
-                styled_metric_table(
-                    regime_rows, [5 * cm, 5 * cm], caption="Regime Probabilities"
-                )
-            )
+            flow.extend(styled_metric_table(regime_rows, [5 * cm, 5 * cm], caption="Regime Probabilities"))
             flow.append(Spacer(1, 8))
 
         if regime_result.regime_returns:
             reg_ret_rows = [["Regime", "Ann. Return", "Ann. Volatility", "Sharpe"]]
             for r, ret in regime_result.regime_returns.items():
-                reg_ret_rows.append([str(r), f"{ret.get('return', 0):.2f}%", f"{ret.get('vol', 0):.2f}%", f"{ret.get('sharpe', 0):.2f}"])
+                reg_ret_rows.append(
+                    [
+                        str(r),
+                        f"{ret.get('return', 0):.2f}%",
+                        f"{ret.get('vol', 0):.2f}%",
+                        f"{ret.get('sharpe', 0):.2f}",
+                    ]
+                )
             flow.extend(
                 styled_metric_table(
                     reg_ret_rows, [4 * cm, 4 * cm, 4 * cm, 4 * cm], caption="Regime Performance"
@@ -989,21 +1039,27 @@ def generate_pdf_report(
         kupiec_p = "N/A"
         if var_breaches > 0 and daily_returns is not None and len(daily_returns) > 0:
             from scipy import stats
+
             expected = len(daily_returns) * 0.05
             if expected > 0:
-                lr = -2 * (var_breaches * np.log(expected / var_breaches) + (len(daily_returns) - var_breaches) * np.log((len(daily_returns) - expected) / (len(daily_returns) - var_breaches)))
+                lr = -2 * (
+                    var_breaches * np.log(expected / var_breaches)
+                    + (len(daily_returns) - var_breaches)
+                    * np.log((len(daily_returns) - expected) / (len(daily_returns) - var_breaches))
+                )
                 kupiec_p = f"{1 - stats.chi2.cdf(lr, 1):.3f}"
 
         # GARCH volatility forecast (1-day ahead)
         garch_forecast = "N/A"
         try:
             from arch import arch_model
+
             if portfolio_cum is not None and len(portfolio_cum) > 30:
                 daily_ret = portfolio_cum.pct_change().dropna() * 100
                 if len(daily_ret) > 30:
-                    am = arch_model(daily_ret, vol='Garch', p=1, q=1, dist='normal')
-                    res = am.fit(update_freq=0, disp='off')
-                    garch_forecast = f"{np.sqrt(res.conditional_volatility.iloc[-1]**2):.3f}%"
+                    am = arch_model(daily_ret, vol="Garch", p=1, q=1, dist="normal")
+                    res = am.fit(update_freq=0, disp="off")
+                    garch_forecast = f"{np.sqrt(res.conditional_volatility.iloc[-1] ** 2):.3f}%"
         except Exception:
             pass
 
@@ -1017,11 +1073,7 @@ def generate_pdf_report(
             ["Calmar Ratio", f"{risk.calmar_ratio:.2f}"],
             ["Treynor Ratio", f"{risk.treynor_ratio:.2f}"],
         ]
-        flow.extend(
-            styled_metric_table(
-                adv_rows, [7 * cm, 7 * cm], caption="Advanced Metrics"
-            )
-        )
+        flow.extend(styled_metric_table(adv_rows, [7 * cm, 7 * cm], caption="Advanced Metrics"))
         flow.append(Spacer(1, 8))
 
     # FINAL DISCLAIMER
