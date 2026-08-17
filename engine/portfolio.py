@@ -10,8 +10,10 @@ This module is the entry point for user data. It handles:
 
 from __future__ import annotations
 
+import base64
 import csv
 import io
+import json
 import math
 import re
 from contextlib import suppress
@@ -587,3 +589,52 @@ def parse_portfolio_excel(
     df.to_csv(csv_buffer, index=False)
     csv_bytes = csv_buffer.getvalue().encode("utf-8-sig")
     return parse_portfolio_csv(csv_bytes, portfolio_name=portfolio_name)
+
+
+# ── Shareable link encode/decode (pure, no Streamlit) ──
+# Used by app._share_link (encode) and ui.upload.render_upload_tab (decode).
+# Keeping this here makes the round-trip unit-testable without a Streamlit runtime.
+
+_LINK_KEYS = ("t", "n", "q", "p")  # ticker, name, quantity, avg_price
+
+
+def encode_portfolio_link(portfolio: Portfolio) -> str:
+    """Serialize a portfolio into a base64 `?p=` token (no server storage)."""
+    holdings_data = [
+        {
+            "t": h.ticker.replace(".NS", ""),
+            "n": h.name,
+            "q": h.quantity,
+            "p": h.avg_price,
+        }
+        for h in portfolio.holdings
+    ]
+    return base64.b64encode(json.dumps({"holdings": holdings_data}).encode()).decode()
+
+
+def decode_portfolio_link(token: str) -> Portfolio:
+    """Reverse of encode_portfolio_link. Raises ValueError on malformed input."""
+    try:
+        decoded = base64.b64decode(token).decode()
+        data = json.loads(decoded)
+    except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as e:
+        raise ValueError("Invalid portfolio link") from e
+
+    if not isinstance(data, dict) or "holdings" not in data:
+        raise ValueError("Invalid portfolio data: missing 'holdings'")
+    if not isinstance(data["holdings"], list):
+        raise ValueError("Invalid portfolio data: 'holdings' must be a list")
+
+    holdings = []
+    for item in data["holdings"]:
+        if not isinstance(item, dict) or not all(k in item for k in _LINK_KEYS[:3]):
+            raise ValueError("Invalid holding: missing required fields (t, q, p)")
+        holdings.append(
+            Holding(
+                ticker=normalize_ticker(item["t"]),
+                name=item.get("n", item["t"]),
+                quantity=int(item["q"]),
+                avg_price=float(item["p"]),
+            )
+        )
+    return Portfolio(holdings=holdings, name="Shared Portfolio")

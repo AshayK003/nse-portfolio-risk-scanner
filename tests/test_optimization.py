@@ -166,3 +166,58 @@ class TestHardCap:
         for w in weights:
             assert abs(w - 0.5) < 1e-6  # equal weight
         assert abs(sum(weights) - 1.0) < 1e-6
+
+
+class TestOptimizeAdvancedReceivesReturns:
+    """Regression guard for the prices-vs-returns bug (fixed in compute.py).
+
+    optimize_advanced() expects a *returns* DataFrame. compute_all must pass
+    prices.pct_change().dropna(), never raw price levels. If it ever passes
+    prices directly, the advanced optimizer silently returns None (or garbage),
+    so we capture the argument and assert it is stationary (returns), not trending.
+    """
+
+    def test_compute_all_passes_returns_not_prices(self, sample_prices):
+        from unittest.mock import patch
+
+        from engine.compute import compute_all
+        from engine.portfolio import portfolio_from_dict
+
+        # Build a 2-holding portfolio matching sample_prices columns
+        tickers = [c.replace(".NS", "") for c in sample_prices.columns]
+        data = {"holdings": [{"ticker": t, "quantity": 10, "avg_price": 100.0} for t in tickers]}
+        portfolio = portfolio_from_dict(data)
+
+        # compute_all drops holdings with current_price == 0; set a positive price
+        for h in portfolio.holdings:
+            h.current_price = 100.0
+
+        captured = {}
+
+        # Stub optimize_advanced to record its argument and return None
+        def _spy(returns, method="CVaR", obj="Sharpe"):
+            captured["arg"] = returns
+            return None
+
+        with (
+            patch("engine.compute.optimize_advanced", side_effect=_spy),
+            patch("engine.compute._fetch_prices", return_value=sample_prices),
+            patch(
+                "engine.compute._fetch_benchmark",
+                return_value=(None, pd.Series(dtype=float)),
+            ),
+        ):
+            compute_all(portfolio, "^NSEI", "moderate", 0.065)
+
+        assert "arg" in captured, "optimize_advanced was not called"
+        arg = captured["arg"]
+        # Returns are stationary (mean ~ 0), prices are trending (mean >> 0 slope).
+        # Assert the passed frame is NOT raw prices: a price series has a strong
+        # monotonic drift; returns do not. Check std is small relative to mean
+        # for at least one column (returns have no unit scale like prices ~100).
+        assert isinstance(arg, __import__("pandas").DataFrame)
+        # Price levels here are ~100+; returns are fractional (|x| < 0.1 typically)
+        assert arg.abs().max().max() < 1.0 + 1e-9, (
+            f"optimize_advanced received price-like levels (max={arg.abs().max().max()}), "
+            f"expected returns (fractional)"
+        )

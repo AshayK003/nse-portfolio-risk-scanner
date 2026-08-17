@@ -8,9 +8,6 @@ All computation lives in engine/compute.py; all rendering in ui/render.py.
 
 from __future__ import annotations
 
-import base64
-import json
-
 import streamlit as st
 
 from engine import Portfolio
@@ -26,11 +23,9 @@ from ui.upload import render_data_editor, render_sidebar, render_upload_tab
 def _share_link(portfolio: Portfolio) -> None:
     """Render shareable base64 portfolio link."""
     with st.expander("Share Portfolio", expanded=False):
-        holdings_data = [
-            {"t": h.ticker.replace(".NS", ""), "n": h.name, "q": h.quantity, "p": h.avg_price}
-            for h in portfolio.holdings
-        ]
-        encoded = base64.b64encode(json.dumps({"holdings": holdings_data}).encode()).decode()
+        from engine.portfolio import encode_portfolio_link
+
+        encoded = encode_portfolio_link(portfolio)
         st.code(f"?p={encoded}", language="text")
         st.caption(
             "Append this to the app URL to share your portfolio. "
