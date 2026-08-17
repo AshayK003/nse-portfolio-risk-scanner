@@ -410,11 +410,14 @@ def render_all_tabs(ctx: ComputeContext, report: AnalysisReport) -> None:
             render_benchmark_section(report.benchmark)
         else:
             st.info("Benchmark data is not available for the selected index.")
-        st.plotly_chart(
-            benchmark_chart(ctx.portfolio_cum, ctx.benchmark_cum),
-            width="stretch",
-            key="benchmark_chart",
-        )
+        # Only overlay the benchmark line when we actually have benchmark data,
+        # otherwise the chart silently plots an empty (misleading) series.
+        if ctx.benchmark_cum is not None and not ctx.benchmark_cum.empty:
+            st.plotly_chart(
+                benchmark_chart(ctx.portfolio_cum, ctx.benchmark_cum),
+                width="stretch",
+                key="benchmark_chart",
+            )
 
     # ── Tab 3: Charts ──
     with tabs[3]:
