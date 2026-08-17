@@ -345,20 +345,45 @@ def _build_overall_verdict(risk: RiskMetrics, sector: SectorExposure) -> str:
     dd_lvl = _drawdown_level(risk.max_drawdown)
     div_lvl = _diversification_level(sector.diversification_score)
 
-    score = 0
-    score += 0 if vol_lvl == "low" else 1 if vol_lvl == "moderate" else 2
-    score += 0 if sharpe >= 1.0 else 1 if sharpe >= 0.5 else 2
-    score += 0 if dd_lvl == "mild" else 1 if dd_lvl == "moderate" else 2
-    score += 0 if div_lvl == "good" else 1 if div_lvl == "moderate" else 2
+    # Per-dimension contribution: 0 = healthy, 1 = watch, 2 = elevated
+    dims = [
+        ("volatility", 0 if vol_lvl == "low" else 1 if vol_lvl == "moderate" else 2),
+        ("sharpe", 0 if sharpe >= 1.0 else 1 if sharpe >= 0.5 else 2),
+        ("drawdown", 0 if dd_lvl == "mild" else 1 if dd_lvl == "moderate" else 2),
+        ("diversification", 0 if div_lvl == "good" else 1 if div_lvl == "moderate" else 2),
+    ]
+    score = sum(weight for _, weight in dims)
+
+    # Name only the dimensions that actually add risk, never a fixed hint
+    labels = {
+        "volatility": "elevated volatility",
+        "sharpe": "weak risk-adjusted returns",
+        "drawdown": "drawdown exposure",
+        "diversification": "concentration / limited diversification",
+    }
+    weak = [labels[name] for name, weight in dims if weight > 0]
+
+    def _join(items: list[str]) -> str:
+        if len(items) == 1:
+            return items[0]
+        if len(items) == 2:
+            return f"{items[0]} and {items[1]}"
+        return ", ".join(items[:-1]) + f", and {items[-1]}"
 
     if score <= 2:
         verdict = "Low Risk"
         detail = "The portfolio shows healthy diversification, controlled volatility, and adequate risk-adjusted returns."
     elif score <= 4:
         verdict = "Moderate Risk"
-        detail = "Some areas need attention — review the concerns above, particularly around concentration and drawdown exposure."
+        detail = (
+            f"Some areas need attention — mainly {_join(weak)}. "
+            "Review the concerns above for specific actions."
+        )
     else:
         verdict = "Higher Risk"
-        detail = "Multiple risk factors are elevated. A systematic review of position sizing, sector allocation, and hedge coverage is recommended."
+        detail = (
+            f"Multiple risk factors are elevated ({_join(weak)}). "
+            "A systematic review of position sizing, sector allocation, and hedge coverage is recommended."
+        )
 
     return f"**{verdict}.** {detail}"

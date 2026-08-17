@@ -313,6 +313,37 @@ class TestGenerateNarrative:
         n = generate_narrative(report)
         assert "Higher Risk" in n.overall_verdict
 
+    def test_verdict_names_actual_weak_dimensions(self):
+        """Moderate verdict must name the dimensions that scored, not a fixed hint."""
+        # vol=18 (mod), dd=-18 (mod), sharpe=1.1 (good), div_score=55 (mod) -> weak 3 dims
+        risk = self._make_risk(volatility_annual=18.0, sharpe=1.1, max_drawdown=-18.0)
+        sector = self._make_sector(diversification_score=55.0)
+        report = self._make_report(risk=risk, sector=sector)
+        n = generate_narrative(report)
+        verdict = n.overall_verdict
+        assert "Moderate Risk" in verdict
+        # The three actually-weak dimensions must appear
+        assert "elevated volatility" in verdict
+        assert "drawdown exposure" in verdict
+        assert "concentration / limited diversification" in verdict
+        # Sharpe is healthy here -> it must NOT be named as a concern in the verdict
+        assert "weak risk-adjusted returns" not in verdict
+
+    def test_verdict_does_not_hardcode_concentration(self):
+        """A perfectly diversified moderate portfolio must not be told it has concentration risk."""
+        risk = self._make_risk(
+            volatility_annual=20.0, sharpe=0.8, max_drawdown=-12.0
+        )  # vol mod, sharpe poor, dd mild
+        sector = self._make_sector(diversification_score=85.0, concentrated_sectors=[])
+        report = self._make_report(risk=risk, sector=sector)
+        n = generate_narrative(report)
+        verdict = n.overall_verdict
+        assert "Moderate Risk" in verdict
+        assert "concentration / limited diversification" not in verdict
+        # Weak here = volatility + sharpe, so the verdict must name those instead
+        assert "elevated volatility" in verdict
+        assert "weak risk-adjusted returns" in verdict
+
     # ── Edge cases ──
 
     def test_no_holdings(self):
