@@ -43,9 +43,16 @@ def compare_to_benchmark(
     Returns:
         BenchmarkComparison dataclass
     """
+    # Ensure both series have correct names for proper alignment
+    if portfolio_returns.name != "portfolio":
+        portfolio_returns = portfolio_returns.copy()
+        portfolio_returns.name = "portfolio"
+    if benchmark_returns.name != "benchmark":
+        benchmark_returns = benchmark_returns.copy()
+        benchmark_returns.name = "benchmark"
+
     # Align on dates
     aligned = pd.concat([portfolio_returns, benchmark_returns], axis=1, join="inner").dropna()
-    aligned.columns = ["portfolio", "benchmark"]
 
     if len(aligned) < 5:
         return _empty_comparison()

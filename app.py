@@ -111,7 +111,7 @@ def main() -> None:
 
     risk_free_rate = st.session_state.get("risk_free_rate", 6.5) / 100.0
     risk_profile_key = st.session_state.get("risk_profile", "moderate")
-    RISK_PROFILES[risk_profile_key]  # validate key exists
+    _ = RISK_PROFILES[risk_profile_key]  # validate key exists
 
     # ── Input hash — skip recomputation when portfolio hasn't changed ──
     current_hash = compute_input_hash(portfolio, benchmark_choice, risk_profile_key, risk_free_rate)
