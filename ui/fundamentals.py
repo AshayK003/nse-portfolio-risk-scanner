@@ -14,14 +14,13 @@ from __future__ import annotations
 import streamlit as st
 
 from engine import Portfolio
-from ui.icons import LINE_CHART, icon_html
 
 # Fields we want, mapped to a display label + formatting hint
 # yfinance info keys are used; derived metrics (PEG, etc.) are computed in _enrich
 _FUNDAMENTAL_FIELDS = [
     ("trailingPE", "P/E (TTM)", "x"),
     ("forwardPE", "Forward P/E", "x"),
-    ("pegRatio", "PEG Ratio", "x"),        # computed: trailingPE / earningsGrowth
+    ("pegRatio", "PEG Ratio", "x"),  # computed: trailingPE / earningsGrowth
     ("priceToBook", "P/B", "x"),
     ("dividendYield", "Dividend Yield", "%"),
     ("marketCap", "Market Cap", "cr"),
@@ -48,7 +47,9 @@ def fetch_fundamentals(ticker: str) -> dict:
 
         stock = yf.Ticker(f"{ticker}.NS")
         info = stock.info or {}
-        raw = {k: info.get(k) for k, _, _ in _FUNDAMENTAL_FIELDS if k != "pegRatio" and info.get(k) is not None}
+        raw = {
+            k: info.get(k) for k, _, _ in _FUNDAMENTAL_FIELDS if k != "pegRatio" and info.get(k) is not None
+        }
 
         # Compute PEG: trailingPE / earningsGrowth (both must exist, growth > 0)
         pe = info.get("trailingPE")
@@ -109,7 +110,7 @@ def render_fundamentals_section(portfolio: Portfolio):
 
     st.dataframe(
         rows,
-        width='stretch',
+        width="stretch",
         hide_index=True,
     )
 

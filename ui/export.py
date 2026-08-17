@@ -5,16 +5,14 @@ Streamlit-dependent presentation layer; chart/render logic lives in pdf_reportla
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import pandas as pd
 import streamlit as st
 
 from engine import Portfolio, RiskMetrics
 from engine.recommendations import RecommendationReport
 from engine.risk import MonteCarloResult
-from ui.pdf_reportlab import generate_pdf_report
 from ui.icons import DOWNLOAD, icon_text
+from ui.pdf_reportlab import generate_pdf_report
 
 
 def _to_rich_csv(
@@ -168,7 +166,7 @@ def render_export_section(
         data=csv_bytes,
         file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.csv",
         mime="text/csv",
-        width='stretch',
+        width="stretch",
     )
 
     # ── PDF ──
@@ -207,7 +205,7 @@ def render_export_section(
             data=pdf_bytes,
             file_name=f"portfolio_report_{portfolio.name.replace(' ', '_')}.pdf",
             mime="application/pdf",
-            width='stretch',
+            width="stretch",
         )
     else:
         st.caption("PDF export unavailable — reportlab required")

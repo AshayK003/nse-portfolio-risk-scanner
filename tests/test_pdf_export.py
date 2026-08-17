@@ -12,11 +12,9 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from engine import Holding, Portfolio, RiskMetrics
 from engine.risk import MonteCarloResult
-
 from ui import pdf_reportlab as gen
 
 

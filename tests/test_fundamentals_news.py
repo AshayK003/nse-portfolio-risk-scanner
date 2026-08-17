@@ -1,8 +1,5 @@
 """Tests for the Fundamentals and News UI modules."""
 
-import pandas as pd
-import pytest
-
 from engine import Holding, Portfolio
 from ui.fundamentals import _format, fetch_fundamentals
 from ui.news import fetch_news

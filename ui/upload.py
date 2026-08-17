@@ -53,7 +53,7 @@ def render_sidebar():
                 options=["— Select —"] + list(options.keys()),
                 key="delete_portfolio",
             )
-            if delete_name != "— Select —" and st.sidebar.button("Delete", width='stretch'):
+            if delete_name != "— Select —" and st.sidebar.button("Delete", width="stretch"):
                 p_id = options[delete_name]
                 delete_portfolio(p_id)
                 st.sidebar.success("Portfolio deleted.")
@@ -135,7 +135,7 @@ def render_manual_entry() -> list[Holding]:
                 format="%.2f",
                 placeholder="e.g. 2500.00",
             )
-        submitted = st.form_submit_button("Add Stock", width='stretch')
+        submitted = st.form_submit_button("Add Stock", width="stretch")
 
         if submitted:
             if custom_ticker.strip():
@@ -165,9 +165,7 @@ def render_manual_entry() -> list[Holding]:
             with col_b:
                 st.text(f"{h.quantity} shares")
             with col_c:
-                if st.button(
-                    "Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", width='stretch'
-                ):
+                if st.button("Remove", key=f"remove_manual_{i}", help=f"Remove {h.ticker}", width="stretch"):
                     st.session_state.manual_holdings.pop(i)
                     st.rerun()
 
@@ -223,7 +221,7 @@ def render_upload_tab() -> Portfolio | None:
             data=xlsx_bytes,
             file_name="portfolio_sample_template.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            width='stretch',
+            width="stretch",
             help="Use this exact format for your CSV/Excel upload.",
         )
     except Exception:
@@ -279,7 +277,7 @@ def render_upload_tab() -> Portfolio | None:
         )
 
         # Quick-launch sample portfolio (auto-analyzed on click)
-        if st.button("Try Sample Portfolio", width='stretch', type="primary"):
+        if st.button("Try Sample Portfolio", width="stretch", type="primary"):
             portfolio = Portfolio(
                 holdings=[
                     Holding(ticker="RELIANCE.NS", name="Reliance Industries", quantity=10, avg_price=1100.00),
@@ -287,7 +285,12 @@ def render_upload_tab() -> Portfolio | None:
                     Holding(ticker="INFY.NS", name="Infosys", quantity=20, avg_price=850.00),
                     Holding(ticker="ITC.NS", name="ITC Ltd", quantity=50, avg_price=240.00),
                     Holding(ticker="ICICIBANK.NS", name="ICICI Bank", quantity=30, avg_price=1150.00),
-                    Holding(ticker="BANKBEES.NS", name="Nippon India ETF Nifty Bank BeES", quantity=50, avg_price=500.00),
+                    Holding(
+                        ticker="BANKBEES.NS",
+                        name="Nippon India ETF Nifty Bank BeES",
+                        quantity=50,
+                        avg_price=500.00,
+                    ),
                     Holding(ticker="CPSEETF.NS", name="CPSEETF", quantity=100, avg_price=80.00),
                 ],
                 name="Sample Portfolio",
@@ -331,7 +334,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
 
         df = st.data_editor(
             data,
-            width='stretch',
+            width="stretch",
             hide_index=True,
             num_rows="dynamic",
             column_config={
@@ -342,7 +345,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
             },
         )
 
-        if st.button("Update from Editor", width='stretch'):
+        if st.button("Update from Editor", width="stretch"):
             if not isinstance(df, pd.DataFrame) or df.empty:
                 st.warning("Add rows in the data editor, then click Update.")
             else:
@@ -379,7 +382,7 @@ def render_save_button(portfolio: Portfolio):
     """Show save portfolio button."""
     with st.expander("Save Portfolio", expanded=False):
         save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
-        if st.button("Save to Database", width='stretch'):
+        if st.button("Save to Database", width="stretch"):
             try:
                 from storage.db import save_portfolio
                 from storage.models import portfolio_to_saved

@@ -214,7 +214,7 @@ def render_stock_table(portfolio: Portfolio) -> None:
             }
         )
 
-    st.dataframe(rows, width='stretch', hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def render_narrative_section(narrative: NarrativeReport) -> None:
@@ -293,12 +293,12 @@ def render_advanced_section(
             if w:
                 st.dataframe(
                     pd.DataFrame(list(w.items()), columns=["Ticker", "Opt. Weight"])
-                                        .assign(**{"Opt. Weight %": lambda df: df["Opt. Weight"] * 100})
-                                        .drop(columns=["Opt. Weight"])
-                                        .style.format({"Opt. Weight %": "{:.1f}%"}),
-                                        width='stretch',
-                                        hide_index=True,
-                                    )
+                    .assign(**{"Opt. Weight %": lambda df: df["Opt. Weight"] * 100})
+                    .drop(columns=["Opt. Weight"])
+                    .style.format({"Opt. Weight %": "{:.1f}%"}),
+                    width="stretch",
+                    hide_index=True,
+                )
 
 
 def render_stock_risk_table(risk_df: pd.DataFrame) -> None:
@@ -318,7 +318,7 @@ def render_stock_risk_table(risk_df: pd.DataFrame) -> None:
         return ""
 
     styled = risk_df.style.map(_highlight_risk, subset=["Risk Contrib (%)"])
-    st.dataframe(styled, width='stretch', hide_index=True)
+    st.dataframe(styled, width="stretch", hide_index=True)
 
     st.caption(
         "**Risk Contrib %** \u2014 share of total portfolio risk attributed to each holding. "
@@ -425,7 +425,7 @@ def render_optimization_section(
                 "noise by shrinking extreme correlations toward the average."
             )
 
-    # Current vs Optimized comparison
+        # Current vs Optimized comparison
         if portfolio and portfolio.total_current > 0:
             col1, col2 = st.columns(2)
             total_value = portfolio.total_current
@@ -438,14 +438,14 @@ def render_optimization_section(
 
                 st.plotly_chart(
                     allocation_pie(current_weights, "Current Allocation"),
-                    width='stretch',
+                    width="stretch",
                     key="current_alloc",
                 )
 
             with col2:
                 st.plotly_chart(
                     allocation_pie(opt.weights, "Optimized Allocation"),
-                    width='stretch',
+                    width="stretch",
                     key="opt_alloc",
                 )
 
@@ -465,7 +465,7 @@ def render_optimization_section(
                         "Why": reason,
                     }
                 )
-            st.dataframe(comparison, width='stretch', hide_index=True)
+            st.dataframe(comparison, width="stretch", hide_index=True)
 
         # Warn if optimization concentrates above profile's single-holding limit
         max_opt_w = max(opt.weights.values())
@@ -483,7 +483,7 @@ def render_optimization_section(
                     "Suggested Weight": f"{weight * 100:.1f}%",
                 }
             )
-        st.dataframe(rows, width='stretch', hide_index=True)
+        st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def render_monte_carlo_section(mc: MonteCarloResult | None) -> None:
@@ -552,7 +552,7 @@ def render_regime_section(regime: RegimeResult | None) -> None:
                     **{regime.labels[j]: f"{trans[i][j]:.1%}" for j in range(len(regime.labels))},
                 }
             )
-        st.dataframe(trans_rows, width='stretch', hide_index=True)
+        st.dataframe(trans_rows, width="stretch", hide_index=True)
 
 
 def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
@@ -588,7 +588,7 @@ def render_scenario_section(scenarios: list[ScenarioResult]) -> None:
                     }
                 )
             if rows:
-                st.dataframe(rows, width='stretch', hide_index=True)
+                st.dataframe(rows, width="stretch", hide_index=True)
             st.divider()
 
 
@@ -628,7 +628,7 @@ def render_rebalance_section(
                 "Why": reason,
             }
         )
-    st.dataframe(rows, width='stretch', hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
 
     # Estimated transaction costs
     buy_value = sum(t["change_rs"] for t in rebalance.trades if t["action"] == "increase")

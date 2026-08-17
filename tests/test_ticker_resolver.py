@@ -3,7 +3,6 @@
 import io
 
 import pandas as pd
-import pytest
 
 from engine.ticker_resolver import (
     ALIASES,
