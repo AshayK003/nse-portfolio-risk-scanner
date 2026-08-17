@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.18.2 (2026-08-17)
+
+### Added — Investor Reliability Tests
+
+- **PnL arithmetic** (`tests/test_pnl_math.py`) — Holding/Portfolio profit/loss, sign correctness on losses, zero-current-price handling, div-by-zero guards (`pnl_pct` returns 0 when invested is 0), NaN current_price treated as 0, weight normalization, and zero-current-price weight exclusion.
+- **Shareable-link round-trip** (`tests/test_shareable_link.py`) — Extracted `encode_portfolio_link` / `decode_portfolio_link` into `engine/portfolio.py` (pure, no Streamlit) and rewired `app._share_link` + `ui/upload.render_upload_tab` to use them. Tests cover encode→decode fidelity, `.NS` stripping, empty portfolio, URL-safe token, and all malformed-input error paths (garbage token, missing `holdings`, non-list `holdings`, missing required field).
+- **`optimize_advanced` returns-contract regression** (`tests/test_optimization.py::TestOptimizeAdvancedReceivesReturns`) — Guards the prices-vs-returns bug: `compute_all` must pass `prices.pct_change().dropna()` (fractional returns), never raw price levels. Captures the argument and asserts max abs value < 1.0.
+
+### Tests
+
+- Added 3 test files + 1 regression class. Full suite: **416 passed**, 1 skipped. Zero regressions. Ruff clean.
+
 ## v0.18.1 (2026-08-17)
 
 ### Fixed — Logic Correctness (Logic Review Pass)

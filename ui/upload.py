@@ -175,31 +175,9 @@ def render_upload_tab() -> Portfolio | None:
     query_params = st.query_params
     if "p" in query_params and st.session_state.get("portfolio") is None:
         try:
-            import base64
-            import json
+            from engine.portfolio import decode_portfolio_link
 
-            decoded = base64.b64decode(query_params["p"]).decode()
-            data = json.loads(decoded)
-
-            # Validate required fields
-            if not isinstance(data, dict) or "holdings" not in data:
-                raise ValueError("Invalid portfolio data: missing 'holdings'")
-            if not isinstance(data["holdings"], list):
-                raise ValueError("Invalid portfolio data: 'holdings' must be a list")
-
-            holdings = []
-            for item in data["holdings"]:
-                if not isinstance(item, dict) or "t" not in item or "q" not in item or "p" not in item:
-                    raise ValueError("Invalid holding: missing required fields (t, q, p)")
-                holdings.append(
-                    Holding(
-                        ticker=normalize_ticker(item["t"]),
-                        name=item.get("n", item["t"]),
-                        quantity=int(item["q"]),
-                        avg_price=float(item["p"]),
-                    )
-                )
-            portfolio = Portfolio(holdings=holdings, name="Shared Portfolio")
+            portfolio = decode_portfolio_link(query_params["p"])
             st.success("Loaded portfolio from shared link.")
             return portfolio
         except Exception:
