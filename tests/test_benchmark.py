@@ -38,7 +38,8 @@ class TestCompareToBenchmark:
         empty_port = pd.Series(dtype=float)
         empty_bench = pd.Series(dtype=float)
         result = compare_to_benchmark(empty_port, empty_bench)
-        assert result.beta == 1.0  # default
+        # No data -> explicit "no comparison" signal, not fake zeros
+        assert result is None
 
     def test_identical_series(self):
         dates = pd.date_range(end="2024-01-01", periods=100, freq="B")

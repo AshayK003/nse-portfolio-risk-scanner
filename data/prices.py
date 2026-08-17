@@ -336,12 +336,21 @@ def fetch_benchmark(
         try:
             hist = _cached_fetch(ticker, period)
             if hist is not None:
-                return hist["Close"]
+                close = hist["Close"]
+                # Equity prices are tz-naive; keep benchmark consistent so the
+                # date-aligned join in compare_to_benchmark overlaps. A tz-aware
+                # benchmark index silently yields 0 overlapping rows -> zeros.
+                if close.index.tz is not None:
+                    close = close.tz_localize(None)
+                return close
         except Exception:
             pass
     elif not df.empty:
         l2 = _get_l2_cache()
-        l2.set(ticker, df["Close"])
-        return df["Close"]
+        close = df["Close"]
+        if close.index.tz is not None:
+            close = close.tz_localize(None)
+        l2.set(ticker, close)
+        return close
 
     return pd.Series(dtype=float)

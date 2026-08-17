@@ -31,7 +31,7 @@ def compare_to_benchmark(
     portfolio_returns: pd.Series,
     benchmark_returns: pd.Series,
     risk_free_rate: float = 0.065,
-) -> BenchmarkComparison:
+) -> BenchmarkComparison | None:
     """
     Compare portfolio performance against a benchmark index.
 
@@ -51,11 +51,22 @@ def compare_to_benchmark(
         benchmark_returns = benchmark_returns.copy()
         benchmark_returns.name = "benchmark"
 
+    # Normalize timezone so a tz-aware benchmark (from yfinance on some
+    # environments) still aligns on date with a tz-naive portfolio series.
+    # Mismatched tz yields 0 overlapping rows -> meaningless comparison.
+    if isinstance(portfolio_returns.index, pd.DatetimeIndex) and portfolio_returns.index.tz is not None:
+        portfolio_returns = portfolio_returns.tz_localize(None)
+    if isinstance(benchmark_returns.index, pd.DatetimeIndex) and benchmark_returns.index.tz is not None:
+        benchmark_returns = benchmark_returns.tz_localize(None)
+
     # Align on dates
     aligned = pd.concat([portfolio_returns, benchmark_returns], axis=1, join="inner").dropna()
 
     if len(aligned) < 5:
-        return _empty_comparison()
+        # Not enough overlapping data to compute a meaningful comparison.
+        # Return None so the UI shows an explicit "data unavailable" notice
+        # instead of fake all-zero metrics (which an investor could misread).
+        return None
 
     port_ret = aligned["portfolio"]
     bench_ret = aligned["benchmark"]
@@ -106,19 +117,4 @@ def compare_to_benchmark(
         rolling_alpha_6m=round(rolling_alpha, 2),
         outperformance_months=int(outperformance),
         total_months=int(total_months),
-    )
-
-
-def _empty_comparison() -> BenchmarkComparison:
-    return BenchmarkComparison(
-        portfolio_return=0.0,
-        benchmark_return=0.0,
-        alpha=0.0,
-        tracking_error=0.0,
-        information_ratio=0.0,
-        beta=1.0,
-        correlation=0.0,
-        rolling_alpha_6m=0.0,
-        outperformance_months=0,
-        total_months=0,
     )

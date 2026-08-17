@@ -14,6 +14,7 @@ from __future__ import annotations
 import streamlit as st
 
 from engine import Portfolio
+from engine._log import logger
 
 # Fields we want, mapped to a display label + formatting hint
 # yfinance info keys are used; derived metrics (PEG, etc.) are computed in _enrich
@@ -41,30 +42,52 @@ def fetch_fundamentals(ticker: str) -> dict:
 
     Keys mirror yfinance info keys. Missing keys are simply absent.
     Also adds computed fields: pegRatio (if trailingPE + earningsGrowth exist).
+
+    A transient Yahoo failure is retried; only after retries are exhausted do we
+    return an empty dict (which the UI renders as "no data"). We do NOT swallow
+    the failure silently into a long-lived cache without trying again.
     """
-    try:
-        import yfinance as yf
+    last_err: Exception | None = None
+    for attempt in range(3):
+        try:
+            import yfinance as yf
 
-        stock = yf.Ticker(f"{ticker}.NS")
-        info = stock.info or {}
-        raw = {
-            k: info.get(k) for k, _, _ in _FUNDAMENTAL_FIELDS if k != "pegRatio" and info.get(k) is not None
-        }
+            stock = yf.Ticker(f"{ticker}.NS")
+            info = stock.info or {}
+            if not info:
+                # Yahoo returned an empty payload (common on geo-blocked/rate-limited
+                # requests). Retry before giving up so a transient blip doesn't
+                # permanently cache an N/A for this ticker.
+                last_err = RuntimeError("empty info payload")
+                if attempt < 2:
+                    continue
+                return {}
 
-        # Compute PEG: trailingPE / earningsGrowth (both must exist, growth > 0)
-        pe = info.get("trailingPE")
-        eps_growth = info.get("earningsGrowth")
-        if pe is not None and eps_growth is not None:
-            try:
-                peg = float(pe) / float(eps_growth)
-                if eps_growth > 0:
-                    raw["pegRatio"] = peg
-            except (TypeError, ValueError, ZeroDivisionError):
-                pass
+            raw = {
+                k: info.get(k)
+                for k, _, _ in _FUNDAMENTAL_FIELDS
+                if k != "pegRatio" and info.get(k) is not None
+            }
 
-        return raw
-    except Exception:
-        return {}
+            # Compute PEG: trailingPE / earningsGrowth (both must exist, growth > 0)
+            pe = info.get("trailingPE")
+            eps_growth = info.get("earningsGrowth")
+            if pe is not None and eps_growth is not None:
+                try:
+                    peg = float(pe) / float(eps_growth)
+                    if eps_growth > 0:
+                        raw["pegRatio"] = peg
+                except (TypeError, ValueError, ZeroDivisionError):
+                    pass
+
+            return raw
+        except Exception as exc:  # noqa: BLE001
+            last_err = exc
+            if attempt < 2:
+                continue
+    # All retries failed — return empty; caller renders "no data".
+    logger.warning("Fundamentals fetch failed for {t}: {e}", t=ticker, e=last_err)
+    return {}
 
 
 def _format(value, unit: str) -> str:

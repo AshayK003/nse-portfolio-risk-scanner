@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.18.3 (2026-08-17)
+
+### Fixed — Silent Data Failures (Deploy Reliability)
+
+- **vs Nifty 50 showed all zeros** (`engine/benchmark.py`, `data/prices.py`, `ui/render.py`)
+  `fetch_benchmark` returned a tz-aware price series while equity prices are tz-naive. The date-aligned inner-join in `compare_to_benchmark` then yielded **0 overlapping rows**, and the function returned `_empty_comparison()` — all-zero metrics with `beta=1.0` that looked like real data to an investor. Benchmark series are now timezone-normalized at the source, and `compare_to_benchmark` also strips tz defensively. When genuinely too little data overlaps, the function returns `None` (no fake zeros), and the UI renders an explicit "Benchmark data is not available" notice plus skips the empty chart overlay.
+- **Fundamentals tab showed N/A for every stock** (`ui/fundamentals.py`)
+  `fetch_fundamentals` swallowed *all* Yahoo failures into `return {}`, and `@st.cache_data(ttl=3600)` cached that empty dict for an hour. On Streamlit Cloud (Yahoo rate-limited / geo-blocked), every ticker returned `{}` → cached N/A. The fetch now retries on empty payloads / exceptions before giving up, and logs the failure instead of failing silently.
+
+### Tests
+
+- Added `tests/test_benchmark_tz.py` — pins tz-aware benchmark alignment with tz-naive portfolio, and that missing data returns `None` (not fake zeros).
+- Updated `tests/test_benchmark.py` empty-series case to expect `None`.
+- Full suite: **419 passed**, 1 skipped. Zero regressions. Ruff clean.
+
 ## v0.18.2 (2026-08-17)
 
 ### Added — Investor Reliability Tests
