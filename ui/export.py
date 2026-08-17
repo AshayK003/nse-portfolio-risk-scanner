@@ -1,5 +1,5 @@
 """
-Report export — CSV download and PDF report generation.
+Report export - CSV download and PDF report generation.
 Streamlit-dependent presentation layer; chart/render logic lives in pdf_reportlab.py.
 """
 
@@ -8,8 +8,18 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from engine import Portfolio, RiskMetrics
-from engine.recommendations import RecommendationReport
+from engine import (
+    BenchmarkComparison,
+    FactorRiskReport,
+    InstitutionalRiskScores,
+    MacroDriver,
+    MacroScenarioResult,
+    Portfolio,
+    RecommendationReport,
+    RegimeResult,
+    RiskMetrics,
+    WarningReport,
+)
 from engine.risk import MonteCarloResult
 from ui.icons import DOWNLOAD, icon_text
 from ui.pdf_reportlab import generate_pdf_report
@@ -152,6 +162,13 @@ def render_export_section(
     portfolio_cum: pd.Series | None = None,
     recommendations: RecommendationReport | None = None,
     risk_data: dict | None = None,
+    benchmark: BenchmarkComparison | None = None,
+    factor_risk: FactorRiskReport | None = None,
+    macro_drivers: list[MacroDriver] | None = None,
+    regime_result: RegimeResult | None = None,
+    institutional_scores: InstitutionalRiskScores | None = None,
+    scenario_results: list[MacroScenarioResult] | None = None,
+    warning_report: WarningReport | None = None,
 ) -> None:
     """Display export buttons for the analysis results."""
     st.markdown(
@@ -194,7 +211,20 @@ def render_export_section(
     try:
         with st.spinner("Generating PDF report..."):
             pdf_bytes = generate_pdf_report(
-                portfolio, risk, sector_data, df, mc_result, portfolio_cum, recommendations
+                portfolio,
+                risk,
+                sector_data,
+                df,
+                mc_result,
+                portfolio_cum,
+                recommendations,
+                benchmark,
+                factor_risk,
+                macro_drivers,
+                regime_result,
+                institutional_scores,
+                scenario_results,
+                warning_report,
             )
     except Exception as e:
         st.error(f"PDF generation failed: {e}")
