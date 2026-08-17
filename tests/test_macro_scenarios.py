@@ -129,3 +129,34 @@ class TestSectorMultiplierRelative:
         crude = next(s for s in result if s.name == "Crude Oil Spike (+50%)")
         impact = next(h["impact_pct"] for h in crude.holding_impacts if h["ticker"] == "X")
         assert abs(impact - (-21.0)) < 0.5
+
+
+class TestMacroScenariosViaRegistry:
+    """Registry passes a Portfolio object, not a raw holdings list (the bug that
+    raised 'Portfolio object is not iterable'). Guard against regression."""
+
+    def test_registry_accepts_portfolio_object(self):
+        from engine import Portfolio
+        from engine.intelligence_registry import run_intelligence_modules
+
+        pf = Portfolio(
+            holdings=[
+                Holding(
+                    ticker="RELIANCE.NS",
+                    name="Reliance",
+                    quantity=10,
+                    avg_price=2500,
+                    current_price=2700,
+                    sector="Oil & Gas",
+                ),
+                Holding(
+                    ticker="TCS.NS", name="TCS", quantity=5, avg_price=3500, current_price=3800, sector="IT"
+                ),
+            ]
+        )
+        ctx = {"portfolio": pf, "stock_betas": {"RELIANCE.NS": 1.1, "TCS.NS": 0.8}}
+        results = run_intelligence_modules(ctx)
+        ms = results["macro_scenarios"]
+        assert isinstance(ms, list)
+        assert len(ms) > 0
+        assert all(hasattr(s, "name") for s in ms)
