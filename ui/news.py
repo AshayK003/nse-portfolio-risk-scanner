@@ -15,7 +15,6 @@ import urllib.parse
 import streamlit as st
 
 from engine import Portfolio
-from ui.icons import NEWSPAPER, icon_html
 
 _RSS_TEMPLATE = "https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}"
 

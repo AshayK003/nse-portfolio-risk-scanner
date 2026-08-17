@@ -11,7 +11,6 @@ import io
 
 import pandas as pd
 
-
 # Columns the parser recognizes (see engine/portfolio.py _COLUMN_ALIASES).
 # We use the canonical names so the sample works out-of-the-box.
 _SAMPLE_ROWS = [

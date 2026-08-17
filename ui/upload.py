@@ -11,12 +11,11 @@ import streamlit as st
 
 from engine import Holding, Portfolio
 from engine.__init__ import RISK_PROFILES
-from engine.portfolio import parse_portfolio_csv, normalize_ticker
+from engine.portfolio import normalize_ticker, parse_portfolio_csv
 from engine.ticker_resolver import (
     build_ticker_options,
     get_company_name,
     parse_ticker_option,
-    resolve_ticker,
 )
 from ui.icons import (
     UPLOAD,

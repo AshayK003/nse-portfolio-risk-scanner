@@ -581,7 +581,7 @@ def parse_portfolio_excel(
 
         df = pd.read_excel(io.BytesIO(excel_bytes), sheet_name=0)
     except Exception as e:  # noqa: BLE001
-        raise ValueError(f"Could not read Excel file: {e}")
+        raise ValueError(f"Could not read Excel file: {e}") from e
 
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
