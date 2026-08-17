@@ -26,24 +26,24 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Optimization** | Hierarchical Risk Parity (HRP), Minimum Volatility, Maximum Sharpe — with weight caps, cash-instrument exclusion, and transaction cost estimates |
 | **Regime Detection** | HMM-based bull/neutral/bear classification with transition matrix and per-regime stats. Falls back to quantile heuristic when hmmlearn not installed |
 | **Factor Decomposition** | Market, size, momentum, volatility, liquidity, and concentration factor exposures. Macro sensitivity estimates for crude, rates, INR/USD, and risk sentiment |
-|| **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |
-|| **Fundamentals** | P/E, Forward P/E, PEG, P/B, Div Yield, Market Cap, ROE, ROA, Profit/Operating Margin, Revenue/EPS Growth, Debt/Equity, Free Cash Flow — per holding with expanders |
-|| **News** | Yahoo Finance RSS headlines per holding, de-duplicated, linked with source/date |
-|| **Benchmark Comparison** | Nifty 50 / Bank Nifty / Sensex / sectoral indices. Alpha, tracking error, information ratio, monthly outperformance |
+| **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |
+| **Fundamentals** | P/E, Forward P/E, PEG, P/B, Div Yield, Market Cap, ROE, ROA, Profit/Operating Margin, Revenue/EPS Growth, Debt/Equity, Free Cash Flow — per holding with expanders |
+| **News** | Yahoo Finance RSS headlines per holding, de-duplicated, linked with source/date |
+| **Benchmark Comparison** | Nifty 50 / Bank Nifty / Sensex / sectoral indices. Alpha, tracking error, information ratio, monthly outperformance |
 | **Correlation Denoising** | Marchenko-Pastur eigenvalue clipping for cleaner covariance estimates |
 | **Stress Testing** | 5 basic scenarios + 7 macro scenarios with sector-specific multipliers and causal reasoning |
 | **Institutional Scoring** | P×I×C framework — Overall Risk, Conviction, Stress, Hidden Correlation, and Tail Risk scores |
 | **Early Warnings** | MA crossover, RSI extremes, volatility regime shifts, correlation breakdowns, momentum divergences |
 | **Recommendations** | Actionable suggestions (reduce/hedge/diversify/accumulate) with expected risk reduction and trade-off analysis |
 | **AI Narratives** | Rule-based plain-English explanations — volatility, VaR, Sharpe, drawdown, concentration, benchmark alpha/beta, key concerns, overall verdict. No LLM, no API calls |
-|| **Risk Profiles** | Conservative / Moderate / Aggressive — controls optimization method, single-stock cap, and 6 recommendation thresholds. Changing profile recalculates all metrics automatically |
-|| **Portfolio Health Gauge** | Single 0-100 health score at the top of every report — green/yellow/red color-coded. Instant answer to "is my portfolio OK?" |
-|| **Risk-free Rate** | Adjustable slider (3-10%) in sidebar — Sharpe, Sortino, and alpha update dynamically. Default 6.5% (10-year Indian bond yield) |
-|| **Shareable Links** | Base64-encoded portfolio in `?p=` query param — share your risk report as a single URL. Zero server storage |
-|||| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
-|||| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
-|||| **Portfolio Composition** | ETF / Passive allocation %, US exposure % (MAFANG, MASPTOP50), Top-3 concentration %, Win/Loss count |
-|||| **Try Sample Portfolio** | One-click button loads a diversified 7-holding portfolio with stocks, sector ETFs, and commodity ETFs. Instant analysis with zero setup — no CSV upload needed |
+| **Risk Profiles** | Conservative / Moderate / Aggressive — controls optimization method, single-stock cap, and 6 recommendation thresholds. Changing profile recalculates all metrics automatically |
+| **Portfolio Health Gauge** | Single 0-100 health score at the top of every report — green/yellow/red color-coded. Instant answer to "is my portfolio OK?" |
+| **Risk-free Rate** | Adjustable slider (3-10%) in sidebar — Sharpe, Sortino, and alpha update dynamically. Default 6.5% (10-year Indian bond yield) |
+| **Shareable Links** | Base64-encoded portfolio in `?p=` query param — share your risk report as a single URL. Zero server storage |
+| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
+| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
+| **Portfolio Composition** | ETF / Passive allocation %, US exposure % (MAFANG, MASPTOP50), Top-3 concentration %, Win/Loss count |
+| **Try Sample Portfolio** | One-click button loads a diversified 7-holding portfolio with stocks, sector ETFs, and commodity ETFs. Instant analysis with zero setup — no CSV upload needed |
 
 ## Demo
 
@@ -105,9 +105,9 @@ streamlit run app.py
 | diskcache | yes | Price cache |
 | nselib | `[nse]` | Official NSE data |
 | hmmlearn | `[ml]` | HMM regime detection |
-|| pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
-|| feedparser | yes | Yahoo Finance RSS for News tab |
-|| ruff / pre-commit | dev | Linting / formatting |
+| pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
+| feedparser | yes | Yahoo Finance RSS for News tab |
+| ruff / pre-commit | dev | Linting / formatting |
 | pytest / vcrpy | dev | Testing |
 
 ### Environment Variables
@@ -198,7 +198,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 361 tests
+├── tests/                    # 387 tests
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
