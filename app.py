@@ -72,7 +72,7 @@ from ui.dashboard import (
 )
 from ui.export import render_export_section
 from ui.fundamentals import render_fundamentals_section
-from ui.icons import ALERT_TRIANGLE, BAR_CHART_3, GITHUB, HEART, LINE_CHART, NEWSPAPER, icon_html
+from ui.icons import ALERT_TRIANGLE, BAR_CHART_3, GITHUB, HEART, icon_html
 from ui.news import render_news_section
 from ui.styles import inject_css
 from ui.upload import render_data_editor, render_save_button, render_sidebar, render_upload_tab
