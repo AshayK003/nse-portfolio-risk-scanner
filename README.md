@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-351%20total-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-387%20total-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 351 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 387 tests.
 
 ---
 
@@ -27,6 +27,8 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Regime Detection** | HMM-based bull/neutral/bear classification with transition matrix and per-regime stats. Falls back to quantile heuristic when hmmlearn not installed |
 | **Factor Decomposition** | Market, size, momentum, volatility, liquidity, and concentration factor exposures. Macro sensitivity estimates for crude, rates, INR/USD, and risk sentiment |
 | **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |
+| **Fundamentals** | P/E, Forward P/E, PEG, P/B, Div Yield, Market Cap, ROE, ROA, Profit/Operating Margin, Revenue/EPS Growth, Debt/Equity, Free Cash Flow — per holding with expanders |
+| **News** | Yahoo Finance RSS headlines per holding, de-duplicated, linked with source/date |
 | **Benchmark Comparison** | Nifty 50 / Bank Nifty / Sensex / sectoral indices. Alpha, tracking error, information ratio, monthly outperformance |
 | **Correlation Denoising** | Marchenko-Pastur eigenvalue clipping for cleaner covariance estimates |
 | **Stress Testing** | 5 basic scenarios + 7 macro scenarios with sector-specific multipliers and causal reasoning |
@@ -34,18 +36,37 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Early Warnings** | MA crossover, RSI extremes, volatility regime shifts, correlation breakdowns, momentum divergences |
 | **Recommendations** | Actionable suggestions (reduce/hedge/diversify/accumulate) with expected risk reduction and trade-off analysis |
 | **AI Narratives** | Rule-based plain-English explanations — volatility, VaR, Sharpe, drawdown, concentration, benchmark alpha/beta, key concerns, overall verdict. No LLM, no API calls |
-|| **Risk Profiles** | Conservative / Moderate / Aggressive — controls optimization method, single-stock cap, and 6 recommendation thresholds. Changing profile recalculates all metrics automatically |
-|| **Portfolio Health Gauge** | Single 0-100 health score at the top of every report — green/yellow/red color-coded. Instant answer to "is my portfolio OK?" |
-|| **Risk-free Rate** | Adjustable slider (3-10%) in sidebar — Sharpe, Sortino, and alpha update dynamically. Default 6.5% (10-year Indian bond yield) |
-|| **Shareable Links** | Base64-encoded portfolio in `?p=` query param — share your risk report as a single URL. Zero server storage |
-|||| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
-|||| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
-|||| **Portfolio Composition** | ETF / Passive allocation %, US exposure % (MAFANG, MASPTOP50), Top-3 concentration %, Win/Loss count |
-|||| **Try Sample Portfolio** | One-click button loads a diversified 7-holding portfolio with stocks, sector ETFs, and commodity ETFs. Instant analysis with zero setup — no CSV upload needed |
+| **Risk Profiles** | Conservative / Moderate / Aggressive — controls optimization method, single-stock cap, and 6 recommendation thresholds. Changing profile recalculates all metrics automatically |
+| **Portfolio Health Gauge** | Single 0-100 health score at the top of every report — green/yellow/red color-coded. Instant answer to "is my portfolio OK?" |
+| **Risk-free Rate** | Adjustable slider (3-10%) in sidebar — Sharpe, Sortino, and alpha update dynamically. Default 6.5% (10-year Indian bond yield) |
+| **Shareable Links** | Base64-encoded portfolio in `?p=` query param — share your risk report as a single URL. Zero server storage |
+| **Export** | CSV with position-level risk data + 4-page PDF report (cover page, risk analysis, holdings breakdown) |
+| **10+ Broker Formats** | Zerodha, Groww, Upstox, Angel One, ICICI Direct, Kotak, HDFC — Indian number format, auto column detection |
+| **Portfolio Composition** | ETF / Passive allocation %, US exposure % (MAFANG, MASPTOP50), Top-3 concentration %, Win/Loss count |
+| **Try Sample Portfolio** | One-click button loads a diversified 7-holding portfolio with stocks, sector ETFs, and commodity ETFs. Instant analysis with zero setup — no CSV upload needed |
 
 ## Demo
 
+### Exported PDF Report
 
+The Export tab produces a 4-page PDF styled to the **pdf-studio ledger theme** — deep-green foundation, gold accents, Lora headings, Inter body. Generated with reportlab + matplotlib (self-contained, no external service).
+
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-1.png" width="48%" alt="Page 1 — Cover"/>
+    <img src="docs/showcase/report-page-2.png" width="48%" alt="Page 2 — Executive Summary"/>
+  </a>
+</p>
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-3.png" width="48%" alt="Page 3 — Risk Analysis"/>
+    <img src="docs/showcase/report-page-4.png" width="48%" alt="Page 4 — Holdings"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">📄 Download full sample report (PDF)</a>
+</p>
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
@@ -85,6 +106,7 @@ streamlit run app.py
 | nselib | `[nse]` | Official NSE data |
 | hmmlearn | `[ml]` | HMM regime detection |
 | pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
+| feedparser | yes | Yahoo Finance RSS for News tab |
 | ruff / pre-commit | dev | Linting / formatting |
 | pytest / vcrpy | dev | Testing |
 
@@ -176,7 +198,7 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 355 tests
+├── tests/                    # 387 tests
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
@@ -232,7 +254,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-355 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
+361 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
 
 ```bash
 pytest tests/                           # Full suite

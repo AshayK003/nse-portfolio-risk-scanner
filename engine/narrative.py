@@ -8,13 +8,11 @@ Pure functions — zero IO, zero Streamlit imports.
 
 from __future__ import annotations
 
-import sys
+from dataclasses import dataclass
+
 # Ensure engine module is in sys.modules before dataclass decorator runs
 # Fixes AttributeError: 'NoneType' object has no attribute '__dict__' on Streamlit Cloud
 import engine  # noqa: F401
-
-from dataclasses import dataclass
-
 from engine import (
     AnalysisReport,
     BenchmarkComparison,
