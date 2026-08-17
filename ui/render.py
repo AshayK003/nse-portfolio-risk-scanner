@@ -266,6 +266,13 @@ def render_export_tab(report, mc_result, portfolio_cum, recommendations, risk_da
         portfolio_cum=portfolio_cum,
         recommendations=recommendations,
         risk_data=risk_data,
+        benchmark=report.benchmark,
+        factor_risk=report.factor_report,
+        macro_drivers=report.macro_drivers,
+        regime_result=report.regime,
+        institutional_scores=report.institutional_scores,
+        scenario_results=report.macro_scenarios,
+        warning_report=report.warnings,
     )
 
 

@@ -16,6 +16,7 @@ from io import BytesIO
 from pathlib import Path
 from threading import Lock
 
+import numpy as np
 import pandas as pd
 
 # matplotlib guarded import — Figure is used only in type annotations
@@ -27,9 +28,14 @@ except ImportError:
     Figure = None  # type: ignore[assignment, misc]
     _MATPLOTLIB_OK = False
 
-from engine import Portfolio, RiskMetrics
+from engine import BenchmarkComparison, Portfolio, RiskMetrics
+from engine.factors import FactorRiskReport, MacroDriver
 from engine.recommendations import RecommendationReport
+from engine.regime import RegimeResult
 from engine.risk import MonteCarloResult
+from engine.scenario import MacroScenarioResult
+from engine.scoring import InstitutionalRiskScores
+from engine.warnings import WarningReport
 
 # ── Ledger theme tokens (mirrors pdf_studio.themes.Theme.ledger) ──
 
@@ -112,7 +118,7 @@ def _register_mpl_fonts():
         _MPL_FONTS_REGISTERED = True
 
 
-# ── Matplotlib helpers ──
+# ── Matplotlib helpers ─────────────────────────────────────────────
 
 
 def _import_matplotlib():
@@ -384,7 +390,7 @@ def _pnl_chart(df: pd.DataFrame, plt) -> Figure | None:
     return fig
 
 
-# ── Risk assessment ──
+# ── Risk assessment ────────────────────────────────────────────────
 
 
 def _risk_assessment_text(risk: RiskMetrics | None) -> tuple[str, str]:
@@ -403,7 +409,7 @@ def _risk_assessment_text(risk: RiskMetrics | None) -> tuple[str, str]:
         )
 
 
-# ── PDF assembly with reportlab ──
+# ── PDF assembly with reportlab ────────────────────────────────────
 
 
 def generate_pdf_report(
@@ -414,8 +420,15 @@ def generate_pdf_report(
     mc_result: MonteCarloResult | None = None,
     portfolio_cum: pd.Series | None = None,
     recommendations: RecommendationReport | None = None,
+    benchmark: BenchmarkComparison | None = None,
+    factor_risk: FactorRiskReport | None = None,
+    macro_drivers: list[MacroDriver] | None = None,
+    regime_result: RegimeResult | None = None,
+    institutional_scores: InstitutionalRiskScores | None = None,
+    scenario_results: list[MacroScenarioResult] | None = None,
+    warning_report: WarningReport | None = None,
 ) -> bytes:
-    """Generate a 4-page PDF report using reportlab, styled to pdf-studio's ledger theme."""
+    """Generate an 8-page PDF report using reportlab, styled to pdf-studio's ledger theme."""
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
@@ -526,8 +539,7 @@ def generate_pdf_report(
         )
 
     def styled_metric_table(rows, col_widths, right_align=None, caption=None):
-        """Two-column-pair metric table styled like pdf-studio (green header absent here,
-        but zebra + gold rule under header row)."""
+        """Two-column-pair metric table styled like pdf-studio."""
         data = [list(r) for r in rows]
         t = Table(data, colWidths=col_widths, repeatRows=1)
         cmds = [
@@ -618,7 +630,8 @@ def generate_pdf_report(
         t.setStyle(TableStyle(style_cmds))
         return t
 
-    # ── Build flowables ──
+    # ── Build flowables ────────────────────────────────────────────
+
     flow: list = []
 
     # PAGE 1 — COVER
@@ -743,7 +756,7 @@ def generate_pdf_report(
         for rec in recommendations.priority_actions[:5]:
             flow.append(
                 Paragraph(
-                    f"&bull; {rec.action.value.upper()} {rec.target}: {rec.reasoning} "
+                    f"• {rec.action.value.upper()} {rec.target}: {rec.reasoning} "
                     f"({rec.urgency}, {rec.confidence:.0%} confidence)",
                     body,
                 )
@@ -772,6 +785,298 @@ def generate_pdf_report(
     flow.append(holdings_table(display_df))
     flow.append(Spacer(1, 10))
 
+    flow.append(PageBreak())
+
+    # PAGE 5 — BENCHMARK COMPARISON
+    if benchmark:
+        flow.append(Paragraph("4. Benchmark Comparison", h1))
+        flow.append(heading_rule())
+        flow.append(Paragraph("Portfolio performance relative to Nifty 50 benchmark.", body))
+
+        bench_rows = [
+            ["Beta", f"{benchmark.beta:.2f}", "Alpha (ann.)", f"{benchmark.alpha:.2f}%"],
+            [
+                "Information Ratio",
+                f"{benchmark.information_ratio:.2f}",
+                "Tracking Error",
+                f"{benchmark.tracking_error:.2f}%",
+            ],
+            ["Correlation", f"{benchmark.correlation:.2f}", "Up Capture", f"{benchmark.up_capture:.2f}%"],
+            ["Down Capture", f"{benchmark.down_capture:.2f}%", "", ""],
+        ]
+        flow.extend(
+            styled_metric_table(
+                bench_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm], caption="Benchmark Comparison Metrics"
+            )
+        )
+        flow.append(Spacer(1, 8))
+
+        # Benchmark returns chart
+        if benchmark.benchmark_returns is not None and benchmark.portfolio_returns is not None:
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots(figsize=(8.5, 3))
+            ax.plot(
+                benchmark.benchmark_returns.index,
+                benchmark.benchmark_returns.cumsum(),
+                label="Nifty 50",
+                color=MUTED_TEXT,
+                linewidth=1.5,
+            )
+            ax.plot(
+                benchmark.portfolio_returns.index,
+                benchmark.portfolio_returns.cumsum(),
+                label="Portfolio",
+                color=FOUNDATION,
+                linewidth=1.5,
+            )
+            ax.set_title("Cumulative Returns: Portfolio vs Benchmark", fontsize=11, color=FOUNDATION)
+            ax.set_xlabel("")
+            ax.set_ylabel("Cumulative Return", color=MUTED_TEXT)
+            ax.legend(frameon=False, loc="upper left")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.tick_params(colors=MUTED_TEXT)
+            flow.append(fig_to_img(fig, width=17 * cm))
+            flow.append(Spacer(1, 8))
+
+    flow.append(PageBreak())
+
+    # PAGE 6 — FACTOR RISK DECOMPOSITION
+    if factor_risk:
+        flow.append(Paragraph("5. Factor Risk Decomposition", h1))
+        flow.append(heading_rule())
+        flow.append(
+            Paragraph("Risk attribution across systematic factors and idiosyncratic component.", body)
+        )
+
+        if factor_risk.factor_exposures:
+            factor_rows = [["Factor", "Exposure", "Risk Contribution", "% of Total Risk"]]
+            for name, exp in factor_risk.factor_exposures.items():
+                contrib = factor_risk.factor_contributions.get(name, 0)
+                pct = (contrib / factor_risk.specific_risk * 100) if factor_risk.specific_risk > 0 else 0
+                factor_rows.append([name, f"{exp:.2f}", f"{contrib:.4f}", f"{pct:.1f}%"])
+            total_risk = factor_risk.specific_risk + sum(factor_risk.factor_contributions.values())
+            spec_pct = (factor_risk.specific_risk / total_risk * 100) if total_risk > 0 else 0
+            factor_rows.append(
+                ["Specific (Idiosyncratic)", "—", f"{factor_risk.specific_risk:.4f}", f"{spec_pct:.1f}%"]
+            )
+            flow.extend(
+                styled_metric_table(
+                    factor_rows,
+                    [5 * cm, 3 * cm, 4.5 * cm, 4.5 * cm],
+                    caption="Factor Exposures & Contributions",
+                )
+            )
+            flow.append(Spacer(1, 8))
+
+        if factor_risk.r_squared is not None:
+            flow.append(
+                Paragraph(
+                    f"Model R²: {factor_risk.r_squared:.1%} — proportion of portfolio variance explained by factor model.",
+                    body,
+                )
+            )
+            flow.append(Spacer(1, 4))
+
+    flow.append(PageBreak())
+
+    # PAGE 7 — MACRO DRIVERS & SCENARIOS / INSTITUTIONAL SCORES & EARLY WARNINGS
+    flow.append(Paragraph("6. Macro Drivers, Scenarios & Institutional Scores", h1))
+    flow.append(heading_rule())
+
+    # Macro Drivers
+    if macro_drivers:
+        flow.append(Paragraph("Macro Factor Sensitivities", h2))
+        flow.append(heading_rule())
+        flow.append(
+            Paragraph("Portfolio sensitivity to key macroeconomic drivers (rolling regression).", body)
+        )
+
+        macro_rows = [["Driver", "Beta", "p-value", "Ann. Contribution"]]
+        for md in macro_drivers:
+            macro_rows.append([md.name, f"{md.beta:.3f}", f"{md.p_value:.3f}", f"{md.contribution:.2f}%"])
+        flow.extend(
+            styled_metric_table(
+                macro_rows, [5 * cm, 3 * cm, 3 * cm, 5 * cm], caption="Macro Driver Sensitivities"
+            )
+        )
+        flow.append(Spacer(1, 8))
+
+    # Macro Scenarios
+    if scenario_results:
+        flow.append(Paragraph("Macro Stress Scenarios", h2))
+        flow.append(heading_rule())
+        flow.append(Paragraph("Portfolio impact under hypothetical macro scenarios.", body))
+
+        scen_rows = [["Scenario", "Portfolio Return", "Benchmark Return", "VaR 95%", "CVaR 95%", "Max DD"]]
+        for s in scenario_results:
+            scen_rows.append(
+                [
+                    s.scenario_name,
+                    f"{s.portfolio_return:.2f}%",
+                    f"{s.benchmark_return:.2f}%",
+                    f"{s.var_95:.2f}%",
+                    f"{s.cvar_95:.2f}%",
+                    f"{s.max_drawdown:.2f}%",
+                ]
+            )
+        flow.extend(
+            styled_metric_table(
+                scen_rows,
+                [3 * cm, 2.8 * cm, 2.8 * cm, 2.2 * cm, 2.2 * cm, 2.2 * cm],
+                caption="Scenario Analysis",
+            )
+        )
+        flow.append(Spacer(1, 8))
+
+    # Institutional Scores
+    if institutional_scores:
+        flow.append(Paragraph("Institutional Risk Scores", h2))
+        flow.append(heading_rule())
+        flow.append(Paragraph("Multi-factor institutional scoring framework (higher = better).", body))
+
+        score_rows = [
+            [
+                "Quality",
+                f"{institutional_scores.quality:.1f}",
+                "Momentum",
+                f"{institutional_scores.momentum:.1f}",
+            ],
+            [
+                "Value",
+                f"{institutional_scores.value:.1f}",
+                "Volatility",
+                f"{institutional_scores.volatility:.1f}",
+            ],
+            ["Liquidity", f"{institutional_scores.liquidity:.1f}", "ESG", f"{institutional_scores.esg:.1f}"],
+            ["Composite", f"{institutional_scores.composite:.1f}", "", ""],
+        ]
+        flow.extend(
+            styled_metric_table(
+                score_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm], caption="Institutional Scores"
+            )
+        )
+        flow.append(Spacer(1, 8))
+
+    # Early Warnings
+    if warning_report and warning_report.warnings:
+        flow.append(Paragraph("Early Warnings", h2))
+        flow.append(heading_rule())
+        flow.append(Paragraph("Automated risk flags from portfolio monitoring.", body))
+
+        for w in warning_report.warnings[:8]:
+            sev_color = BAD if w.severity == "high" else ACCENT if w.severity == "medium" else GOOD
+            flow.append(
+                Paragraph(
+                    f'<font color="{sev_color}">• {w.severity.upper()}</font> {w.message}',
+                    body,
+                )
+            )
+        flow.append(Spacer(1, 8))
+
+    flow.append(PageBreak())
+
+    # PAGE 8 — REGIME ANALYSIS & ADVANCED METRICS
+    flow.append(Paragraph("7. Regime Analysis & Advanced Metrics", h1))
+    flow.append(heading_rule())
+
+    if regime_result:
+        flow.append(Paragraph("Market Regime Detection (HMM)", h2))
+        flow.append(heading_rule())
+        flow.append(
+            Paragraph("Hidden Markov Model regime identification and transition probabilities.", body)
+        )
+
+        if regime_result.current_regime is not None:
+            flow.append(Paragraph(f"Current Regime: {regime_result.current_regime}", body))
+            flow.append(Spacer(1, 4))
+
+        if regime_result.regime_probabilities:
+            regime_rows = [["Regime", "Probability"]]
+            for r, p in regime_result.regime_probabilities.items():
+                regime_rows.append([str(r), f"{p:.1%}"])
+            flow.extend(styled_metric_table(regime_rows, [5 * cm, 5 * cm], caption="Regime Probabilities"))
+            flow.append(Spacer(1, 8))
+
+        if regime_result.regime_returns:
+            reg_ret_rows = [["Regime", "Ann. Return", "Ann. Volatility", "Sharpe"]]
+            for r, ret in regime_result.regime_returns.items():
+                reg_ret_rows.append(
+                    [
+                        str(r),
+                        f"{ret.get('return', 0):.2f}%",
+                        f"{ret.get('vol', 0):.2f}%",
+                        f"{ret.get('sharpe', 0):.2f}",
+                    ]
+                )
+            flow.extend(
+                styled_metric_table(
+                    reg_ret_rows, [4 * cm, 4 * cm, 4 * cm, 4 * cm], caption="Regime Performance"
+                )
+            )
+            flow.append(Spacer(1, 8))
+
+    # Advanced Metrics
+    if risk:
+        flow.append(Paragraph("Advanced Risk Metrics", h2))
+        flow.append(heading_rule())
+
+        # Z-score (Altman proxy)
+        z_score = None
+        if risk.volatility_annual > 0:
+            z_score = (risk.total_return / 100) / (risk.volatility_annual / 100 / (252**0.5))
+
+        # VaR Backtest (Kupiec)
+        var_breaches = 0
+        daily_returns = None
+        if portfolio_cum is not None and len(portfolio_cum) > 1:
+            daily_returns = portfolio_cum.pct_change().dropna()
+            if len(daily_returns) > 0:
+                var_threshold = -abs(risk.var_95 / 100)
+                var_breaches = (daily_returns < var_threshold).sum()
+
+        kupiec_p = "N/A"
+        if var_breaches > 0 and daily_returns is not None and len(daily_returns) > 0:
+            from scipy import stats
+
+            expected = len(daily_returns) * 0.05
+            if expected > 0:
+                lr = -2 * (
+                    var_breaches * np.log(expected / var_breaches)
+                    + (len(daily_returns) - var_breaches)
+                    * np.log((len(daily_returns) - expected) / (len(daily_returns) - var_breaches))
+                )
+                kupiec_p = f"{1 - stats.chi2.cdf(lr, 1):.3f}"
+
+        # GARCH volatility forecast (1-day ahead)
+        garch_forecast = "N/A"
+        try:
+            from arch import arch_model
+
+            if portfolio_cum is not None and len(portfolio_cum) > 30:
+                daily_ret = portfolio_cum.pct_change().dropna() * 100
+                if len(daily_ret) > 30:
+                    am = arch_model(daily_ret, vol="Garch", p=1, q=1, dist="normal")
+                    res = am.fit(update_freq=0, disp="off")
+                    garch_forecast = f"{np.sqrt(res.conditional_volatility.iloc[-1] ** 2):.3f}%"
+        except Exception:
+            pass
+
+        adv_rows = [
+            ["Altman Z-Score (portfolio proxy)", f"{z_score:.2f}" if z_score else "N/A"],
+            ["VaR Backtest (Kupiec p-value)", kupiec_p],
+            ["VaR Breaches (95%, 1y)", str(var_breaches) if var_breaches else "N/A"],
+            ["GARCH(1,1) 1-day Vol Forecast", garch_forecast],
+            ["Skewness", f"{risk.skewness:.3f}"],
+            ["Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"],
+            ["Calmar Ratio", f"{risk.calmar_ratio:.2f}"],
+            ["Treynor Ratio", f"{risk.treynor_ratio:.2f}"],
+        ]
+        flow.extend(styled_metric_table(adv_rows, [7 * cm, 7 * cm], caption="Advanced Metrics"))
+        flow.append(Spacer(1, 8))
+
+    # FINAL DISCLAIMER
     flow.append(
         Paragraph(
             "Disclaimer: This report is for informational purposes only and does not constitute financial advice. "
