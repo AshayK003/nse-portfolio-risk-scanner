@@ -360,7 +360,9 @@ def compute_all(
     opt_advanced = None
     try:
         if not prices.empty and len(weights) >= 2:
-            opt_advanced = optimize_advanced(prices, weights)
+            rets = prices.pct_change().dropna()
+            if not rets.empty:
+                opt_advanced = optimize_advanced(rets)
     except Exception as e:  # noqa: BLE001
         logger.warning("Advanced optimization failed: {e}", e=e)
 
