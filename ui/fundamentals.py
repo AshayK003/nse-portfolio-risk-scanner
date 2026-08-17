@@ -17,9 +17,11 @@ from engine import Portfolio
 from ui.icons import LINE_CHART, icon_html
 
 # Fields we want, mapped to a display label + formatting hint
+# yfinance info keys are used; derived metrics (PEG, etc.) are computed in _enrich
 _FUNDAMENTAL_FIELDS = [
     ("trailingPE", "P/E (TTM)", "x"),
     ("forwardPE", "Forward P/E", "x"),
+    ("pegRatio", "PEG Ratio", "x"),        # computed: trailingPE / earningsGrowth
     ("priceToBook", "P/B", "x"),
     ("dividendYield", "Dividend Yield", "%"),
     ("marketCap", "Market Cap", "cr"),
@@ -28,8 +30,9 @@ _FUNDAMENTAL_FIELDS = [
     ("profitMargins", "Profit Margin", "%"),
     ("operatingMargins", "Operating Margin", "%"),
     ("revenueGrowth", "Revenue Growth", "%"),
-    ("earningsGrowth", "Earnings Growth", "%"),
+    ("earningsGrowth", "EPS Growth", "%"),
     ("debtToEquity", "Debt/Equity", "x"),
+    ("freeCashflow", "Free Cash Flow", "cr"),
 ]
 
 
@@ -38,13 +41,27 @@ def fetch_fundamentals(ticker: str) -> dict:
     """Fetch fundamental metrics for one ticker. Returns a flat dict.
 
     Keys mirror yfinance info keys. Missing keys are simply absent.
+    Also adds computed fields: pegRatio (if trailingPE + earningsGrowth exist).
     """
     try:
         import yfinance as yf
 
         stock = yf.Ticker(f"{ticker}.NS")
         info = stock.info or {}
-        return {k: info.get(k) for k, _, _ in _FUNDAMENTAL_FIELDS if info.get(k) is not None}
+        raw = {k: info.get(k) for k, _, _ in _FUNDAMENTAL_FIELDS if k != "pegRatio" and info.get(k) is not None}
+
+        # Compute PEG: trailingPE / earningsGrowth (both must exist, growth > 0)
+        pe = info.get("trailingPE")
+        eps_growth = info.get("earningsGrowth")
+        if pe is not None and eps_growth is not None:
+            try:
+                peg = float(pe) / float(eps_growth)
+                if eps_growth > 0:
+                    raw["pegRatio"] = peg
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
+
+        return raw
     except Exception:
         return {}
 
@@ -62,7 +79,7 @@ def _format(value, unit: str) -> str:
     if unit == "x":
         return f"{v:,.1f}x"
     if unit == "cr":
-        # marketCap comes in absolute rupees → convert to crores
+        # marketCap / freeCashflow come in absolute rupees → convert to crores
         return f"Rs {v / 1e7:,.0f} Cr"
     return f"{v:,.1f}"
 
@@ -72,7 +89,8 @@ def render_fundamentals_section(portfolio: Portfolio):
     st.subheader("Fundamentals at a Glance")
     st.caption(
         "Valuation, profitability, and growth metrics per holding. "
-        "Data sourced from Yahoo Finance; 'N/A' means the field was not reported."
+        "Data sourced from Yahoo Finance; 'N/A' means the field was not reported. "
+        "PEG = P/E ÷ EPS Growth (computed)."
     )
 
     holdings = portfolio.holdings

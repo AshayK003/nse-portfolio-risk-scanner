@@ -6,14 +6,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-22C55E?style=flat" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white" alt="Streamlit"></a>
-  <img src="https://img.shields.io/badge/tests-361%20total-22C55E?style=flat&logo=pytest" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-387%20total-22C55E?style=flat&logo=pytest" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-90%25-22C55E?style=flat&logo=codecov" alt="Coverage">
   <img src="https://img.shields.io/badge/mobile-friendly-22C55E?style=flat&logo=android" alt="Mobile Friendly">
 </p>
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 361 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 387 tests.
 
 ---
 
@@ -26,8 +26,10 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 | **Optimization** | Hierarchical Risk Parity (HRP), Minimum Volatility, Maximum Sharpe — with weight caps, cash-instrument exclusion, and transaction cost estimates |
 | **Regime Detection** | HMM-based bull/neutral/bear classification with transition matrix and per-regime stats. Falls back to quantile heuristic when hmmlearn not installed |
 | **Factor Decomposition** | Market, size, momentum, volatility, liquidity, and concentration factor exposures. Macro sensitivity estimates for crude, rates, INR/USD, and risk sentiment |
-| **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |
-| **Benchmark Comparison** | Nifty 50 / Bank Nifty / Sensex / sectoral indices. Alpha, tracking error, information ratio, monthly outperformance |
+|| **Sector Analysis** | 160+ NSE stocks pre-mapped across 18 sectors. Concentration detection (HHI), diversification scoring |
+|| **Fundamentals** | P/E, Forward P/E, PEG, P/B, Div Yield, Market Cap, ROE, ROA, Profit/Operating Margin, Revenue/EPS Growth, Debt/Equity, Free Cash Flow — per holding with expanders |
+|| **News** | Yahoo Finance RSS headlines per holding, de-duplicated, linked with source/date |
+|| **Benchmark Comparison** | Nifty 50 / Bank Nifty / Sensex / sectoral indices. Alpha, tracking error, information ratio, monthly outperformance |
 | **Correlation Denoising** | Marchenko-Pastur eigenvalue clipping for cleaner covariance estimates |
 | **Stress Testing** | 5 basic scenarios + 7 macro scenarios with sector-specific multipliers and causal reasoning |
 | **Institutional Scoring** | P×I×C framework — Overall Risk, Conviction, Stress, Hidden Correlation, and Tail Risk scores |
@@ -103,8 +105,9 @@ streamlit run app.py
 | diskcache | yes | Price cache |
 | nselib | `[nse]` | Official NSE data |
 | hmmlearn | `[ml]` | HMM regime detection |
-| pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
-| ruff / pre-commit | dev | Linting / formatting |
+|| pdf-studio (ReportLab) + matplotlib | — | PDF report export (included by default) |
+|| feedparser | yes | Yahoo Finance RSS for News tab |
+|| ruff / pre-commit | dev | Linting / formatting |
 | pytest / vcrpy | dev | Testing |
 
 ### Environment Variables
