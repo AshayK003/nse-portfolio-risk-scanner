@@ -110,3 +110,41 @@ def backtest_var(
     if confidences is None:
         confidences = [0.95, 0.99]
     return [kupiec_pof(var_forecasts, realized_returns, c) for c in confidences]
+
+
+def rolling_historical_var_backtest(
+    realized_returns: np.ndarray,
+    confidence: float = 0.95,
+    min_window: int = 60,
+) -> dict[str, KupiecResult]:
+    """Rolling-window historical VaR backtest — a genuine out-of-sample Kupiec test.
+
+    For each day t >= min_window the VaR forecast is the trailing-window historical
+    5th percentile (a positive loss number), and it is tested against the NEXT day's
+    realized return. Because every forecast is estimated from prior data, the test can
+    legitimately FAIL when the model mis-estimates tail risk — unlike pinning one
+    constant VaR (the in-sample 5th percentile) to the whole series, which passes by
+    construction.
+
+    Returns a dict keyed by confidence label (e.g. "95%") for UI compatibility, or an
+    empty dict when there is insufficient data for a rolling backtest.
+    """
+    rets = np.asarray(realized_returns, dtype=float)
+    n = len(rets)
+    if n < min_window + 2:
+        return {}
+
+    alpha = 1.0 - confidence
+    forecasts: list[float] = []
+    realized: list[float] = []
+    for t in range(min_window, n):
+        window = rets[t - min_window : t]
+        var = abs(float(np.percentile(window, 100 * alpha)))  # positive loss number
+        forecasts.append(var)
+        realized.append(float(rets[t]))
+
+    return {
+        f"{int(confidence * 100)}%": kupiec_pof(
+            np.asarray(forecasts), np.asarray(realized), confidence=confidence
+        )
+    }

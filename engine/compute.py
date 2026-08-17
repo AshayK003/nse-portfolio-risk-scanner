@@ -332,12 +332,14 @@ def compute_all(
 
     var_backtest = None
     try:
-        if not np.isnan(risk.var_95) and risk.var_95 != 0 and not portfolio_returns.empty:
-            from engine.backtesting import kupiec_pof
+        if not portfolio_returns.empty:
+            from engine.backtesting import rolling_historical_var_backtest
 
-            rets_flat = portfolio_returns.values.flatten()
-            var_forecast_series = np.full(len(rets_flat), abs(risk.var_95) / 100)
-            var_backtest = {"95%": kupiec_pof(var_forecast_series, rets_flat, confidence=0.95)}
+            # Rolling (expanding-window) historical VaR backtest — each day's VaR is
+            # estimated from the trailing window and tested against the NEXT day's return.
+            # This is a genuine out-of-sample Kupiec test (can legitimately FAIL),
+            # unlike a constant forecast pinned to the in-sample 5th percentile.
+            var_backtest = rolling_historical_var_backtest(portfolio_returns.values.flatten())
     except Exception as e:  # noqa: BLE001
         logger.warning("VaR backtest failed: {e}", e=e)
 
