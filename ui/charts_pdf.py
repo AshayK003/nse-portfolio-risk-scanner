@@ -126,11 +126,11 @@ def _risk_metrics_table(risk: RiskMetrics, portfolio: Portfolio) -> list[list[st
     """Risk metric detail table for Risk Analysis page."""
     return _metrics_table(
         [
-            ("VaR (95%)", f"{risk.var_95:.2f}%", "CVaR (95%)", f"{risk.cvar_95:.2f}%"),
+            ("Daily VaR (95%)", f"{risk.var_95:.2f}%", "CVaR (95%)", f"{risk.cvar_95:.2f}%"),
             ("Volatility", f"{risk.volatility_annual:.1f}%", "Backtest CAGR", f"{risk.cagr:.1f}%"),
             ("Max Drawdown", f"{risk.max_drawdown:.1f}%", "Total Return", f"{risk.total_return:.1f}%"),
             ("Sortino", f"{risk.sortino:.2f}", "Beta", f"{risk.beta:.2f}"),
-            ("VaR (99%)", f"{risk.var_99:.2f}%", "Correlation", f"{risk.correlation_to_benchmark:.2f}"),
+            ("Daily VaR (99%)", f"{risk.var_99:.2f}%", "Correlation", f"{risk.correlation_to_benchmark:.2f}"),
             ("Stock Count", str(portfolio.holding_count), "Sharpe", f"{risk.sharpe:.2f}"),
             ("Calmar Ratio", f"{risk.calmar_ratio:.2f}", "Treynor Ratio", f"{risk.treynor_ratio:.2f}"),
             ("Skewness", f"{risk.skewness:.3f}", "Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"),

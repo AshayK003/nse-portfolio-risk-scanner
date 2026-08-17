@@ -37,27 +37,44 @@ _MIN_ANNUAL_VOL = 0.02
 
 
 def _cap_max_weight(weights: list[float], max_single: float = 0.35) -> list[float]:
-    """Cap individual weights at max_single and redistribute excess proportionally."""
+    """Enforce a HARD per-position cap, preserving sum=1 and non-negativity.
+
+    The naive "clip then redistribute to the rest" approach re-leaks weight past
+    the cap (e.g. 2 assets + 0.35 cap -> [0.35, 0.65]): the recipient of the
+    surplus itself ends up above the cap. This version iterates until every weight
+    is within [0, max_single] and the sum is preserved.
+
+    If max_single < 1/n the cap is mathematically infeasible (can't keep every
+    weight <= cap AND sum to 1). Rather than silently leaking past it, fall back
+    to equal weights -- the closest feasible allocation -- so the breach is
+    transparent, not hidden.
+    """
     n = len(weights)
     if n == 0:
         return weights
-    total_surplus = 0.0
-    result = list(weights)
-    for i in range(n):
-        if result[i] > max_single:
-            total_surplus += result[i] - max_single
-            result[i] = max_single
-    if total_surplus > 1e-12:
-        uncapped = [i for i in range(n) if result[i] < max_single]
-        if uncapped:
-            base = sum(result[i] for i in uncapped)
-            if base > 1e-12:
-                for i in uncapped:
-                    result[i] += total_surplus * (result[i] / base)
-            else:
-                for i in uncapped:
-                    result[i] += total_surplus / len(uncapped)
-    return result
+    if max_single < 1.0 / n - 1e-12:
+        return [1.0 / n] * n
+
+    w = [max(0.0, x) for x in weights]
+    for _ in range(100):
+        total = sum(w)
+        if abs(total - 1.0) > 1e-9:
+            w = [x / total for x in w]
+        over = [i for i in range(n) if w[i] > max_single]
+        if not over:
+            break
+        surplus = sum(w[i] - max_single for i in over)
+        for i in over:
+            w[i] = max_single
+        room = [i for i in range(n) if w[i] < max_single]
+        if not room:
+            break
+        cap_room = sum(max_single - w[i] for i in room)
+        if cap_room <= 1e-12:
+            break
+        for i in room:
+            w[i] += surplus * (max_single - w[i]) / cap_room
+    return w
 
 
 def _ledoit_wolf_cov(values: np.ndarray) -> np.ndarray:
@@ -230,12 +247,15 @@ def optimize_min_volatility(
         return np.sqrt(w @ cov @ w)
 
     constraints = {"type": "eq", "fun": lambda w: w.sum() - 1.0}
-    bounds = [(0.0, 1.0)] * n
+    # Cap is a HARD solver bound — SLSQP respects it natively instead of leaking
+    # weight past it via post-hoc renormalization.
+    bounds = [(0.0, max_single_weight)] * n
     result = minimize(portfolio_vol, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
+    # Safety clamp (idempotent when bounds already held): guarantees no weight
+    # exceeds the cap even if the solver returns a numerically marginal value.
     w = _cap_max_weight(w.tolist(), max_single_weight)
-    w = np.array(w) / sum(w)
     port_ret = w @ (returns.mean().values * 252)
     port_vol = portfolio_vol(w)
     sharpe = (port_ret - risk_free_rate) / port_vol if port_vol > 0 else 0.0
@@ -270,12 +290,13 @@ def optimize_max_sharpe(
         return -(port_ret - rf) / port_vol if port_vol > 0 else 0.0
 
     constraints = {"type": "eq", "fun": lambda w: w.sum() - 1.0}
-    bounds = [(0.0, 1.0)] * n
+    # Cap is a HARD solver bound — same rationale as optimize_min_volatility.
+    bounds = [(0.0, max_single_weight)] * n
     result = minimize(neg_sharpe, np.ones(n) / n, method="SLSQP", bounds=bounds, constraints=constraints)
 
     w = np.ones(n) / n if not result.success else result.x
+    # Safety clamp (idempotent when bounds already held).
     w = _cap_max_weight(w.tolist(), max_single_weight)
-    w = np.array(w) / sum(w)
     port_ret = w @ mu
     port_vol = np.sqrt(w @ cov @ w)
     sharpe = (port_ret - rf) / port_vol if port_vol > 0 else 0.0

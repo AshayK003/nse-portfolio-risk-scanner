@@ -272,9 +272,11 @@ def run_macro_scenarios(
             # Base impact from beta
             base_impact = beta * market_change
 
-            # Sector-specific adjustment
+            # Sector-specific adjustment: SECTOR_MULTIPLIERS are RELATIVE deltas to the
+            # beta-weighted market move (1.0 = market average). Applied as a multiplier so
+            # e.g. O&G in a crude spike (adj -0.3) is 30% MILDER than beta*mkt, not -30pp on top.
             sector_adj = sector_multipliers.get(sector, 0.0)
-            adjusted_impact = base_impact + (sector_adj * 100)  # scale adj to percentage
+            adjusted_impact = base_impact * (1.0 + sector_adj)
 
             impact_pct = weight * adjusted_impact
             weighted_impact += impact_pct
@@ -306,7 +308,7 @@ def run_macro_scenarios(
             sector_adj = sector_multipliers.get(sector, 0.0)
             sector_impacts[sector] = (
                 round(
-                    sector_weight * (portfolio_beta * market_change + sector_adj * 100),
+                    sector_weight * (portfolio_beta * market_change * (1.0 + sector_adj)),
                     2,
                 )
                 if betas is not None

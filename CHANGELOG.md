@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.18.1 (2026-08-17)
+
+### Fixed — Logic Correctness (Logic Review Pass)
+
+- **H1 — Optimizer weight cap leaked past the limit** (`engine/optimization.py`)
+  The old `_cap_max_weight` clip-and-redistribute re-leaked weight (2 assets + 0.35 cap → `[0.35, 0.65]`). The cap is now a **hard SLSQP solver bound** in `optimize_min_volatility` and `optimize_max_sharpe`, with an idempotent clamp as a safety net. When a cap is mathematically infeasible (`cap < 1/n` assets) the optimizer degrades to equal weight — the closest feasible allocation — instead of silently breaching the cap. HRP already capped correctly.
+- **H2 — VaR backtest was circular** (`engine/compute.py`, `engine/backtesting.py`)
+  `var_backtest` pinned one constant VaR (the in-sample 5th percentile) to the whole series, which passes by construction and never tests the model. Replaced with `rolling_historical_var_backtest` — each day's VaR is estimated from the trailing window and tested against the **next** day's return (genuine out-of-sample Kupiec POF; can legitimately FAIL when the model mis-estimates tail risk).
+- **M2 — Macro scenario double-counted the shock** (`engine/scenario.py`)
+  `SECTOR_MULTIPLIERS` were applied **additively** on top of the beta×market impact (crude spike: `-30 + (-30pp) = -60%`). Now applied as a **relative multiplier** `beta·mkt·(1 + adj)`, so e.g. Oil & Gas in a crude spike is 30% *milder* than the market move, not an extra -30pp.
+- **M3 — GARCH VaR shown with the wrong sign** (`ui/dashboard.py`)
+  `GARCH(1,1) VaR 95%` displayed `+{var_95}` (a positive number) for a loss metric. Now displays `{-var_95:.2%}` (negative loss, consistent with the rest of the risk cards).
+- **M1 — VaR horizon ambiguity in PDF report** (`ui/charts_pdf.py`)
+  Risk-metrics table now labels VaR as `Daily VaR (95%)` / `Daily VaR (99%)` to disambiguate from the MC horizon VaR shown elsewhere.
+
+### Tests
+
+- `tests/test_optimization.py` — `TestHardCap` (cap binds, preserves sum, infeasible cap degrades to equal weight).
+- `tests/test_macro_scenarios.py` — `TestSectorMultiplierRelative` (multiplier not additive; O&G milder than unexposed under crude spike).
+- `tests/test_backtesting.py` — `TestRollingHistoricalVarBacktest` (out-of-sample rolling test; insufficient data → empty).
+- Full suite: **396 passed** (was 387), 1 skipped. Zero regressions.
+
 ## v0.18.0 (2026-08-17)
 
 ### Added — User Feedback Implementation

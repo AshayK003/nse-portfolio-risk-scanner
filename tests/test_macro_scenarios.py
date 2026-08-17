@@ -93,3 +93,39 @@ class TestRunMacroScenarios:
         holdings = [Holding(ticker="A", name="A", quantity=0, avg_price=100, current_price=100, sector="IT")]
         result = run_macro_scenarios(holdings, {"A": 1.0})
         assert result == []
+
+
+class TestSectorMultiplierRelative:
+    """M2 fix: SECTOR_MULTIPLIERS are RELATIVE deltas, not additive percentage points.
+
+    Before the fix, a -0.3 sector adjustment was applied ADDITIVELY on top of the
+    beta*mkt impact (e.g. crude spike: -30 + (-30pp) = -60%), double-counting the
+    shock. Now it's a multiplier: beta*mkt*(1 + adj), so O&G is 30% MILDER than the
+    market move, not -30pp extra.
+    """
+
+    def test_oil_gas_milder_than_unexposed_in_crude_spike(self):
+        # Equal beta, equal weight — only sector differs. Crude spike hurts O&G less.
+        holdings = [
+            Holding(ticker="X", name="X", quantity=10, avg_price=100, current_price=100, sector="Oil & Gas"),
+            Holding(ticker="Y", name="Y", quantity=10, avg_price=100, current_price=100, sector="Banking"),
+        ]
+        betas = {"X": 1.0, "Y": 1.0}
+        result = run_macro_scenarios(holdings, betas)
+        crude = next(s for s in result if s.name == "Crude Oil Spike (+50%)")
+        x_impact = next(h["impact_pct"] for h in crude.holding_impacts if h["ticker"] == "X")
+        y_impact = next(h["impact_pct"] for h in crude.holding_impacts if h["ticker"] == "Y")
+        assert x_impact > y_impact  # O&G loss is smaller (milder)
+
+    def test_sector_adjustment_multiplier_not_additive(self):
+        # Crude Spike scenario uses market_change = -30. A -0.3 sector adjustment
+        # (O&G) must be applied as a MULTIPLIER: beta*mkt*(1+adj) = 1.0*(-30)*(0.7)
+        # = -21.0%, NOT additive (-30 + -30pp = -60%, the old double-counting bug).
+        holdings = [
+            Holding(ticker="X", name="X", quantity=10, avg_price=100, current_price=100, sector="Oil & Gas"),
+        ]
+        betas = {"X": 1.0}
+        result = run_macro_scenarios(holdings, betas)
+        crude = next(s for s in result if s.name == "Crude Oil Spike (+50%)")
+        impact = next(h["impact_pct"] for h in crude.holding_impacts if h["ticker"] == "X")
+        assert abs(impact - (-21.0)) < 0.5

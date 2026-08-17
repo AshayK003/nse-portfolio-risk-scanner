@@ -13,7 +13,7 @@
 
 ---
 
-Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 387 tests.
+Analyze your NSE portfolio using professional-grade risk metrics — Value at Risk, Monte Carlo simulation, factor decomposition, regime detection, HRP optimization, stress testing, Altman Z-Score, VaR backtesting, GARCH volatility modeling, PELVE ratio, and advanced portfolio optimization (Riskfolio-Lib). Zero paid APIs. 396 tests.
 
 ---
 
@@ -278,7 +278,7 @@ pytest tests/ --cov=engine --cov-report=term-missing
 | Recommendations | `test_recommendations.py` | Action generation, trade-offs, priority |
 | Narrative | `test_narrative.py` | Threshold boundaries, edge cases, benchmark none |
 | Fundamentals | `test_fundamentals.py` | Altman Z-Score, zone classification, missing data |
-| Backtesting | `test_backtesting.py` | Kupiec POF, exception rates, multiple confidences |
+| Backtesting | `test_backtesting.py` | Kupiec POF, exception rates, rolling out-of-sample historical VaR backtest |
 | GARCH VaR | `test_garch_var.py` | GARCH(1,1)-t VaR, insufficient data, arch fallback |
 | PELVE | `test_pelve.py` | PELVE ratio, epsilon param, zero vol, fat tails |
 | Warnings | `test_warnings.py` | MA crossover, RSI, vol shifts, correlation breakdown |

@@ -1,5 +1,6 @@
 """Tests for the portfolio optimization module."""
 
+import numpy as np
 import pandas as pd
 
 from engine import Holding
@@ -112,3 +113,56 @@ class TestSuggestRebalance:
         result = suggest_rebalance(holdings, target_method="equal_weight")
         for t in result.trades:
             assert t["action"] == "hold"
+
+
+class TestHardCap:
+    """H1 fix: the per-position weight cap must be a TRUE hard cap.
+
+    The previous redistribution leaked weight past the cap (2 assets + 0.35 cap
+    produced [0.35, 0.65]). The cap is now a SLSQP bound plus an idempotent clamp.
+
+    NOTE on feasibility: a cap c on n assets is only satisfiable if c >= 1/n
+    (every weight <= c AND sum to 1 requires n*c >= 1). When c < 1/n the code
+    degrades to equal weight — the closest feasible allocation — rather than
+    silently leaking past the cap. Tests below use FEASIBLE caps.
+    """
+
+    def test_cap_binds_for_min_vol(self, sample_prices):
+        # 5 synthetic assets, cap 0.30 is feasible (1/5 = 0.20 < 0.30).
+        returns = sample_prices.pct_change().dropna()
+        returns = returns.assign(ZZ=returns.iloc[:, 0] * 0.9 + returns.iloc[:, 1] * 0.1)
+        result = optimize_min_volatility(returns, max_single_weight=0.30)
+        assert max(result.weights.values()) <= 0.30 + 1e-6
+        # Unconstrained min-vol would exceed 0.30 (proves the bound actually bites).
+        unconstrained = optimize_min_volatility(returns)
+        assert max(unconstrained.weights.values()) > 0.30 + 1e-6
+
+    def test_cap_holds_for_hrp_and_sharpe(self, sample_prices):
+        returns = sample_prices.pct_change().dropna()
+        returns = returns.assign(ZZ=returns.iloc[:, 0] * 0.9 + returns.iloc[:, 1] * 0.1)
+        for fn in (optimize_hrp, optimize_max_sharpe):
+            result = fn(returns, max_single_weight=0.40)
+            for w in result.weights.values():
+                assert w <= 0.40 + 1e-6
+
+    def test_cap_preserves_sum(self, sample_prices):
+        returns = sample_prices.pct_change().dropna()
+        returns = returns.assign(ZZ=returns.iloc[:, 0] * 0.9 + returns.iloc[:, 1] * 0.1)
+        result = optimize_max_sharpe(returns, max_single_weight=0.25)
+        assert abs(sum(result.weights.values()) - 1.0) < 1e-6
+
+    def test_infeasible_cap_degrades_to_equal_weight(self):
+        # 2 assets + 0.35 cap is impossible (2*0.35 < 1.0). Code must degrade
+        # gracefully to equal weight, not leak past the cap.
+        prices = pd.DataFrame(
+            {
+                "A.NS": 100 + np.arange(100) * 0.5,
+                "B.NS": 100 + np.arange(100) * 0.3,
+            }
+        )
+        returns = prices.pct_change().dropna()
+        result = optimize_max_sharpe(returns, max_single_weight=0.35)
+        weights = list(result.weights.values())
+        for w in weights:
+            assert abs(w - 0.5) < 1e-6  # equal weight
+        assert abs(sum(weights) - 1.0) < 1e-6

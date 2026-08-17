@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from engine.backtesting import KupiecResult, backtest_var, kupiec_pof
+from engine.backtesting import KupiecResult, backtest_var, kupiec_pof, rolling_historical_var_backtest
 
 
 class TestKupiecPOF:
@@ -72,3 +72,35 @@ class TestEdgeCases:
         # Should not crash with near-zero values
         result = kupiec_pof(forecasts, returns)
         assert result.observations == 100
+
+
+class TestRollingHistoricalVarBacktest:
+    """H2 fix: the VaR backtest must be an OUT-OF-SAMPLE rolling test, not a
+    circular one. Each day's VaR is estimated from the trailing window and tested
+    against the NEXT day's return, so a mis-specified model can legitimately fail.
+    """
+
+    def test_returns_dict_keyed_by_confidence(self):
+        rng = np.random.default_rng(1)
+        returns = rng.normal(0, 0.01, 300)
+        out = rolling_historical_var_backtest(returns, confidence=0.95)
+        assert "95%" in out
+        assert isinstance(out["95%"], KupiecResult)
+
+    def test_insufficient_data_returns_empty(self):
+        returns = np.random.default_rng(2).normal(0, 0.01, 50)
+        assert rolling_historical_var_backtest(returns) == {}
+
+    def test_forecast_uses_prior_window_not_full_sample(self):
+        # A regime shift late in the series: early calm, late volatile. A constant
+        # in-sample VaR would be tiny (calm) and breach constantly. The rolling test
+        # must catch up via the trailing window, keeping breaches in a sane range.
+        rng = np.random.default_rng(3)
+        calm = rng.normal(0, 0.005, 200)
+        volatile = rng.normal(0, 0.03, 200)
+        returns = np.concatenate([calm, volatile])
+        out = rolling_historical_var_backtest(returns, confidence=0.95)
+        res = out["95%"]
+        # Breach rate should be in a plausible band (not 0, not ~100%) — the model
+        # adapts through the trailing window rather than pinning one constant VaR.
+        assert 0 < res.exception_rate < 0.5
