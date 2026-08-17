@@ -12,32 +12,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kurtosis, skew
 
-# Ensure engine module is in sys.modules before dataclass decorator runs
-# Fixes AttributeError: 'NoneType' object has no attribute '__dict__' on Streamlit Cloud
-import engine  # noqa: F401
-
-
-@dataclass
-class RiskMetrics:
-    """Computed risk metrics for the portfolio."""
-
-    volatility_annual: float
-    var_95: float
-    var_99: float
-    cvar_95: float
-    max_drawdown: float
-    max_drawdown_start: str
-    max_drawdown_end: str
-    beta: float
-    correlation_to_benchmark: float
-    sharpe: float
-    sortino: float
-    cagr: float
-    total_return: float
-    calmar_ratio: float = 0.0
-    skewness: float = 0.0
-    kurtosis_excess: float = 0.0
-    treynor_ratio: float = 0.0
+# Import RiskMetrics from engine to avoid duplicate class definition
+from engine import RiskMetrics
 
 
 @dataclass
@@ -312,6 +288,10 @@ def _empty_risk_metrics() -> RiskMetrics:
         sortino=0.0,
         cagr=0.0,
         total_return=0.0,
+        calmar_ratio=0.0,
+        treynor_ratio=0.0,
+        skewness=0.0,
+        kurtosis_excess=0.0,
     )
 
 

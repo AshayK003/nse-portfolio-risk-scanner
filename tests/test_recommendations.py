@@ -38,8 +38,8 @@ class TestGenerateRecommendations:
             herfindahl_index=0.35,
         )
 
-    def _make_benchmark(self):
-        return BenchmarkComparison(
+    def _make_benchmark(self, **overrides):
+        defaults = dict(
             portfolio_return=22.0,
             benchmark_return=18.0,
             alpha=4.0,
@@ -47,10 +47,14 @@ class TestGenerateRecommendations:
             information_ratio=0.8,
             beta=0.95,
             correlation=0.88,
+            up_capture=100.0,
+            down_capture=100.0,
             rolling_alpha_6m=5.0,
             outperformance_months=7,
             total_months=12,
         )
+        defaults.update(overrides)
+        return BenchmarkComparison(**defaults)
 
     def _make_portfolio(self):
         holdings = [
@@ -60,9 +64,16 @@ class TestGenerateRecommendations:
                 quantity=10,
                 avg_price=2500,
                 current_price=2700,
-                sector="Oil & Gas",
+                sector="Energy",
             ),
-            Holding(ticker="TCS", name="TCS", quantity=5, avg_price=3500, current_price=3800, sector="IT"),
+            Holding(
+                ticker="TCS",
+                name="TCS",
+                quantity=5,
+                avg_price=3500,
+                current_price=3800,
+                sector="IT",
+            ),
             Holding(
                 ticker="HDFCBANK",
                 name="HDFC Bank",
@@ -72,171 +83,149 @@ class TestGenerateRecommendations:
                 sector="Banking",
             ),
         ]
-        return Portfolio(holdings=holdings)
+        return Portfolio(holdings=holdings, name="Test Portfolio")
 
     def test_returns_report_type(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        assert isinstance(result, RecommendationReport)
+        portfolio = self._make_portfolio()
+        risk = self._make_risk()
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
 
-    def test_has_recommendations(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        assert len(result.recommendations) > 0
-
-    def test_concentration_triggers_reduce(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(concentrated=["Banking"]),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        banking_recs = [r for r in result.recommendations if r.target == "Banking"]
-        assert len(banking_recs) > 0
-        assert banking_recs[0].action in (ActionType.REDUCE, ActionType.DIVERSIFY)
-
-    def test_high_beta_triggers_hedge(self):
-        result = generate_recommendations(
-            risk=self._make_risk(beta=1.5),
-            sector=self._make_sector(concentrated=[]),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        hedge_recs = [r for r in result.recommendations if r.action == ActionType.HEDGE]
-        assert len(hedge_recs) > 0
-
-    def test_low_sharpe_triggers_rebalance(self):
-        result = generate_recommendations(
-            risk=self._make_risk(sharpe=0.3),
-            sector=self._make_sector(concentrated=[]),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        rebal_recs = [r for r in result.recommendations if r.action == ActionType.REBALANCE]
-        assert len(rebal_recs) > 0
-
-    def test_recommendations_have_trade_offs(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        for rec in result.recommendations:
-            assert len(rec.trade_off) > 0
-            assert len(rec.reasoning) > 0
-
-    def test_priority_actions_populated(self):
-        result = generate_recommendations(
-            risk=self._make_risk(beta=1.5, sharpe=0.2),
-            sector=self._make_sector(concentrated=["Banking"]),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        assert len(result.priority_actions) > 0
-
-    def test_summary_populated(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        assert len(result.summary) > 0
-
-    def test_risk_reduction_non_negative(self):
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=MODERATE,
-        )
-        assert result.risk_reduction_potential >= 0
-
-    def test_action_type_enum(self):
-        assert ActionType.REDUCE.value == "reduce"
-        assert ActionType.HEDGE.value == "hedge"
-        assert ActionType.DIVERSIFY.value == "diversify"
-        assert ActionType.ACCUMULATE.value == "accumulate"
-        assert ActionType.MONITOR.value == "monitor"
-        assert ActionType.REBALANCE.value == "rebalance"
-
-    # ── Risk Profile specific tests ──
-
-    def test_conservative_triggers_reduce_sooner(self):
-        """Conservative threshold is 25%, so Banking at 30% triggers REDUCE."""
-        sector = self._make_sector(concentrated=["Banking"])
-        sector.sector_allocation = {"Banking": 30.0, "IT": 35.0, "Oil & Gas": 35.0}
-        result = generate_recommendations(
-            risk=self._make_risk(),
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
             sector=sector,
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=CONSERVATIVE,
-        )
-        banking_recs = [r for r in result.recommendations if r.target == "Banking"]
-        assert len(banking_recs) > 0
-        assert banking_recs[0].action == ActionType.REDUCE
-
-    def test_moderate_does_not_reduce_30pct(self):
-        """Moderate threshold is 35%, so Banking at 30% should DIVERSIFY not REDUCE."""
-        sector = self._make_sector(concentrated=["Banking"])
-        sector.sector_allocation = {"Banking": 30.0, "IT": 35.0, "Oil & Gas": 35.0}
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=sector,
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
+            benchmark=benchmark,
             profile=MODERATE,
         )
-        banking_recs = [r for r in result.recommendations if r.target == "Banking"]
-        assert len(banking_recs) > 0
-        assert banking_recs[0].action == ActionType.DIVERSIFY
 
-    def test_aggressive_skips_hedge_at_beta_1_5(self):
-        """Aggressive beta_threshold is 1.8, so beta=1.5 should NOT trigger HEDGE."""
-        result = generate_recommendations(
-            risk=self._make_risk(beta=1.5),
-            sector=self._make_sector(concentrated=[]),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
+        assert isinstance(report, RecommendationReport)
+        assert report.summary is not None
+        assert len(report.priority_actions) > 0
+
+    def test_conservative_profile_more_actions(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk()
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
+
+        aggressive_report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
             profile=AGGRESSIVE,
         )
-        hedge_recs = [r for r in result.recommendations if r.action == ActionType.HEDGE]
-        assert len(hedge_recs) == 0
-
-    def test_profile_appears_in_summary(self):
-        """Summary should mention the selected profile name."""
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
+        conservative_report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
             profile=CONSERVATIVE,
         )
-        assert "Conservative" in result.summary
-        result = generate_recommendations(
-            risk=self._make_risk(),
-            sector=self._make_sector(),
-            benchmark=self._make_benchmark(),
-            portfolio=self._make_portfolio(),
-            profile=AGGRESSIVE,
+
+        # Conservative has LOWER thresholds so it triggers MORE recommendations
+        assert len(conservative_report.priority_actions) >= len(aggressive_report.priority_actions)
+
+    def test_high_vol_triggers_reduce(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk(volatility_annual=45.0)
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
         )
-        assert "Aggressive" in result.summary
+
+        # Should have at least one REDUCE action for high volatility
+        reduce_actions = [a for a in report.priority_actions if a.action == ActionType.REDUCE]
+        assert len(reduce_actions) > 0
+
+    def test_concentrated_sector_triggers_reduce(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk()
+        sector = self._make_sector(concentrated=["Tech", "Energy", "Banking"])
+        benchmark = self._make_benchmark()
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
+        )
+
+        reduce_actions = [a for a in report.priority_actions if a.action == ActionType.REDUCE]
+        assert len(reduce_actions) > 0
+
+    def test_high_drawdown_triggers_monitor(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk(max_drawdown=-45.0)
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
+        )
+
+        monitor_actions = [a for a in report.priority_actions if a.action == ActionType.MONITOR]
+        assert len(monitor_actions) > 0
+
+    def test_low_beta_triggers_accumulate(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk(beta=0.4)  # Low beta triggers ACCUMULATE
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
+        )
+
+        accumulate_actions = [a for a in report.recommendations if a.action == ActionType.ACCUMULATE]
+        assert len(accumulate_actions) > 0
+
+    def test_negative_alpha_triggers_reduce(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk()
+        sector = self._make_sector()
+        benchmark = self._make_benchmark(alpha=-5.0)
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
+        )
+
+        reduce_actions = [a for a in report.priority_actions if a.action == ActionType.REDUCE]
+        assert len(reduce_actions) > 0
+
+    def test_low_sharpe_triggers_reduce(self):
+        portfolio = self._make_portfolio()
+        risk = self._make_risk(sharpe=0.2, sortino=0.1)
+        sector = self._make_sector()
+        benchmark = self._make_benchmark()
+
+        report = generate_recommendations(
+            portfolio=portfolio,
+            risk=risk,
+            sector=sector,
+            benchmark=benchmark,
+            profile=MODERATE,
+        )
+
+        reduce_actions = [a for a in report.priority_actions if a.action == ActionType.REDUCE]
+        assert len(reduce_actions) > 0

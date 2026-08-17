@@ -67,6 +67,8 @@ def _make_report() -> AnalysisReport:
             information_ratio=1.25,
             beta=0.9,
             correlation=0.88,
+            up_capture=100.0,
+            down_capture=100.0,
             rolling_alpha_6m=6.0,
             outperformance_months=7,
             total_months=12,
