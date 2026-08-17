@@ -185,11 +185,7 @@ class TestOptimizeAdvancedReceivesReturns:
 
         # Build a 2-holding portfolio matching sample_prices columns
         tickers = [c.replace(".NS", "") for c in sample_prices.columns]
-        data = {
-            "holdings": [
-                {"ticker": t, "quantity": 10, "avg_price": 100.0} for t in tickers
-            ]
-        }
+        data = {"holdings": [{"ticker": t, "quantity": 10, "avg_price": 100.0} for t in tickers]}
         portfolio = portfolio_from_dict(data)
 
         # compute_all drops holdings with current_price == 0; set a positive price
@@ -203,11 +199,13 @@ class TestOptimizeAdvancedReceivesReturns:
             captured["arg"] = returns
             return None
 
-        with patch("engine.compute.optimize_advanced", side_effect=_spy), patch(
-            "engine.compute._fetch_prices", return_value=sample_prices
-        ), patch(
-            "engine.compute._fetch_benchmark",
-            return_value=(None, pd.Series(dtype=float)),
+        with (
+            patch("engine.compute.optimize_advanced", side_effect=_spy),
+            patch("engine.compute._fetch_prices", return_value=sample_prices),
+            patch(
+                "engine.compute._fetch_benchmark",
+                return_value=(None, pd.Series(dtype=float)),
+            ),
         ):
             compute_all(portfolio, "^NSEI", "moderate", 0.065)
 

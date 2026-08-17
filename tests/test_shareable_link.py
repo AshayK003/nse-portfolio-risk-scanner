@@ -80,8 +80,6 @@ class TestShareableLinkDecodeErrors:
         import base64
         import json
 
-        token = base64.b64encode(
-            json.dumps({"holdings": [{"t": "RELIANCE", "q": 10}]}).encode()
-        ).decode()
+        token = base64.b64encode(json.dumps({"holdings": [{"t": "RELIANCE", "q": 10}]}).encode()).decode()
         with pytest.raises(ValueError, match="missing required fields"):
             decode_portfolio_link(token)

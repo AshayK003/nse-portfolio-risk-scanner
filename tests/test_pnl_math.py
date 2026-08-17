@@ -41,9 +41,7 @@ class TestHoldingPnL:
         assert h.pnl_pct == 0.0  # invested 0 -> guarded
 
     def test_nan_current_price_treated_as_zero(self):
-        h = Holding(
-            ticker="RIL", name="RIL", quantity=10, avg_price=100, current_price=float("nan")
-        )
+        h = Holding(ticker="RIL", name="RIL", quantity=10, avg_price=100, current_price=float("nan"))
         assert h.current_value == 0.0
         assert h.pnl == -1000.0
 
