@@ -85,7 +85,7 @@ def compare_to_benchmark(
     beta = cov / var if var > 0 else 1.0
 
     # Correlation
-    correlation = port_ret.corr(bench_ret)
+    correlation = float(port_ret.corr(bench_ret))
 
     # Tracking error
     diff = port_ret - bench_ret
@@ -106,6 +106,16 @@ def compare_to_benchmark(
     outperformance = (monthly_port > monthly_bench).sum()
     total_months = len(monthly_port)
 
+    # Up/Down capture ratios
+    # Up capture: portfolio return / benchmark return when benchmark > 0
+    # Down capture: portfolio return / benchmark return when benchmark < 0
+    up_mask = bench_ret > 0
+    down_mask = bench_ret < 0
+    up_capture = (port_ret[up_mask].mean() / bench_ret[up_mask].mean()) * 100 if up_mask.any() else 100.0
+    down_capture = (
+        (port_ret[down_mask].mean() / bench_ret[down_mask].mean()) * 100 if down_mask.any() else 100.0
+    )
+
     return BenchmarkComparison(
         portfolio_return=round(port_total_return, 2),
         benchmark_return=round(bench_total_return, 2),
@@ -114,7 +124,11 @@ def compare_to_benchmark(
         information_ratio=round(information_ratio, 3),
         beta=round(beta, 2),
         correlation=round(correlation, 3),
+        up_capture=round(up_capture, 2),
+        down_capture=round(down_capture, 2),
         rolling_alpha_6m=round(rolling_alpha, 2),
         outperformance_months=int(outperformance),
         total_months=int(total_months),
+        portfolio_returns=port_ret,
+        benchmark_returns=bench_ret,
     )

@@ -1899,7 +1899,7 @@ wheels = [
 
 [[package]]
 name = "nse-risk-scanner"
-version = "0.17.4"
+version = "0.18.1"
 source = { virtual = "." }
 dependencies = [
     { name = "diskcache" },

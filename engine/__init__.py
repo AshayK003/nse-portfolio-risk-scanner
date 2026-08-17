@@ -6,8 +6,9 @@ Pure dataclasses — no business logic, no dependencies beyond stdlib.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+
+import pandas as pd
 
 
 @dataclass(frozen=True)
@@ -61,29 +62,17 @@ RISK_PROFILES: dict[str, RiskProfile] = {p.name.lower(): p for p in [CONSERVATIV
 _DEFAULT_PROFILE = MODERATE
 
 
-# Import types from their owning modules to keep each module self-contained.
-# This avoids import-order edge cases on Streamlit Cloud's Linux environment.
-from engine.factors import FactorRiskReport, MacroDriver  # noqa: F401, E402
-from engine.optimization import OptimizationResult, RebalanceSuggestion  # noqa: F401, E402
-from engine.recommendations import RecommendationReport  # noqa: F401, E402
-from engine.regime import RegimeResult  # noqa: F401, E402
-from engine.risk import MonteCarloResult, RiskMetrics  # noqa: F401, E402
-from engine.scenario import MacroScenarioResult, ScenarioResult  # noqa: F401, E402
-from engine.scoring import InstitutionalRiskScores  # noqa: F401, E402
-from engine.warnings import WarningReport  # noqa: F401, E402
-
-
 @dataclass
 class Holding:
-    """A single stock position in the portfolio."""
+    """Single holding in a portfolio."""
 
-    ticker: str  # e.g. "RELIANCE"
-    name: str  # e.g. "Reliance Industries Ltd"
+    ticker: str
+    name: str
     quantity: int
-    avg_price: float  # average buy price
-    sector: str = ""  # populated by sector mapper
-    current_price: float = 0.0  # populated by price fetcher
-    change_pct: float = 0.0  # populated after price fetch
+    avg_price: float
+    sector: str = "Unknown"  # Optional sector from CSV; default to Unknown
+    current_price: float | None = None
+    change_pct: float | None = None
 
     @property
     def invested_value(self) -> float:
@@ -91,8 +80,10 @@ class Holding:
 
     @property
     def current_value(self) -> float:
-        val = self.quantity * self.current_price
-        return 0.0 if math.isnan(val) else val
+        cp = self.current_price
+        if cp is None or (isinstance(cp, float) and math.isnan(cp)):
+            return 0.0
+        return self.quantity * cp
 
     @property
     def pnl(self) -> float:
@@ -102,16 +93,19 @@ class Holding:
     def pnl_pct(self) -> float:
         if self.invested_value == 0:
             return 0.0
-        return (self.pnl / self.invested_value) * 100
+        return (self.current_value - self.invested_value) / self.invested_value * 100
 
 
 @dataclass
 class Portfolio:
-    """The user's full portfolio."""
+    """A collection of holdings with aggregated metrics."""
 
-    holdings: list[Holding] = field(default_factory=list)
-    name: str = "My Portfolio"
-    created_at: datetime = field(default_factory=datetime.now)
+    holdings: list[Holding]
+    name: str = "Portfolio"
+
+    @property
+    def holding_count(self) -> int:
+        return len(self.holdings)
 
     @property
     def total_invested(self) -> float:
@@ -119,41 +113,57 @@ class Portfolio:
 
     @property
     def total_current(self) -> float:
-        vals = [h.current_value for h in self.holdings]
-        return sum(0.0 if math.isnan(v) else v for v in vals)
+        return sum(h.current_value for h in self.holdings)
 
     @property
     def total_pnl(self) -> float:
-        return self.total_current - self.total_invested
+        return sum(h.pnl for h in self.holdings)
 
     @property
     def total_pnl_pct(self) -> float:
         if self.total_invested == 0:
             return 0.0
-        return (self.total_pnl / self.total_invested) * 100
-
-    @property
-    def holding_count(self) -> int:
-        return len(self.holdings)
+        return self.total_pnl / self.total_invested * 100
 
     @property
     def weight(self) -> list[float]:
-        """Return fractional weight of each holding (0-1)."""
-        total = self.total_current
-        if total == 0:
+        if self.total_current == 0:
             return [0.0] * len(self.holdings)
-        return [h.current_value / total for h in self.holdings]
+        return [h.current_value / self.total_current for h in self.holdings]
+
+
+@dataclass
+class RiskMetrics:
+    """Portfolio-level risk metrics."""
+
+    volatility_annual: float
+    var_95: float
+    var_99: float
+    cvar_95: float
+    max_drawdown: float
+    max_drawdown_start: str
+    max_drawdown_end: str
+    beta: float
+    correlation_to_benchmark: float
+    sharpe: float
+    sortino: float
+    cagr: float
+    total_return: float
+    calmar_ratio: float = 0.0
+    treynor_ratio: float = 0.0
+    skewness: float = 0.0
+    kurtosis_excess: float = 0.0
 
 
 @dataclass
 class SectorExposure:
-    """Sector concentration analysis."""
+    """Sector-level portfolio exposure analysis."""
 
     holdings: list[Holding]
-    sector_allocation: dict[str, float]  # sector_name -> % of portfolio
-    concentrated_sectors: list[str]  # sectors > 20% of portfolio
-    diversification_score: float  # 0-100, higher = more diversified
-    herfindahl_index: float  # 0-1 concentration metric
+    sector_allocation: dict[str, float]
+    concentrated_sectors: list[str]
+    diversification_score: float
+    herfindahl_index: float
 
 
 @dataclass
@@ -167,9 +177,13 @@ class BenchmarkComparison:
     information_ratio: float  # Information ratio
     beta: float  # Beta to benchmark
     correlation: float  # Correlation
+    up_capture: float  # Up-market capture ratio (%)
+    down_capture: float  # Down-market capture ratio (%)
     rolling_alpha_6m: float  # 6-month rolling alpha (%)
     outperformance_months: int  # Count of months beating benchmark
     total_months: int  # Total months compared
+    portfolio_returns: pd.Series | None = None  # Aligned portfolio returns (for charts)
+    benchmark_returns: pd.Series | None = None  # Aligned benchmark returns (for charts)
 
 
 @dataclass
@@ -197,3 +211,15 @@ class AnalysisReport:
     garch_var: dict | None = None
     pelve: dict | None = None
     optimization_advanced: dict | None = None
+
+
+# Import types from their owning modules to keep each module self-contained.
+# This avoids import-order edge cases on Streamlit Cloud's Linux environment.
+from engine.factors import FactorRiskReport, MacroDriver  # noqa: F401, E402
+from engine.optimization import OptimizationResult, RebalanceSuggestion  # noqa: F401, E402
+from engine.recommendations import RecommendationReport  # noqa: F401, E402
+from engine.regime import RegimeResult  # noqa: F401, E402
+from engine.risk import MonteCarloResult  # noqa: F401, E402
+from engine.scenario import MacroScenarioResult  # noqa: F401, E402
+from engine.scoring import InstitutionalRiskScores  # noqa: F401, E402
+from engine.warnings import WarningReport  # noqa: F401, E402
