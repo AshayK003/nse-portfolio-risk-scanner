@@ -23,7 +23,7 @@ from ui.icons import (
 )
 
 
-def render_sidebar():
+def render_sidebar() -> None:
     """Render the sidebar with saved portfolio management."""
     st.sidebar.subheader("Saved Portfolios")
 
@@ -96,10 +96,7 @@ def render_sidebar():
         st.session_state.risk_profile = new_key
         st.rerun()
     profile = RISK_PROFILES[st.session_state.risk_profile]
-    st.sidebar.caption(
-        f"**{profile.name}** → {profile.method.replace('_', ' ').title()}, "
-        f"Max {profile.max_single_weight * 100:.0f}% per stock"
-    )
+    st.sidebar.caption(f"**{profile.name}**")
 
 
 def render_manual_entry() -> list[Holding]:
@@ -378,7 +375,7 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
     return portfolio
 
 
-def render_save_button(portfolio: Portfolio):
+def render_save_button(portfolio: Portfolio) -> None:
     """Show save portfolio button."""
     with st.expander("Save Portfolio", expanded=False):
         save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
