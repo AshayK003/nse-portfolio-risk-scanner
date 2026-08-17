@@ -71,7 +71,9 @@ from ui.dashboard import (
     render_stock_table,
 )
 from ui.export import render_export_section
-from ui.icons import ALERT_TRIANGLE, BAR_CHART_3, GITHUB, HEART, icon_html
+from ui.fundamentals import render_fundamentals_section
+from ui.icons import ALERT_TRIANGLE, BAR_CHART_3, GITHUB, HEART, LINE_CHART, NEWSPAPER, icon_html
+from ui.news import render_news_section
 from ui.styles import inject_css
 from ui.upload import render_data_editor, render_save_button, render_sidebar, render_upload_tab
 
@@ -566,6 +568,8 @@ tab_names = [
     "vs Nifty 50",
     "Charts",
     "Holdings",
+    "Fundamentals",
+    "News",
     "Scenarios",
     "Recommendations",
     "Export",
@@ -755,8 +759,16 @@ with tabs[4]:
     if not risk_attribution.empty:
         render_stock_risk_table(risk_attribution)
 
-# ── Tab 5: Scenarios (merged basic + macro + regime) ──
+# ── Tab 5: Fundamentals ──
 with tabs[5]:
+    render_fundamentals_section(report.portfolio)
+
+# ── Tab 6: News ──
+with tabs[6]:
+    render_news_section(report.portfolio)
+
+# ── Tab 7: Scenarios (merged basic + macro + regime) ──
+with tabs[7]:
     render_scenario_section(scenarios)
     st.divider()
     if macro_scenarios:
@@ -824,8 +836,8 @@ if portfolio and portfolio.holdings:
 if sector:
     risk_data["sector_allocation"] = sector.sector_allocation
 
-# ── Tab 6: Recommendations ──
-with tabs[6]:
+# ── Tab 8: Recommendations ──
+with tabs[8]:
     render_optimization_section(
         opt_result,
         portfolio=report.portfolio,
@@ -893,8 +905,8 @@ with tabs[6]:
     else:
         st.info("Recommendations require full analysis.")
 
-# ── Tab 7: Export ──
-with tabs[7]:
+# ── Tab 9: Export ──
+with tabs[9]:
     render_export_section(
         report.portfolio,
         risk=report.risk,

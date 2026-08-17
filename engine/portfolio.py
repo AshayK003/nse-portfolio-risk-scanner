@@ -563,3 +563,27 @@ def portfolio_from_dict(data: dict) -> Portfolio:
         holdings=holdings,
         name=data.get("name", "My Portfolio"),
     )
+
+
+def parse_portfolio_excel(
+    excel_bytes: bytes,
+    portfolio_name: str = "My Portfolio",
+) -> Portfolio:
+    """Parse an .xlsx/.xls portfolio file by converting it to CSV first.
+
+    Reuses the robust CSV parser (multi-broker column detection, Indian
+    number formats, validation) so Excel uploads behave identically to CSV.
+    """
+    import io
+
+    try:
+        import pandas as pd
+
+        df = pd.read_excel(io.BytesIO(excel_bytes), sheet_name=0)
+    except Exception as e:  # noqa: BLE001
+        raise ValueError(f"Could not read Excel file: {e}")
+
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer, index=False)
+    csv_bytes = csv_buffer.getvalue().encode("utf-8-sig")
+    return parse_portfolio_csv(csv_bytes, portfolio_name=portfolio_name)
