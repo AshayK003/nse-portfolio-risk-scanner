@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.19.1 (2026-08-19)
+
+### Fixed — Upload Tab Empty Portfolio Crash
+
+Fixed a crash in `ui/upload.py` where `render_upload_tab()` returned `None` when no CSV or manual holdings were provided, causing a downstream `TypeError` in `app.py` when trying to use the returned `None` as a `Portfolio` object.
+
+**Fix:** Modified `render_upload_tab()` in `ui/upload.py` to return an empty `Portfolio(holdings=[], name="Empty Portfolio")` instead of `None` when no CSV or manual holdings are provided. This prevents downstream crashes in `app.py` and provides a clean empty state for the UI.
+
+**Related:** Fixes the `TypeError: 'NoneType' object is not iterable` / `portfolio = csv_portfolio or Portfolio(...)` crash reported on Streamlit Cloud.
+
+### Fixed — Delete Portfolio Button Safety
+
+Added safe dictionary access in `render_sidebar()` delete logic to prevent `KeyError` when deleting portfolios.
+
+---
+
 ## v0.19.0 (2026-08-18)
 
 ### Added — Deterministic Recommendation Rule System
