@@ -13,10 +13,8 @@ import streamlit as st
 
 from engine import RISK_PROFILES, Holding, Portfolio
 from engine.portfolio import (
-    decode_portfolio_link,
     normalize_ticker,
     parse_portfolio_csv,
-    parse_portfolio_excel,
 )
 from engine.ticker_resolver import (
     build_ticker_options,
