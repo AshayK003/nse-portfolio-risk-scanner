@@ -1,13 +1,16 @@
-from engine.recommendations import run_recommendation_engine
+from __future__ import annotations
+
 from engine.recommendations.orchestrator import (
-    PortfolioSnapshot,
     MarketData,
+    PortfolioSnapshot,
     UserProfile,
+)
+from engine.recommendations.orchestrator import (
     run_recommendation_engine as run_rec_engine,
 )
 from engine.recommendations.types import (
-    RecommendationReport,
     FiiDiiBias,
+    RecommendationReport,
     RegimeContext,
 )
 
@@ -43,7 +46,7 @@ def generate_recommendations(
             })
 
         # Get sector weights from sector object
-        sector_weights = sector.sector_allocation if sector else {}
+        _ = sector.sector_allocation if sector else {}
 
         snapshot = PortfolioSnapshot(
             holdings=[{

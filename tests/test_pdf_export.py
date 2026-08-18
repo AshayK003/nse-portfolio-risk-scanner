@@ -15,6 +15,13 @@ import pandas as pd
 
 from engine import Holding, Portfolio, RiskMetrics
 from engine.risk import MonteCarloResult
+from engine.recommendations.types import (
+    ActionType,
+    RecommendationCard,
+    RecommendationReport,
+    RegimeContext,
+    Urgency,
+)
 from ui import pdf_reportlab as gen
 
 
