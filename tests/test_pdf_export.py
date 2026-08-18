@@ -308,6 +308,47 @@ def test_generate_pdf_report_with_factor_macro_scenario():
     assert len(pdf_bytes) > 5000
 
 
+def test_generate_pdf_report_with_institutional_scores():
+    """Exercise the institutional-scores PDF block with a real engine object.
+
+    Regression guard: the block read quality/momentum/value/volatility/liquidity/
+    esg/composite — none of which exist on InstitutionalRiskScores. It crashed at
+    runtime unless a real instance was passed, which the other tests never did.
+    """
+    from engine.scoring import compute_institutional_scores
+
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    sector_data = _sample_sector_data()
+    df = _sample_export_df(portfolio)
+    mc_result = _sample_mc_result()
+    portfolio_cum = _sample_portfolio_cum()
+
+    np.random.seed(7)
+    dates = pd.date_range(end=datetime.now(), periods=60, freq="B")
+    prices = pd.DataFrame(
+        {h.ticker: np.random.normal(100, 2, 60).cumprod() for h in portfolio.holdings},
+        index=dates,
+    )
+    weights = [1.0 / len(portfolio.holdings)] * len(portfolio.holdings)
+    sector_alloc = {h.sector: 100.0 / len(portfolio.holdings) for h in portfolio.holdings}
+
+    institutional_scores = compute_institutional_scores(risk, prices, weights, sector_alloc)
+
+    pdf_bytes = gen.generate_pdf_report(
+        portfolio=portfolio,
+        risk=risk,
+        sector_data=sector_data,
+        df=df,
+        mc_result=mc_result,
+        portfolio_cum=portfolio_cum,
+        institutional_scores=institutional_scores,
+    )
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes[:4] == b"%PDF"
+    assert len(pdf_bytes) > 5000
+
+
 def test_generate_pdf_report_minimal():
     """Generate PDF with no optional data."""
     portfolio = _sample_portfolio()
