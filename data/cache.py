@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import os
+import pickle
 import threading
 
 import pandas as pd
@@ -30,6 +31,8 @@ try:
     from diskcache import Cache as _Cache
 except ImportError:
     _Cache = None
+
+from engine._log import logger
 
 _DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".price_cache")
 
@@ -62,7 +65,8 @@ class PriceCache:
                 series = pd.Series(raw["values"], index=pd.to_datetime(raw["dates"]), name=ticker)
                 series.index.name = "Date"
                 return series
-            except Exception:
+            except (KeyError, ValueError, pickle.UnpicklingError, OSError) as exc:
+                logger.debug("Cache get failed for %s: %s", ticker, exc)
                 return None
 
     def set(self, ticker: str, close_series: pd.Series):
@@ -76,7 +80,8 @@ class PriceCache:
                 ]
                 values = [round(float(v), 4) for v in close_series.values]
                 self._cache.set(ticker, {"dates": dates, "values": values}, expire=self.ttl_hours * 3600)
-            except Exception:
+            except (OSError, pickle.PicklingError, ValueError) as exc:
+                logger.debug("Cache set failed for %s: %s", ticker, exc)
                 return
 
     def has(self, ticker: str) -> bool:
@@ -85,7 +90,8 @@ class PriceCache:
         with _CACHE_LOCK:
             try:
                 return ticker in self._cache
-            except Exception:
+            except (KeyError, OSError) as exc:
+                logger.debug("Cache has failed for %s: %s", ticker, exc)
                 return False
 
     def clear(self, ticker: str):
@@ -94,7 +100,8 @@ class PriceCache:
         with _CACHE_LOCK:
             try:
                 del self._cache[ticker]
-            except Exception:
+            except (KeyError, OSError) as exc:
+                logger.debug("Cache clear failed for %s: %s", ticker, exc)
                 return
 
     def clear_all(self):
@@ -103,7 +110,8 @@ class PriceCache:
         with _CACHE_LOCK:
             try:
                 self._cache.clear()
-            except Exception:
+            except OSError as exc:
+                logger.debug("Cache clear_all failed: %s", exc)
                 return
 
     def evict_stale(self):

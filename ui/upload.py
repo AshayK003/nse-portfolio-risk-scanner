@@ -6,12 +6,20 @@ Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander l
 
 from __future__ import annotations
 
+import binascii
+import json
+
 import pandas as pd
 import streamlit as st
 
 from engine import Holding, Portfolio
-from engine.__init__ import RISK_PROFILES
-from engine.portfolio import normalize_ticker, parse_portfolio_csv
+from engine import RISK_PROFILES
+from engine.portfolio import (
+    decode_portfolio_link,
+    normalize_ticker,
+    parse_portfolio_csv,
+    parse_portfolio_excel,
+)
 from engine.ticker_resolver import (
     build_ticker_options,
     get_company_name,
@@ -180,8 +188,8 @@ def render_upload_tab() -> Portfolio | None:
             portfolio = decode_portfolio_link(query_params["p"])
             st.success("Loaded portfolio from shared link.")
             return portfolio
-        except Exception:
-            st.warning("Could not decode shared portfolio link. The link may be invalid or expired.")
+        except (ValueError, json.JSONDecodeError, binascii.Error) as exc:
+            st.warning(f"Could not decode shared portfolio link: {exc}")
 
     # ── CSV Upload Section ──
     st.subheader("Upload Portfolio CSV")
@@ -199,7 +207,7 @@ def render_upload_tab() -> Portfolio | None:
             width="stretch",
             help="Use this exact format for your CSV/Excel upload.",
         )
-    except Exception:
+    except (ImportError, OSError, ValueError):
         # Template is optional — never block upload if it fails
         pass
 

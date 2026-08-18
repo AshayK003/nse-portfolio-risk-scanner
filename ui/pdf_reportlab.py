@@ -104,18 +104,18 @@ def _register_mpl_fonts():
     if _MPL_FONTS_REGISTERED:
         return
     with _MPL_FONT_LOCK:
-        if _MPL_FONTS_REGISTERED:
-            return
-        try:
-            import matplotlib.font_manager as fm
+            if _MPL_FONTS_REGISTERED:
+                return
+            try:
+                import matplotlib.font_manager as fm
 
-            for _, filename in _MPL_FONT_FILES.items():
-                ttf = _FONT_DIR / filename
-                if ttf.exists():
-                    fm.fontManager.addfont(str(ttf))
-        except Exception:
-            pass
-        _MPL_FONTS_REGISTERED = True
+                for _, filename in _MPL_FONT_FILES.items():
+                    ttf = _FONT_DIR / filename
+                    if ttf.exists():
+                        fm.fontManager.addfont(str(ttf))
+            except (OSError, ImportError, AttributeError, ValueError):
+                pass
+            _MPL_FONTS_REGISTERED = True
 
 
 # ── Matplotlib helpers ─────────────────────────────────────────────
@@ -132,7 +132,7 @@ def _import_matplotlib():
         try:
             matplotlib.rcParams["font.family"] = "Inter"
             matplotlib.rcParams["font.sans-serif"] = ["Inter"]
-        except Exception:
+        except (OSError, ImportError, AttributeError, ValueError):
             pass
         return matplotlib, plt
     except ImportError:
@@ -1182,52 +1182,52 @@ def generate_pdf_report(
                 flow.append(Spacer(1, 8))
 
     # Advanced Metrics
-    if risk:
-        flow.append(Paragraph("Advanced Risk Metrics", h2))
-        flow.append(heading_rule())
+        if risk:
+            flow.append(Paragraph("Advanced Risk Metrics", h2))
+            flow.append(heading_rule())
 
-        # Z-score (Altman proxy)
-        z_score = None
-        if risk.volatility_annual > 0:
-            z_score = (risk.total_return / 100) / (risk.volatility_annual / 100 / (252**0.5))
+            # Z-score (Altman proxy)
+            z_score = None
+            if risk.volatility_annual > 0:
+                z_score = (risk.total_return / 100) / (risk.volatility_annual / 100 / (252**0.5))
 
-        # VaR Backtest (Kupiec)
-        var_breaches = 0
-        daily_returns = None
-        if portfolio_cum is not None and len(portfolio_cum) > 1:
-            daily_returns = portfolio_cum.pct_change().dropna()
-            if len(daily_returns) > 0:
-                var_threshold = -abs(risk.var_95 / 100)
-                var_breaches = (daily_returns < var_threshold).sum()
+            # VaR Backtest (Kupiec)
+            var_breaches = 0
+            daily_returns = None
+            if portfolio_cum is not None and len(portfolio_cum) > 1:
+                daily_returns = portfolio_cum.pct_change().dropna()
+                if len(daily_returns) > 0:
+                    var_threshold = -abs(risk.var_95 / 100)
+                    var_breaches = (daily_returns < var_threshold).sum()
 
-        kupiec_p = "N/A"
-        if var_breaches > 0 and daily_returns is not None and len(daily_returns) > 0:
-            from scipy import stats
+            kupiec_p = "N/A"
+            if var_breaches > 0 and daily_returns is not None and len(daily_returns) > 0:
+                from scipy import stats
 
-            expected = len(daily_returns) * 0.05
-            if expected > 0:
-                lr = -2 * (
-                    var_breaches * np.log(expected / var_breaches)
-                    + (len(daily_returns) - var_breaches)
-                    * np.log((len(daily_returns) - expected) / (len(daily_returns) - var_breaches))
-                )
-                kupiec_p = f"{1 - stats.chi2.cdf(lr, 1):.3f}"
+                expected = len(daily_returns) * 0.05
+                if expected > 0:
+                    lr = -2 * (
+                        var_breaches * np.log(expected / var_breaches)
+                        + (len(daily_returns) - var_breaches)
+                        * np.log((len(daily_returns) - expected) / (len(daily_returns) - var_breaches))
+                    )
+                    kupiec_p = f"{1 - stats.chi2.cdf(lr, 1):.3f}"
 
-        # GARCH volatility forecast (1-day ahead)
-        garch_forecast = "N/A"
-        try:
-            from arch import arch_model
+            # GARCH volatility forecast (1-day ahead)
+            garch_forecast = "N/A"
+            try:
+                from arch import arch_model
 
-            if portfolio_cum is not None and len(portfolio_cum) > 30:
-                daily_ret = portfolio_cum.pct_change().dropna() * 100
-                if len(daily_ret) > 30:
-                    am = arch_model(daily_ret, vol="Garch", p=1, q=1, dist="normal")
-                    res = am.fit(update_freq=0, disp="off")
-                    garch_forecast = f"{np.sqrt(res.conditional_volatility.iloc[-1] ** 2):.3f}%"
-        except Exception:
-            pass
+                if portfolio_cum is not None and len(portfolio_cum) > 30:
+                    daily_ret = portfolio_cum.pct_change().dropna() * 100
+                    if len(daily_ret) > 30:
+                        am = arch_model(daily_ret, vol="GARCH", p=1, q=1, dist="normal")
+                        res = am.fit(update_freq=0, disp="off")
+                        garch_forecast = f"{np.sqrt(res.conditional_volatility.iloc[-1] ** 2):.3f}%"
+            except (ImportError, ValueError, RuntimeError, AttributeError, KeyError):
+                pass
 
-        adv_rows = [
+            adv_rows = [
             ["Altman Z-Score (portfolio proxy)", f"{z_score:.2f}" if z_score else "N/A"],
             ["VaR Backtest (Kupiec p-value)", kupiec_p],
             ["VaR Breaches (95%, 1y)", str(var_breaches) if var_breaches else "N/A"],

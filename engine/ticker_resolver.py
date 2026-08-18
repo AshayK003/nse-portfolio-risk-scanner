@@ -87,7 +87,7 @@ def _search_yahoo_finance(query: str) -> tuple[str | None, str | None]:
             sym = q_item.get("symbol", "")
             if sym.endswith(".NS"):
                 return sym.replace(".NS", ""), q_item.get("shortname", query)
-    except Exception:  # noqa: BLE001
+    except (requests.RequestException, json.JSONDecodeError, KeyError, AttributeError):
         pass
     return None, None
 

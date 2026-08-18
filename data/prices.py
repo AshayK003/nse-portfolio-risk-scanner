@@ -329,7 +329,7 @@ def fetch_benchmark(
                 raw = raw.sort_values("DATE")
                 df = raw[["DATE", "CLOSE_PRICE"]].rename(columns={"DATE": "Date", "CLOSE_PRICE": "Close"})
                 df = df.set_index("Date")
-        except Exception:
+        except (AttributeError, KeyError, ValueError, TypeError, OSError):
             pass
 
     if df is None:
@@ -343,7 +343,7 @@ def fetch_benchmark(
                 if close.index.tz is not None:
                     close = close.tz_localize(None)
                 return close
-        except Exception:
+        except (AttributeError, KeyError, ValueError, TypeError, OSError):
             pass
     elif not df.empty:
         l2 = _get_l2_cache()
