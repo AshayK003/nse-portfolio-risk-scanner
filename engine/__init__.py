@@ -220,6 +220,6 @@ from engine.optimization import OptimizationResult, RebalanceSuggestion  # noqa:
 from engine.recommendations import RecommendationReport  # noqa: F401, E402
 from engine.regime import RegimeResult  # noqa: F401, E402
 from engine.risk import MonteCarloResult  # noqa: F401, E402
-from engine.scenario import MacroScenarioResult  # noqa: F401, E402
+from engine.scenario import MacroScenarioResult, ScenarioResult  # noqa: F401, E402
 from engine.scoring import InstitutionalRiskScores  # noqa: F401, E402
 from engine.warnings import WarningReport  # noqa: F401, E402
