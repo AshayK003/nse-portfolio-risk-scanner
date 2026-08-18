@@ -196,12 +196,12 @@ class TestFetchDeliveryForHoldings:
             assert result["RELIANCE"].ticker == "RELIANCE"
 
     def test_exception_in_fetch_is_caught(self):
-            with (
-                patch("engine.delivery._NSELIB_AVAILABLE", True),
-                patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
-            ):
-                mock_fetch.side_effect = OSError("Network error")
+        with (
+            patch("engine.delivery._NSELIB_AVAILABLE", True),
+            patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
+        ):
+            mock_fetch.side_effect = OSError("Network error")
 
-                result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
+            result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
 
-                assert result == {}
+            assert result == {}

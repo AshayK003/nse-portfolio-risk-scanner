@@ -104,18 +104,18 @@ def _register_mpl_fonts():
     if _MPL_FONTS_REGISTERED:
         return
     with _MPL_FONT_LOCK:
-            if _MPL_FONTS_REGISTERED:
-                return
-            try:
-                import matplotlib.font_manager as fm
+        if _MPL_FONTS_REGISTERED:
+            return
+        try:
+            import matplotlib.font_manager as fm
 
-                for _, filename in _MPL_FONT_FILES.items():
-                    ttf = _FONT_DIR / filename
-                    if ttf.exists():
-                        fm.fontManager.addfont(str(ttf))
-            except (OSError, ImportError, AttributeError, ValueError):
-                pass
-            _MPL_FONTS_REGISTERED = True
+            for _, filename in _MPL_FONT_FILES.items():
+                ttf = _FONT_DIR / filename
+                if ttf.exists():
+                    fm.fontManager.addfont(str(ttf))
+        except (OSError, ImportError, AttributeError, ValueError):
+            pass
+        _MPL_FONTS_REGISTERED = True
 
 
 # ── Matplotlib helpers ─────────────────────────────────────────────
@@ -1181,7 +1181,7 @@ def generate_pdf_report(
                 flow.append(fig_to_img(rchart, width=17 * cm))
                 flow.append(Spacer(1, 8))
 
-    # Advanced Metrics
+        # Advanced Metrics
         if risk:
             flow.append(Paragraph("Advanced Risk Metrics", h2))
             flow.append(heading_rule())
@@ -1228,15 +1228,15 @@ def generate_pdf_report(
                 pass
 
             adv_rows = [
-            ["Altman Z-Score (portfolio proxy)", f"{z_score:.2f}" if z_score else "N/A"],
-            ["VaR Backtest (Kupiec p-value)", kupiec_p],
-            ["VaR Breaches (95%, 1y)", str(var_breaches) if var_breaches else "N/A"],
-            ["GARCH(1,1) 1-day Vol Forecast", garch_forecast],
-            ["Skewness", f"{risk.skewness:.3f}"],
-            ["Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"],
-            ["Calmar Ratio", f"{risk.calmar_ratio:.2f}"],
-            ["Treynor Ratio", f"{risk.treynor_ratio:.2f}"],
-        ]
+                ["Altman Z-Score (portfolio proxy)", f"{z_score:.2f}" if z_score else "N/A"],
+                ["VaR Backtest (Kupiec p-value)", kupiec_p],
+                ["VaR Breaches (95%, 1y)", str(var_breaches) if var_breaches else "N/A"],
+                ["GARCH(1,1) 1-day Vol Forecast", garch_forecast],
+                ["Skewness", f"{risk.skewness:.3f}"],
+                ["Excess Kurtosis", f"{risk.kurtosis_excess:.3f}"],
+                ["Calmar Ratio", f"{risk.calmar_ratio:.2f}"],
+                ["Treynor Ratio", f"{risk.treynor_ratio:.2f}"],
+            ]
         flow.extend(styled_metric_table(adv_rows, [7 * cm, 7 * cm], caption="Advanced Metrics"))
         flow.append(Spacer(1, 8))
 
