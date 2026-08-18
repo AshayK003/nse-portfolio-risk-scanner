@@ -183,7 +183,7 @@ def render_institutional_intelligence(institutional_scores, factor_report, early
 
 def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data, profile, report) -> None:
     """Tab 8: Recommendations - uses new RecommendationCard format."""
-    
+
     render_optimization_section(
         opt_result,
         portfolio=report.portfolio,
@@ -192,7 +192,7 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
     )
     render_rebalance_section(rebalance, risk_data=risk_data)
     st.divider()
-    
+
     # Handle both old RecommendationReport (with recommendations list) and new RecommendationCard format
     if recommendations:
         # Check if it's the new RecommendationCard format (has 'cards' attribute)
@@ -205,11 +205,11 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
             cards = getattr(recommendations, 'recommendations', [])
             priority_cards = getattr(recommendations, 'priority_actions', [])
             summary = getattr(recommendations, 'summary', "")
-        
+
         st.subheader("Portfolio Action Recommendations")
         if summary:
             st.caption(summary)
-        
+
         if priority_cards:
             st.markdown("**Priority Actions:**")
             for i, card in enumerate(priority_cards, 1):
@@ -230,7 +230,7 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
                     f"<span style='font-size:0.8rem;color:#f59e0b;'>Trade-off: {'; '.join(card.alternatives[:2]) if card.alternatives else 'See alternatives'}</span></div>",
                     unsafe_allow_html=True,
                 )
-        
+
         # Show total risk reduction
         total_risk_reduction = sum(c.net_risk_reduction_bps for c in cards) / 100
         if total_risk_reduction > 0:
@@ -242,10 +242,10 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
                 "Risk reduction is a directional estimate based on heuristic rules, "
                 "not a backtested or simulated forecast."
             )
-        
+
         st.divider()
         st.subheader("All Recommendations")
-        
+
         for card in cards:
             action_colors = {
                 "buy": "#22c55e",
@@ -255,35 +255,35 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
                 "block": "#a855f7",
             }
             color = action_colors.get(card.action.value, "#6b7280")
-            
+
             with st.expander(
                 f"**{card.action.value.upper()}** {', '.join(card.tickers) if card.tickers else 'PORTFOLIO'} — Urgency: {card.urgency.value}",
                 expanded=card.urgency.value == "immediate",
             ):
                 st.markdown(f"**Reasoning:** {card.reason}")
-                
+
                 # Show rule verdicts
                 if card.rule_verdicts:
                     st.caption("**Triggered Rules:**")
                     for verdict in card.rule_verdicts:
                         st.caption(f"• {verdict.rule_name}: {verdict.reason}")
-                
+
                 # Tax and impact breakdown
                 if card.tax_breakdown:
                     total_tax = sum(card.tax_breakdown.values())
                     st.caption(f"**Estimated Tax Cost:** ₹{total_tax:,.0f}")
-                
+
                 if card.impact_breakdown:
                     total_impact = sum(card.impact_breakdown.values())
                     st.caption(f"**Estimated Impact Cost:** ₹{total_impact:,.0f}")
-                
+
                 st.caption(f"**Net Risk Reduction:** {card.net_risk_reduction_bps} bps")
-                
+
                 if card.alternatives:
                     st.caption(f"**Alternatives:** {'; '.join(card.alternatives[:3])}")
-                
+
                 st.caption(f"**Confidence:** {card.confidence:.0%}")
-                
+
                 # Guardrails
                 if card.guardrails:
                     with st.expander("⚠️ Guardrails (Don't execute if...)", expanded=False):
