@@ -240,6 +240,74 @@ def test_generate_pdf_report_full():
     assert len(pdf_bytes) > 5000
 
 
+def test_generate_pdf_report_with_factor_macro_scenario():
+    """Exercise the factor / macro / scenario PDF blocks with real engine objects.
+
+    Regression guard: pages 6-7 read FactorRiskReport / MacroDriver /
+    MacroScenarioResult fields directly. Earlier code referenced attributes
+    that never existed on those dataclasses, so the PDF crashed at runtime
+    unless real instances were passed — which the other tests never did.
+    """
+    from engine import FactorExposure, FactorRiskReport, MacroDriver
+    from engine.scenario import run_macro_scenarios
+
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    sector_data = _sample_sector_data()
+    df = _sample_export_df(portfolio)
+    mc_result = _sample_mc_result()
+    portfolio_cum = _sample_portfolio_cum()
+
+    factor_risk = FactorRiskReport(
+        factors=[
+            FactorExposure(
+                name="Market",
+                exposure=0.92,
+                risk_contribution_pct=55.0,
+                description="Broad market sensitivity.",
+            ),
+            FactorExposure(
+                name="Momentum",
+                exposure=0.31,
+                risk_contribution_pct=20.0,
+                description="Recent trend strength.",
+            ),
+        ],
+        idiosyncratic_risk_pct=25.0,
+        total_factor_risk_pct=75.0,
+        dominant_factor="Market",
+        diversification_by_factor={"Market": 0.6, "Momentum": 0.4},
+    )
+
+    macro_drivers = [
+        MacroDriver(
+            name="Crude Oil",
+            sensitivity=0.12,
+            current_regime="neutral",
+            risk_level="medium",
+            reasoning="Manageable oil exposure.",
+        )
+    ]
+
+    betas = {h.ticker: 1.0 for h in portfolio.holdings}
+    scenario_results = run_macro_scenarios(portfolio.holdings, betas)
+
+    pdf_bytes = gen.generate_pdf_report(
+        portfolio=portfolio,
+        risk=risk,
+        sector_data=sector_data,
+        df=df,
+        mc_result=mc_result,
+        portfolio_cum=portfolio_cum,
+        factor_risk=factor_risk,
+        macro_drivers=macro_drivers,
+        scenario_results=scenario_results,
+    )
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes[:4] == b"%PDF"
+    assert len(pdf_bytes) > 5000
+
+
 def test_generate_pdf_report_minimal():
     """Generate PDF with no optional data."""
     portfolio = _sample_portfolio()
