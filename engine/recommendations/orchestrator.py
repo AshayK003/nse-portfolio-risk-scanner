@@ -2,21 +2,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import date, datetime
 
-from engine.recommendations.types import (
-    RecommendationContext,
-    RecommendationCard,
-    TaxLot,
-    FiiDiiBias,
-    RegimeContext,
-    Urgency,
-    ActionType,
-    RuleVerdict,
-    RecommendationReport,
-)
 from engine.recommendations.rules import apply_recommendation_rules
+from engine.recommendations.types import (
+    ActionType,
+    FiiDiiBias,
+    RecommendationCard,
+    RecommendationContext,
+    RecommendationReport,
+    RegimeContext,
+    RuleVerdict,
+    TaxLot,
+    Urgency,
+)
 
 
 @dataclass
@@ -238,10 +237,10 @@ def run_recommendation_engine(
     ctx = build_recommendation_context(snapshot, market_data, user_profile)
     verdicts = apply_recommendation_rules(ctx)
     cards = generate_recommendation_cards(verdicts, ctx)
-    
+
     # Build priority_actions for backward compatibility with PDF generator
     priority_cards = [c for c in cards if c.priority > 0 and c.urgency in (Urgency.IMMEDIATE, Urgency.NEAR_TERM)]
-    
+
     report = RecommendationReport(
         cards=cards,
         generated_at=datetime.now().isoformat(),
@@ -319,12 +318,12 @@ def _build_alternatives(action: ActionType, ticker: str, ctx: RecommendationCont
 
     if action == ActionType.TRIM:
         alternatives.append(f"Full exit {ticker} instead of trim")
-        alternatives.append(f"Hedge with PUT instead of reducing")
+        alternatives.append("Hedge with PUT instead of reducing")
     elif action == ActionType.BUY:
-        alternatives.append(f"Add to existing similar holding instead")
-        alternatives.append(f"Wait for pullback to MA20")
+        alternatives.append("Add to existing similar holding instead")
+        alternatives.append("Wait for pullback to MA20")
     elif action == ActionType.SELL:
-        alternatives.append(f"Trim 50% instead of full exit")
-        alternatives.append(f"Set trailing stop instead of hard exit")
+        alternatives.append("Trim 50% instead of full exit")
+        alternatives.append("Set trailing stop instead of hard exit")
 
     return alternatives
