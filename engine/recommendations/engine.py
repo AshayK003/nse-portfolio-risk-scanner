@@ -1,12 +1,9 @@
-# engine/recommendations/engine.py
-from __future__ import annotations
-
 from engine.recommendations import run_recommendation_engine
 from engine.recommendations.orchestrator import (
     PortfolioSnapshot,
     MarketData,
     UserProfile,
-    run_recommendation_engine,
+    run_recommendation_engine as run_rec_engine,
 )
 from engine.recommendations.types import (
     RecommendationReport,
@@ -29,7 +26,7 @@ def generate_recommendations(
 ) -> RecommendationReport | None:
     """
     Generate recommendations for the intelligence registry.
-    
+
     This is a thin wrapper around run_recommendation_engine that converts
     the various context objects into the format expected by the recommendation engine.
     """
@@ -44,16 +41,10 @@ def generate_recommendations(
                 "avg_price": h.avg_price,
                 "current_price": getattr(h, 'current_price', h.avg_price),
             })
-        
+
         # Get sector weights from sector object
         sector_weights = sector.sector_allocation if sector else {}
-        
-        # Calculate total portfolio value
-        total_value = sum(
-            h.quantity * getattr(h, 'current_price', h.avg_price) 
-            for h in portfolio.holdings
-        )
-        
+
         snapshot = PortfolioSnapshot(
             holdings=[{
                 "ticker": h.ticker,
@@ -63,14 +54,14 @@ def generate_recommendations(
                 "current_price": getattr(h, 'current_price', h.avg_price),
             } for h in portfolio.holdings],
             total_value=sum(
-                h.quantity * getattr(h, 'current_price', h.avg_price) 
+                h.quantity * getattr(h, 'current_price', h.avg_price)
                 for h in portfolio.holdings
             ),
             cash_available=0.0,  # Would need to be passed in
             sector_weights=sector.sector_allocation if sector else {},
             asset_class_weights={"Equity": 100.0},
         )
-        
+
         # Build market data from regime result and other context
         # Extract VIX/ADX from regime_result if available
         vix = 13.5
@@ -79,7 +70,7 @@ def generate_recommendations(
             vix = regime_result.vix
         if regime_result and hasattr(regime_result, 'adx') and regime_result.adx:
             adx = regime_result.adx
-            
+
         market_data = MarketData(
             vix=vix,
             adx=adx,
@@ -89,7 +80,7 @@ def generate_recommendations(
             is_expiry_week=False,
             regime=RegimeContext.BULL,
         )
-        
+
         # Default user profile
         user_profile = UserProfile(
             max_stcg_budget=100000,
@@ -101,16 +92,16 @@ def generate_recommendations(
             tax_loss_harvest_enabled=True,
             horizon_years=5,
         )
-        
+
         # Run the recommendation engine
-        _, report = run_recommendation_engine(
+        _, report = run_rec_engine(
             snapshot=snapshot,
             market_data=market_data,
             user_profile=user_profile,
         )
-        
+
         return report
-        
+
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Recommendation generation failed: {e}")
