@@ -196,15 +196,17 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
     # Handle both old RecommendationReport (with recommendations list) and new RecommendationCard format
     if recommendations:
         # Check if it's the new RecommendationCard format (has 'cards' attribute)
-        if hasattr(recommendations, 'cards'):
+        if hasattr(recommendations, "cards"):
             cards = recommendations.cards
-            priority_cards = recommendations.priority_actions if hasattr(recommendations, 'priority_actions') else []
-            summary = recommendations.summary if hasattr(recommendations, 'summary') else ""
+            priority_cards = (
+                recommendations.priority_actions if hasattr(recommendations, "priority_actions") else []
+            )
+            summary = recommendations.summary if hasattr(recommendations, "summary") else ""
         else:
             # Old format - convert for compatibility
-            cards = getattr(recommendations, 'recommendations', [])
-            priority_cards = getattr(recommendations, 'priority_actions', [])
-            summary = getattr(recommendations, 'summary', "")
+            cards = getattr(recommendations, "recommendations", [])
+            priority_cards = getattr(recommendations, "priority_actions", [])
+            summary = getattr(recommendations, "summary", "")
 
         st.subheader("Portfolio Action Recommendations")
         if summary:
