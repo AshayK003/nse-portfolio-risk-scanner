@@ -2,14 +2,13 @@
 Tests for the recommendation engine.
 """
 
-from datetime import date
 from engine.recommendations import (
-    run_recommendation_engine,
-    PortfolioSnapshot,
     MarketData,
+    PortfolioSnapshot,
     UserProfile,
+    run_recommendation_engine,
 )
-from engine.recommendations.types import RegimeContext, FiiDiiBias
+from engine.recommendations.types import FiiDiiBias, RegimeContext
 
 
 def _make_snapshot(cash_available=0):
