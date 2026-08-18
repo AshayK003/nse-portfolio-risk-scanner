@@ -9,7 +9,7 @@ from engine.recommendations import (
     MarketData,
     UserProfile,
 )
-from engine.recommendations.types import RegimeContext, FiiDiiBias, Urgency
+from engine.recommendations.types import RegimeContext, FiiDiiBias
 
 
 def _make_snapshot(cash_available=0):
