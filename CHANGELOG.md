@@ -1,6 +1,20 @@
 # Changelog
 
-## v0.18.4 (2026-08-18)
+## v0.18.5 (2026-08-18)
+
+### Fixed — PDF Overlapping Text (Layout Reliability)
+
+Two layout defects caused text to overlap other text/tables on exported PDF pages:
+
+- **Chart images overlapped the following content** (`fig_to_img`)
+  Image height was computed from the in-memory figure size, but `savefig(..., bbox_inches="tight")` crops whitespace (suptitles, legends, colorbars) and changes the output aspect ratio. The allocated box was therefore shorter than the real PNG — by up to ~1.25 cm on charts with a suptitle — so the next flowable (Spacer/Paragraph/Table) rendered on top of the chart's bottom edge. Height is now derived from the **actual saved PNG dimensions** via PIL, not `fig.get_size_inches()`.
+- **Metric-table cells overflowed into neighbours** (`styled_metric_table`)
+  All cells were passed as raw strings. reportlab does not wrap plain-string cells, so long factor names, macro-driver names, or scenario names spilled horizontally across adjacent columns. Every cell is now wrapped in a `Paragraph`, so text wraps inside its column. Header / label / value styles preserved (bold header, muted label, bold foundation value).
+
+### Tests
+
+- Re-verified export with long-name fixtures (factor/driver/scenario) — 0 text-block overlaps across all 8 pages (measured via PyMuPDF bbox collision check).
+- Full suite: **397 passed**, 1 skipped (GARCH optional-dep skip). Ruff lint + format clean.
 
 ### Fixed — PDF Export Phantom-Schema Crashes (Production Reliability)
 
