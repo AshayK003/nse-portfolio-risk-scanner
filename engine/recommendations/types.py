@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 
 class Urgency(Enum):
