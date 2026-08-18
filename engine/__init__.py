@@ -215,7 +215,7 @@ class AnalysisReport:
 
 # Import types from their owning modules to keep each module self-contained.
 # This avoids import-order edge cases on Streamlit Cloud's Linux environment.
-from engine.factors import FactorRiskReport, MacroDriver  # noqa: F401, E402
+from engine.factors import FactorExposure, FactorRiskReport, MacroDriver  # noqa: F401, E402
 from engine.optimization import OptimizationResult, RebalanceSuggestion  # noqa: F401, E402
 from engine.recommendations import RecommendationReport  # noqa: F401, E402
 from engine.regime import RegimeResult  # noqa: F401, E402

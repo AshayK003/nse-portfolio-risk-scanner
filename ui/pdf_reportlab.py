@@ -850,30 +850,28 @@ def generate_pdf_report(
             Paragraph("Risk attribution across systematic factors and idiosyncratic component.", body)
         )
 
-        if factor_risk.factor_exposures:
-            factor_rows = [["Factor", "Exposure", "Risk Contribution", "% of Total Risk"]]
-            for name, exp in factor_risk.factor_exposures.items():
-                contrib = factor_risk.factor_contributions.get(name, 0)
-                pct = (contrib / factor_risk.specific_risk * 100) if factor_risk.specific_risk > 0 else 0
-                factor_rows.append([name, f"{exp:.2f}", f"{contrib:.4f}", f"{pct:.1f}%"])
-            total_risk = factor_risk.specific_risk + sum(factor_risk.factor_contributions.values())
-            spec_pct = (factor_risk.specific_risk / total_risk * 100) if total_risk > 0 else 0
+        if factor_risk.factors:
+            factor_rows = [["Factor", "Exposure", "Risk Contribution %"]]
+            for f in factor_risk.factors:
+                factor_rows.append([f.name, f"{f.exposure:.2f}", f"{f.risk_contribution_pct:.1f}%"])
             factor_rows.append(
-                ["Specific (Idiosyncratic)", "—", f"{factor_risk.specific_risk:.4f}", f"{spec_pct:.1f}%"]
+                ["Specific (Idiosyncratic)", "—", f"{factor_risk.idiosyncratic_risk_pct:.1f}%"]
             )
             flow.extend(
                 styled_metric_table(
                     factor_rows,
-                    [5 * cm, 3 * cm, 4.5 * cm, 4.5 * cm],
+                    [5 * cm, 3 * cm, 4.5 * cm],
                     caption="Factor Exposures & Contributions",
                 )
             )
             flow.append(Spacer(1, 8))
 
-        if factor_risk.r_squared is not None:
+        if factor_risk.dominant_factor:
             flow.append(
                 Paragraph(
-                    f"Model R²: {factor_risk.r_squared:.1%} — proportion of portfolio variance explained by factor model.",
+                    f"Dominant factor: {factor_risk.dominant_factor} — "
+                    f"{factor_risk.total_factor_risk_pct:.1f}% of total risk is explained by the factor model; "
+                    f"the remaining {factor_risk.idiosyncratic_risk_pct:.1f}% is idiosyncratic.",
                     body,
                 )
             )
@@ -893,9 +891,9 @@ def generate_pdf_report(
             Paragraph("Portfolio sensitivity to key macroeconomic drivers (rolling regression).", body)
         )
 
-        macro_rows = [["Driver", "Beta", "p-value", "Ann. Contribution"]]
+        macro_rows = [["Driver", "Sensitivity", "Regime", "Risk Level"]]
         for md in macro_drivers:
-            macro_rows.append([md.name, f"{md.beta:.3f}", f"{md.p_value:.3f}", f"{md.contribution:.2f}%"])
+            macro_rows.append([md.name, f"{md.sensitivity:.3f}", md.current_regime, md.risk_level])
         flow.extend(
             styled_metric_table(
                 macro_rows, [5 * cm, 3 * cm, 3 * cm, 5 * cm], caption="Macro Driver Sensitivities"
@@ -909,18 +907,11 @@ def generate_pdf_report(
         flow.append(heading_rule())
         flow.append(Paragraph("Portfolio impact under hypothetical macro scenarios.", body))
 
-        scen_rows = [["Scenario", "Portfolio Return", "Benchmark Return", "VaR 95%", "CVaR 95%", "Max DD"]]
+        scen_rows = [["Scenario", "Market Move", "Portfolio Impact %", "Severity", "Probability"]]
         for s in scenario_results:
-            scen_rows.append(
-                [
-                    s.scenario_name,
-                    f"{s.portfolio_return:.2f}%",
-                    f"{s.benchmark_return:.2f}%",
-                    f"{s.var_95:.2f}%",
-                    f"{s.cvar_95:.2f}%",
-                    f"{s.max_drawdown:.2f}%",
-                ]
-            )
+            move = f"{s.market_change:+.1f}%" if s.market_change is not None else "—"
+            impact = f"{s.portfolio_impact_pct:.2f}%" if s.portfolio_impact_pct is not None else "—"
+            scen_rows.append([s.name, move, impact, s.severity, s.probability])
         flow.extend(
             styled_metric_table(
                 scen_rows,
