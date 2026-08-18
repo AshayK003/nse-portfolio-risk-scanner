@@ -390,6 +390,110 @@ def _pnl_chart(df: pd.DataFrame, plt) -> Figure | None:
     return fig
 
 
+def _factor_risk_chart(factor_risk: FactorRiskReport, plt) -> Figure | None:
+    """Horizontal bar of risk contribution % per factor + idiosyncratic."""
+    if plt is None or not factor_risk.factors:
+        return None
+    names = [f.name.replace(".NS", "") for f in factor_risk.factors]
+    contrib = [f.risk_contribution_pct for f in factor_risk.factors]
+    names.append("Idiosyncratic")
+    contrib.append(factor_risk.idiosyncratic_risk_pct)
+
+    fig, ax = plt.subplots(figsize=(8.5, max(2.0, len(names) * 0.55)))
+    colors = [FOUNDATION if n != "Idiosyncratic" else MUTED_TEXT for n in names]
+    bars = ax.barh(range(len(names)), contrib, color=colors, height=0.6, zorder=3)
+    ax.set_yticks(range(len(names)))
+    ax.set_yticklabels(names, fontsize=8, color=MUTED_TEXT)
+    ax.invert_yaxis()
+    ax.set_xlabel("Risk Contribution %", fontsize=8, color=MUTED_TEXT)
+    ax.tick_params(axis="x", labelsize=7)
+    for bar, val in zip(bars, contrib, strict=False):
+        ax.text(
+            bar.get_width() + 0.5,
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:.1f}%",
+            va="center",
+            fontsize=7,
+            ha="left",
+            color=FOUNDATION,
+            fontweight="bold",
+        )
+    ax.set_title("Risk Contribution by Factor", fontsize=11, color=FOUNDATION)
+    ax.margins(x=0.12)
+    _base_chart_style(fig, ax)
+    fig.tight_layout()
+    return fig
+
+
+def _scenario_chart(scenario_results: list, plt) -> Figure | None:
+    """Horizontal bar of portfolio impact % under each macro scenario."""
+    if plt is None or not scenario_results:
+        return None
+    rows = [s for s in scenario_results if s.portfolio_impact_pct is not None]
+    if not rows:
+        return None
+    names = [s.name.replace(".NS", "") for s in rows]
+    impacts = [s.portfolio_impact_pct for s in rows]
+
+    fig, ax = plt.subplots(figsize=(8.5, max(2.0, len(names) * 0.55)))
+    colors = [BAD if v < 0 else GOOD for v in impacts]
+    bars = ax.barh(range(len(names)), impacts, color=colors, height=0.6, zorder=3)
+    ax.set_yticks(range(len(names)))
+    ax.set_yticklabels(names, fontsize=8, color=MUTED_TEXT)
+    ax.invert_yaxis()
+    ax.axvline(0, color="black", linewidth=0.4)
+    ax.set_xlabel("Portfolio Impact %", fontsize=8, color=MUTED_TEXT)
+    ax.tick_params(axis="x", labelsize=7)
+    for bar, val in zip(bars, impacts, strict=False):
+        ax.text(
+            val + (0.3 if val >= 0 else -0.3),
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:+.1f}%",
+            va="center",
+            fontsize=7,
+            ha="left" if val >= 0 else "right",
+            color=FOUNDATION,
+            fontweight="bold",
+        )
+    ax.set_title("Portfolio Impact Under Macro Scenarios", fontsize=11, color=FOUNDATION)
+    ax.margins(x=0.15)
+    _base_chart_style(fig, ax)
+    fig.tight_layout()
+    return fig
+
+
+def _regime_chart(regime_result: RegimeResult, plt) -> Figure | None:
+    """Bar of time spent in each detected regime (from regime stats)."""
+    if plt is None or not regime_result.stats:
+        return None
+    labels = [str(s.get("label", "")) for s in regime_result.stats]
+    pct = [float(s.get("pct", 0)) for s in regime_result.stats]
+    if not labels or sum(pct) <= 0:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8.5, 2.2))
+    bars = ax.bar(range(len(labels)), pct, color=FOUNDATION, width=0.6, zorder=3)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, fontsize=8, color=MUTED_TEXT)
+    ax.set_ylabel("% of Time", fontsize=8, color=MUTED_TEXT)
+    ax.tick_params(axis="y", labelsize=7)
+    for bar, val in zip(bars, pct, strict=False):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.8,
+            f"{val:.0f}%",
+            ha="center",
+            fontsize=7,
+            color=FOUNDATION,
+            fontweight="bold",
+        )
+    ax.set_title("Time Spent in Each Regime", fontsize=11, color=FOUNDATION)
+    ax.margins(y=0.15)
+    _base_chart_style(fig, ax)
+    fig.tight_layout()
+    return fig
+
+
 # ── Risk assessment ────────────────────────────────────────────────
 
 
@@ -894,6 +998,11 @@ def generate_pdf_report(
             )
             flow.append(Spacer(1, 8))
 
+            fchart = _factor_risk_chart(factor_risk, plt)
+            if fchart:
+                flow.append(fig_to_img(fchart, width=17 * cm))
+                flow.append(Spacer(1, 8))
+
         if factor_risk.dominant_factor:
             flow.append(
                 Paragraph(
@@ -948,6 +1057,11 @@ def generate_pdf_report(
             )
         )
         flow.append(Spacer(1, 8))
+
+        schart = _scenario_chart(scenario_results, plt)
+        if schart:
+            flow.append(fig_to_img(schart, width=17 * cm))
+            flow.append(Spacer(1, 8))
 
     # Institutional Scores
     if institutional_scores:
@@ -1061,6 +1175,11 @@ def generate_pdf_report(
                 )
             )
             flow.append(Spacer(1, 8))
+
+            rchart = _regime_chart(regime_result, plt)
+            if rchart:
+                flow.append(fig_to_img(rchart, width=17 * cm))
+                flow.append(Spacer(1, 8))
 
     # Advanced Metrics
     if risk:
