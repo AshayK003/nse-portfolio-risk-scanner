@@ -1,6 +1,20 @@
 # Changelog
 
-## v0.18.5 (2026-08-18)
+## v0.18.6 (2026-08-18)
+
+### Added — Charts in Empty Report Spaces
+
+The three analytics pages that were previously table-only now include a chart that visualises the same data, filling trailing whitespace:
+
+- **Factor Risk Decomposition (p5)** — horizontal bar of risk contribution % per factor + idiosyncratic (`_factor_risk_chart`), sourced from `FactorRiskReport`.
+- **Macro / Scenario (p6)** — horizontal bar of portfolio impact % under each macro stress scenario (`_scenario_chart`), sourced from `scenario_results`; negative impacts shaded red, positive green.
+- **Regime (p7)** — bar of time spent in each detected regime (`_regime_chart`), sourced from `RegimeResult.stats`.
+
+All three reuse the existing `_base_chart_style` brand chrome and `fig_to_img` (PNG-accurate height), so they match the cover/risk/holdings charts and inherit the overlap fix from v0.18.5. Each chart is rendered only when its source data is present.
+
+### Tests
+
+- Full suite: **397 passed**, 1 skipped. New chart helpers exercised via existing PDF export tests (factor + scenario on the factor/macro run; regime on the regime run). Generated report verified: 0 text-block overlaps across all 8 pages; page 6/7/8 each gained one chart image.
 
 ### Fixed — PDF Overlapping Text (Layout Reliability)
 
