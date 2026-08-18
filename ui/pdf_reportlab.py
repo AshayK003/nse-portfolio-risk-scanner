@@ -925,29 +925,38 @@ def generate_pdf_report(
     if institutional_scores:
         flow.append(Paragraph("Institutional Risk Scores", h2))
         flow.append(heading_rule())
-        flow.append(Paragraph("Multi-factor institutional scoring framework (higher = better).", body))
+        flow.append(
+            Paragraph(
+                "Multi-factor institutional scoring framework (0-100; higher = riskier "
+                "for risk metrics, higher = stronger for conviction).",
+                body,
+            )
+        )
 
+        s = institutional_scores
         score_rows = [
             [
-                "Quality",
-                f"{institutional_scores.quality:.1f}",
-                "Momentum",
-                f"{institutional_scores.momentum:.1f}",
+                "Overall Risk",
+                f"{s.overall_risk_score:.1f}",
+                "Conviction",
+                f"{s.conviction_score:.1f}",
             ],
             [
-                "Value",
-                f"{institutional_scores.value:.1f}",
-                "Volatility",
-                f"{institutional_scores.volatility:.1f}",
+                "Portfolio Stress",
+                f"{s.portfolio_stress_score:.1f}",
+                "Hidden Correlation",
+                f"{s.hidden_correlation_score:.1f}",
             ],
-            ["Liquidity", f"{institutional_scores.liquidity:.1f}", "ESG", f"{institutional_scores.esg:.1f}"],
-            ["Composite", f"{institutional_scores.composite:.1f}", "", ""],
+            ["Tail Risk", f"{s.tail_risk_score:.1f}", "", ""],
         ]
         flow.extend(
             styled_metric_table(
                 score_rows, [4 * cm, 4.5 * cm, 4 * cm, 4.5 * cm], caption="Institutional Scores"
             )
         )
+        if s.score_interpretation:
+            flow.append(Spacer(1, 4))
+            flow.append(Paragraph(s.score_interpretation, body))
         flow.append(Spacer(1, 8))
 
     # Early Warnings
