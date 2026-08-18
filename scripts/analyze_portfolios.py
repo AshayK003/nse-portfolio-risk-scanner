@@ -15,8 +15,9 @@ warnings.filterwarnings("ignore")
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from data.prices import fetch_prices  # noqa: E402
+from data.prices import fetch_benchmark, fetch_prices  # noqa: E402
 from engine import RISK_PROFILES, Holding  # noqa: E402
+from engine.compute import _compute_stock_betas  # noqa: E402
 from engine.factors import compute_factor_exposures, estimate_macro_sensitivities  # noqa: E402
 from engine.optimization import optimize_hrp, optimize_min_volatility  # noqa: E402
 from engine.recommendations import generate_recommendations  # noqa: E402
@@ -516,8 +517,16 @@ def analyze_portfolio(holdings, portfolio_name, profile_name="moderate", propose
         print(f"      {i}. {rf.name}: {rf.composite:.1f} — {rf.reasoning[:80]}...")
 
     # ─── Stock Risk Attribution ────────────────────────────────────
+    # Compute real per-holding betas vs Nifty so the table isn't a 1.0 placeholder
+    stock_betas: dict[str, float] = {}
+    try:
+        bench_prices = fetch_benchmark("^NSEI", period="1y")
+        bench_rets = bench_prices.pct_change().dropna() if not bench_prices.empty else None
+        stock_betas = _compute_stock_betas(prices_df[valid_tickers], bench_rets)
+    except Exception as e:  # noqa: BLE001
+        print(f"   ⚠️ Beta fetch failed ({e}); attribution betas default to 1.0")
     print("\n🎯 STOCK RISK ATTRIBUTION (top 7 contributors)")
-    attribution = compute_stock_risk_attribution(prices_df[valid_tickers], weights)
+    attribution = compute_stock_risk_attribution(prices_df[valid_tickers], weights, stock_betas)
     if not attribution.empty:
         for idx, row in attribution.head(7).iterrows():
             pct = (row["Risk Contrib (%)"] / risk.volatility_annual) * 100
