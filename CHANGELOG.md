@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.19.0 (2026-08-18)
+
+### Added — Deterministic Recommendation Rule System
+
+A complete, production-ready recommendation engine with 12 deterministic rules governed by a strict governance pattern (BLOCK > REDUCE > PASS). Replaces ad-hoc heuristics with auditable, testable logic.
+
+**Rules Implemented:**
+- **Concentration** — Single-name (>15%) and sector (>20%) caps with TRIM actions
+- **ETF Overlap** — Detects duplicate index ETFs (NIFTYBEES/MONIFTY500/NEXT50IETF) and consolidates
+- **Sharpe Underperformance** — Flags portfolio Sharpe < 0.5, recommends BUY toward higher-Sharpe holdings
+- **Regime: VIX Spike** — VIX > 28 → BLOCK shorts, TRIM longs 50%
+- **Regime: ADX Doldrums** — ADX < 15 → BLOCK breakout strategies
+- **Breadth Confirmation** — A/D ratio misaligned with portfolio bias → TRIM
+- **FII/DII Confluence** — FII/DII bias contradicts portfolio direction → TRIM 50%
+- **Expiry Week** — Reduces all position sizes by 20%
+- **Tax Loss Harvest** — Harvests STCL > ₹5k for STCG offset
+- **Cash Floor** — Cash below floor → SELL lowest conviction to raise cash
+
+**Architecture:**
+- **Rule Registry** (Governance Pattern) — Each rule is a pure function `ctx → list[RuleVerdict]`; strictest override wins (BLOCK > REDUCE > PASS); per-rule try/except prevents pipeline crashes
+- **Orchestrator** — Assembles verdicts into `RecommendationCard[]` + `RecommendationReport`; deduplicates by (action, ticker); computes net risk reduction (bps) minus tax + impact costs
+- **Intelligence Registry** — `generate_recommendations()` wrapper for registry integration
+- **Frontend** — `render_recommendations_tab()` renders `RecommendationCard[]` with reasoning, triggered rules, tax/impact costs, net risk reduction, guardrails ("Don't execute if..."), alternatives
+- **PDF Export** — Backward-compatible `RecommendationReport.priority_actions` for existing generator
+
+**Frontend Cards** include: action badge, reasoning, triggered rules with reasons, tax/impact breakdown, net risk reduction (bps), guardrails ("Don't execute if..."), alternatives considered
+
+**Sample Output (Ashay's Portfolio):**
+```
+Generated 11 cards:
+  Exit HDFCBANK.NS - sell - immediate - 0.90
+    Guardrails: ['Execute only during market hours']
+    Tax: ₹0 | Impact: ₹9
+  Reduce NIFTYBEES.NS - trim - near_term - 0.90
+    Reason: Broad Market at 32.8% > 20.0% cap
+    Net risk reduction: 114 bps | Tax: ₹2,999
+```
+
+**Tests:** 12 new tests + all existing (401 pass, 1 skipped)
+
+---
+
 ## v0.18.7 (2026-08-18)
 
 ### Fixed — Risk Reporting Display Defects (Decision Reliability)

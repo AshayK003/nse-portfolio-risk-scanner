@@ -280,18 +280,21 @@ def render_upload_tab() -> Portfolio | None:
 
         return None
 
-    portfolio = csv_portfolio or Portfolio(name="My Portfolio")
+    # Build portfolio from available data
     if csv_portfolio and manual_holdings:
         seen = {h.ticker for h in csv_portfolio.holdings}
         for h in manual_holdings:
             if h.ticker not in seen:
-                portfolio.holdings.append(h)
+                csv_portfolio.holdings.append(h)
                 seen.add(h.ticker)
-        portfolio.name = f"{csv_portfolio.name} + Manual"
+        csv_portfolio.name = f"{csv_portfolio.name} + Manual"
+        return csv_portfolio
+    elif csv_portfolio:
+        return csv_portfolio
     elif manual_holdings:
-        portfolio.holdings = manual_holdings
-
-    return portfolio
+        return Portfolio(holdings=manual_holdings, name="Manual Portfolio")
+    else:
+        return None
 
 
 def render_data_editor(portfolio: Portfolio) -> Portfolio:
