@@ -182,7 +182,7 @@ def render_institutional_intelligence(institutional_scores, factor_report, early
 
 
 def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data, profile, report) -> None:
-    """Tab 8: Recommendations."""
+    """Tab 8: Recommendations - uses new RecommendationCard format."""
 
     render_optimization_section(
         opt_result,
@@ -192,36 +192,53 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
     )
     render_rebalance_section(rebalance, risk_data=risk_data)
     st.divider()
-    if recommendations:
-        st.subheader("Portfolio Action Recommendations")
-        st.caption(recommendations.summary)
 
-        if recommendations.priority_actions:
+    # Handle both old RecommendationReport (with recommendations list) and new RecommendationCard format
+    if recommendations:
+        # Check if it's the new RecommendationCard format (has 'cards' attribute)
+        if hasattr(recommendations, "cards"):
+            cards = recommendations.cards
+            priority_cards = (
+                recommendations.priority_actions if hasattr(recommendations, "priority_actions") else []
+            )
+            summary = recommendations.summary if hasattr(recommendations, "summary") else ""
+        else:
+            # Old format - convert for compatibility
+            cards = getattr(recommendations, "recommendations", [])
+            priority_cards = getattr(recommendations, "priority_actions", [])
+            summary = getattr(recommendations, "summary", "")
+
+        st.subheader("Portfolio Action Recommendations")
+        if summary:
+            st.caption(summary)
+
+        if priority_cards:
             st.markdown("**Priority Actions:**")
-            for i, rec in enumerate(recommendations.priority_actions, 1):
+            for i, card in enumerate(priority_cards, 1):
                 action_colors = {
-                    "reduce": "#ef4444",
-                    "hedge": "#f59e0b",
-                    "diversify": "#3b82f6",
-                    "accumulate": "#22c55e",
-                    "monitor": "#6b7280",
-                    "rebalance": "#a855f7",
+                    "buy": "#22c55e",
+                    "sell": "#ef4444",
+                    "trim": "#f59e0b",
+                    "hold": "#6b7280",
+                    "block": "#a855f7",
                 }
-                color = action_colors.get(rec.action.value, "#6b7280")
+                color = action_colors.get(card.action.value, "#6b7280")
                 st.markdown(
                     f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {color};"
                     f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
-                    f"<strong>{i}. {rec.action.value.upper()} {rec.target}</strong> "
-                    f"<span style='color:#9ca3af;'>({rec.urgency}, confidence: {rec.confidence:.0%})</span><br/>"
-                    f"<span style='font-size:0.85rem;'>{rec.reasoning}</span><br/>"
-                    f"<span style='font-size:0.8rem;color:#f59e0b;'>Trade-off: {rec.trade_off}</span></div>",
+                    f"<strong>{i}. {card.action.value.upper()} {', '.join(card.tickers) if card.tickers else 'PORTFOLIO'}</strong> "
+                    f"<span style='color:#9ca3af;'>{card.urgency.value}, confidence: {card.confidence:.0%}</span><br/>"
+                    f"<span style='font-size:0.85rem;'>{card.reason}</span><br/>"
+                    f"<span style='font-size:0.8rem;color:#f59e0b;'>Trade-off: {'; '.join(card.alternatives[:2]) if card.alternatives else 'See alternatives'}</span></div>",
                     unsafe_allow_html=True,
                 )
 
-        if recommendations.risk_reduction_potential > 0:
+        # Show total risk reduction
+        total_risk_reduction = sum(c.net_risk_reduction_bps for c in cards) / 100
+        if total_risk_reduction > 0:
             st.metric(
                 "Total Risk Reduction Potential",
-                f"{recommendations.risk_reduction_potential:.1f}%",
+                f"{total_risk_reduction:.1f}%",
             )
             st.info(
                 "Risk reduction is a directional estimate based on heuristic rules, "
@@ -230,28 +247,50 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
 
         st.divider()
         st.subheader("All Recommendations")
-        for rec in recommendations.recommendations:
+
+        for card in cards:
             action_colors = {
-                "reduce": "#ef4444",
-                "hedge": "#f59e0b",
-                "diversify": "#3b82f6",
-                "accumulate": "#22c55e",
-                "monitor": "#6b7280",
-                "rebalance": "#a855f7",
+                "buy": "#22c55e",
+                "sell": "#ef4444",
+                "trim": "#f59e0b",
+                "hold": "#6b7280",
+                "block": "#a855f7",
             }
-            color = action_colors.get(rec.action.value, "#6b7280")
+            color = action_colors.get(card.action.value, "#6b7280")
+
             with st.expander(
-                f"**{rec.action.value.upper()}** {rec.target} — Urgency: {rec.urgency}",
-                expanded=rec.urgency == "immediate",
+                f"**{card.action.value.upper()}** {', '.join(card.tickers) if card.tickers else 'PORTFOLIO'} — Urgency: {card.urgency.value}",
+                expanded=card.urgency.value == "immediate",
             ):
-                st.markdown(f"**Reasoning:** {rec.reasoning}")
-                st.caption(f"**Trade-off:** {rec.trade_off}")
-                if rec.details:
-                    st.caption(f"**Suggested Action:** {rec.details}")
-                st.caption(
-                    f"Expected risk reduction: {rec.expected_risk_reduction:.1f}% · "
-                    f"Confidence: {rec.confidence:.0%}"
-                )
+                st.markdown(f"**Reasoning:** {card.reason}")
+
+                # Show rule verdicts
+                if card.rule_verdicts:
+                    st.caption("**Triggered Rules:**")
+                    for verdict in card.rule_verdicts:
+                        st.caption(f"• {verdict.rule_name}: {verdict.reason}")
+
+                # Tax and impact breakdown
+                if card.tax_breakdown:
+                    total_tax = sum(card.tax_breakdown.values())
+                    st.caption(f"**Estimated Tax Cost:** ₹{total_tax:,.0f}")
+
+                if card.impact_breakdown:
+                    total_impact = sum(card.impact_breakdown.values())
+                    st.caption(f"**Estimated Impact Cost:** ₹{total_impact:,.0f}")
+
+                st.caption(f"**Net Risk Reduction:** {card.net_risk_reduction_bps} bps")
+
+                if card.alternatives:
+                    st.caption(f"**Alternatives:** {'; '.join(card.alternatives[:3])}")
+
+                st.caption(f"**Confidence:** {card.confidence:.0%}")
+
+                # Guardrails
+                if card.guardrails:
+                    with st.expander("⚠️ Guardrails (Don't execute if...)", expanded=False):
+                        for g in card.guardrails:
+                            st.caption(f"• {g}")
     else:
         st.info("Recommendations require full analysis.")
 
