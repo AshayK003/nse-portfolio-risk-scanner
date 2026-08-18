@@ -406,8 +406,6 @@ def test_generate_pdf_report_with_regime_recommendations_warnings():
         ],
     )
 
-    from engine.recommendations.types import RegimeContext, Urgency
-
     recommendations = RecommendationReport(
         cards=[
             RecommendationCard(
