@@ -22,12 +22,13 @@ class FiiDiiBias(Enum):
 
 # ─── Context passed to every rule ──────────────────────────────────
 
+
 @dataclass(frozen=True)
 class RecommendationContext:
     # Portfolio state
-    holdings: dict[str, TaxLot]           # ticker -> TaxLot
-    sector_weights: dict[str, float]      # sector -> weight %
-    asset_class_weights: dict[str, float] # equity/etf/gold/cash
+    holdings: dict[str, TaxLot]  # ticker -> TaxLot
+    sector_weights: dict[str, float]  # sector -> weight %
+    asset_class_weights: dict[str, float]  # equity/etf/gold/cash
     total_value: float
     cash_available: float
 
@@ -41,14 +42,14 @@ class RecommendationContext:
     is_expiry_week: bool
 
     # User constraints (from profile)
-    max_stcg_budget: float                # ₹ willing to realize STCG
-    max_ltcg_budget: float                # ₹ willing to realize LTCG
-    max_single_trade_pct: float           # max % of portfolio per trade
-    max_sector_weight: float              # sector cap
-    max_single_name_weight: float         # single stock cap
-    min_cash_floor: float                 # emergency cash
+    max_stcg_budget: float  # ₹ willing to realize STCG
+    max_ltcg_budget: float  # ₹ willing to realize LTCG
+    max_single_trade_pct: float  # max % of portfolio per trade
+    max_sector_weight: float  # sector cap
+    max_single_name_weight: float  # single stock cap
+    min_cash_floor: float  # emergency cash
     tax_loss_harvest_enabled: bool
-    horizon_years: int                    # investment horizon
+    horizon_years: int  # investment horizon
 
     # Derived
     portfolio_sharpe: float
@@ -63,6 +64,7 @@ RuleFn = Callable[[RecommendationContext], list[RuleVerdict]]
 
 # ─── Individual Rules ──────────────────────────────────────────────
 
+
 def rule_concentration_single_name(ctx: RecommendationContext) -> list[RuleVerdict]:
     """Any holding > max_single_name_weight → TRIM excess"""
     verdicts = []
@@ -72,19 +74,21 @@ def rule_concentration_single_name(ctx: RecommendationContext) -> list[RuleVerdi
             excess_weight = weight - ctx.max_single_name_weight
             excess_qty = max(0, int(excess_weight * ctx.total_value / lot.current_price))
             if excess_qty > 0:
-                verdicts.append(RuleVerdict(
-                    rule_name="concentration_single_name",
-                    action=ActionType.TRIM,
-                    ticker=ticker,
-                    qty=excess_qty,
-                    urgency=Urgency.NEAR_TERM,
-                    confidence=0.95,
-                    reason=f"{ticker} at {weight:.1f}% > {ctx.max_single_name_weight:.1f}% cap",
-                    risk_delta_bps=int(excess_weight * 50),
-                    tax_cost=_estimate_tax(lot, excess_qty),
-                    impact_cost=_estimate_impact(ticker, excess_qty, lot.current_price, ctx),
-                    net_benefit_bps=0
-                ))
+                verdicts.append(
+                    RuleVerdict(
+                        rule_name="concentration_single_name",
+                        action=ActionType.TRIM,
+                        ticker=ticker,
+                        qty=excess_qty,
+                        urgency=Urgency.NEAR_TERM,
+                        confidence=0.95,
+                        reason=f"{ticker} at {weight:.1f}% > {ctx.max_single_name_weight:.1f}% cap",
+                        risk_delta_bps=int(excess_weight * 50),
+                        tax_cost=_estimate_tax(lot, excess_qty),
+                        impact_cost=_estimate_impact(ticker, excess_qty, lot.current_price, ctx),
+                        net_benefit_bps=0,
+                    )
+                )
     return verdicts
 
 
@@ -93,26 +97,27 @@ def rule_concentration_sector(ctx: RecommendationContext) -> list[RuleVerdict]:
     verdicts = []
     for sector, weight in ctx.sector_weights.items():
         if weight > ctx.max_sector_weight:
-            sector_holdings = [(t, lot) for t, lot in ctx.holdings.items()
-                              if _get_sector(t) == sector]
+            sector_holdings = [(t, lot) for t, lot in ctx.holdings.items() if _get_sector(t) == sector]
             if sector_holdings:
                 ticker, lot = max(sector_holdings, key=lambda x: x[1].qty * x[1].current_price)
                 excess_weight = weight - ctx.max_sector_weight
                 excess_qty = max(0, int(excess_weight * ctx.total_value / lot.current_price))
                 if excess_qty > 0:
-                    verdicts.append(RuleVerdict(
-                        rule_name="concentration_sector",
-                        action=ActionType.TRIM,
-                        ticker=ticker,
-                        qty=excess_qty,
-                        urgency=Urgency.NEAR_TERM,
-                        confidence=0.9,
-                        reason=f"{sector} at {weight:.1f}% > {ctx.max_sector_weight:.1f}% cap",
-                        risk_delta_bps=int(excess_weight * 30),
-                        tax_cost=_estimate_tax(lot, excess_qty),
-                        impact_cost=_estimate_impact(ticker, excess_qty, lot.current_price, ctx),
-                        net_benefit_bps=0
-                    ))
+                    verdicts.append(
+                        RuleVerdict(
+                            rule_name="concentration_sector",
+                            action=ActionType.TRIM,
+                            ticker=ticker,
+                            qty=excess_qty,
+                            urgency=Urgency.NEAR_TERM,
+                            confidence=0.9,
+                            reason=f"{sector} at {weight:.1f}% > {ctx.max_sector_weight:.1f}% cap",
+                            risk_delta_bps=int(excess_weight * 30),
+                            tax_cost=_estimate_tax(lot, excess_qty),
+                            impact_cost=_estimate_impact(ticker, excess_qty, lot.current_price, ctx),
+                            net_benefit_bps=0,
+                        )
+                    )
     return verdicts
 
 
@@ -121,19 +126,21 @@ def rule_sharpe_underperformance(ctx: RecommendationContext) -> list[RuleVerdict
     if ctx.portfolio_sharpe >= 0.5:
         return []
 
-    return [RuleVerdict(
-        rule_name="sharpe_underperformance",
-        action=ActionType.BUY,
-        ticker="PORTFOLIO",
-        qty=0,
-        urgency=Urgency.ROUTINE,
-        confidence=0.7,
-        reason=f"Portfolio Sharpe {ctx.portfolio_sharpe:.2f} < 0.5 target",
-        risk_delta_bps=-200,
-        tax_cost=0,
-        impact_cost=0,
-        net_benefit_bps=0
-    )]
+    return [
+        RuleVerdict(
+            rule_name="sharpe_underperformance",
+            action=ActionType.BUY,
+            ticker="PORTFOLIO",
+            qty=0,
+            urgency=Urgency.ROUTINE,
+            confidence=0.7,
+            reason=f"Portfolio Sharpe {ctx.portfolio_sharpe:.2f} < 0.5 target",
+            risk_delta_bps=-200,
+            tax_cost=0,
+            impact_cost=0,
+            net_benefit_bps=0,
+        )
+    ]
 
 
 def rule_regime_vix_spike(ctx: RecommendationContext) -> list[RuleVerdict]:
@@ -144,35 +151,39 @@ def rule_regime_vix_spike(ctx: RecommendationContext) -> list[RuleVerdict]:
     verdicts = []
     for ticker, lot in ctx.holdings.items():
         if _is_short_candidate(lot, ctx):
-            verdicts.append(RuleVerdict(
-                rule_name="regime_vix_spike",
-                action=ActionType.BLOCK,
-                ticker=ticker,
-                qty=lot.qty,
-                urgency=Urgency.IMMEDIATE,
-                confidence=0.95,
-                reason=f"VIX {ctx.vix:.1f} > 28 — panic regime, no new shorts",
-                risk_delta_bps=0,
-                tax_cost=0,
-                impact_cost=0,
-                net_benefit_bps=0
-            ))
+            verdicts.append(
+                RuleVerdict(
+                    rule_name="regime_vix_spike",
+                    action=ActionType.BLOCK,
+                    ticker=ticker,
+                    qty=lot.qty,
+                    urgency=Urgency.IMMEDIATE,
+                    confidence=0.95,
+                    reason=f"VIX {ctx.vix:.1f} > 28 — panic regime, no new shorts",
+                    risk_delta_bps=0,
+                    tax_cost=0,
+                    impact_cost=0,
+                    net_benefit_bps=0,
+                )
+            )
         else:
             trim_qty = int(lot.qty * 0.5)
             if trim_qty > 0:
-                verdicts.append(RuleVerdict(
-                    rule_name="regime_vix_spike",
-                    action=ActionType.TRIM,
-                    ticker=ticker,
-                    qty=trim_qty,
-                    urgency=Urgency.IMMEDIATE,
-                    confidence=0.8,
-                    reason=f"VIX {ctx.vix:.1f} > 28 — reduce long exposure 50%",
-                    risk_delta_bps=-100,
-                    tax_cost=_estimate_tax(lot, trim_qty),
-                    impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                    net_benefit_bps=0
-                ))
+                verdicts.append(
+                    RuleVerdict(
+                        rule_name="regime_vix_spike",
+                        action=ActionType.TRIM,
+                        ticker=ticker,
+                        qty=trim_qty,
+                        urgency=Urgency.IMMEDIATE,
+                        confidence=0.8,
+                        reason=f"VIX {ctx.vix:.1f} > 28 — reduce long exposure 50%",
+                        risk_delta_bps=-100,
+                        tax_cost=_estimate_tax(lot, trim_qty),
+                        impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                        net_benefit_bps=0,
+                    )
+                )
     return verdicts
 
 
@@ -181,19 +192,21 @@ def rule_regime_adx_doldrums(ctx: RecommendationContext) -> list[RuleVerdict]:
     if ctx.adx >= 15:
         return []
 
-    return [RuleVerdict(
-        rule_name="regime_adx_doldrums",
-        action=ActionType.BLOCK,
-        ticker="PORTFOLIO",
-        qty=0,
-        urgency=Urgency.NEAR_TERM,
-        confidence=0.85,
-        reason=f"ADX {ctx.adx:.1f} < 15 — range-bound, breakout signals unreliable",
-        risk_delta_bps=0,
-        tax_cost=0,
-        impact_cost=0,
-        net_benefit_bps=0
-    )]
+    return [
+        RuleVerdict(
+            rule_name="regime_adx_doldrums",
+            action=ActionType.BLOCK,
+            ticker="PORTFOLIO",
+            qty=0,
+            urgency=Urgency.NEAR_TERM,
+            confidence=0.85,
+            reason=f"ADX {ctx.adx:.1f} < 15 — range-bound, breakout signals unreliable",
+            risk_delta_bps=0,
+            tax_cost=0,
+            impact_cost=0,
+            net_benefit_bps=0,
+        )
+    ]
 
 
 def rule_breadth_confirmation(ctx: RecommendationContext) -> list[RuleVerdict]:
@@ -207,38 +220,42 @@ def rule_breadth_confirmation(ctx: RecommendationContext) -> list[RuleVerdict]:
             if lot.unrealized_pnl > 0:
                 trim_qty = int(lot.qty * 0.3)
                 if trim_qty > 0:
-                    verdicts.append(RuleVerdict(
-                        rule_name="breadth_confirmation",
-                        action=ActionType.TRIM,
-                        ticker=ticker,
-                        qty=trim_qty,
-                        urgency=Urgency.NEAR_TERM,
-                        confidence=0.7,
-                        reason=f"A/D ratio {ctx.breadth_ad_ratio:.2f} < 0.7 — breadth contradicts long bias",
-                        risk_delta_bps=-50,
-                        tax_cost=_estimate_tax(lot, trim_qty),
-                        impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                        net_benefit_bps=0
-                    ))
+                    verdicts.append(
+                        RuleVerdict(
+                            rule_name="breadth_confirmation",
+                            action=ActionType.TRIM,
+                            ticker=ticker,
+                            qty=trim_qty,
+                            urgency=Urgency.NEAR_TERM,
+                            confidence=0.7,
+                            reason=f"A/D ratio {ctx.breadth_ad_ratio:.2f} < 0.7 — breadth contradicts long bias",
+                            risk_delta_bps=-50,
+                            tax_cost=_estimate_tax(lot, trim_qty),
+                            impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                            net_benefit_bps=0,
+                        )
+                    )
     elif portfolio_bias < 0 and ctx.breadth_ad_ratio > 1.5:
         # Portfolio short but breadth strong
         for ticker, lot in ctx.holdings.items():
             if lot.unrealized_pnl < 0:
                 trim_qty = int(lot.qty * 0.3)
                 if trim_qty > 0:
-                    verdicts.append(RuleVerdict(
-                        rule_name="breadth_confirmation",
-                        action=ActionType.TRIM,
-                        ticker=ticker,
-                        qty=trim_qty,
-                        urgency=Urgency.NEAR_TERM,
-                        confidence=0.7,
-                        reason=f"A/D ratio {ctx.breadth_ad_ratio:.2f} > 1.5 — breadth contradicts short bias",
-                        risk_delta_bps=-50,
-                        tax_cost=_estimate_tax(lot, trim_qty),
-                        impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                        net_benefit_bps=0
-                    ))
+                    verdicts.append(
+                        RuleVerdict(
+                            rule_name="breadth_confirmation",
+                            action=ActionType.TRIM,
+                            ticker=ticker,
+                            qty=trim_qty,
+                            urgency=Urgency.NEAR_TERM,
+                            confidence=0.7,
+                            reason=f"A/D ratio {ctx.breadth_ad_ratio:.2f} > 1.5 — breadth contradicts short bias",
+                            risk_delta_bps=-50,
+                            tax_cost=_estimate_tax(lot, trim_qty),
+                            impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                            net_benefit_bps=0,
+                        )
+                    )
     return verdicts
 
 
@@ -249,7 +266,7 @@ def rule_fii_dii_confluence(ctx: RecommendationContext) -> list[RuleVerdict]:
 
     # Handle both enum and string
     fii_dii = ctx.fii_dii_bias
-    if hasattr(fii_dii, 'value'):
+    if hasattr(fii_dii, "value"):
         fii_dii = fii_dii.value
     is_bearish = fii_dii == "bearish"
     is_bullish = fii_dii == "bullish"
@@ -258,36 +275,40 @@ def rule_fii_dii_confluence(ctx: RecommendationContext) -> list[RuleVerdict]:
         for ticker, lot in ctx.holdings.items():
             trim_qty = int(lot.qty * 0.5)
             if trim_qty > 0:
-                verdicts.append(RuleVerdict(
-                    rule_name="fii_dii_confluence",
-                    action=ActionType.TRIM,
-                    ticker=ticker,
-                    qty=trim_qty,
-                    urgency=Urgency.NEAR_TERM,
-                    confidence=0.75,
-                    reason="FII/DII bearish contradicts long portfolio bias",
-                    risk_delta_bps=-75,
-                    tax_cost=_estimate_tax(lot, trim_qty),
-                    impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                    net_benefit_bps=0
-                ))
+                verdicts.append(
+                    RuleVerdict(
+                        rule_name="fii_dii_confluence",
+                        action=ActionType.TRIM,
+                        ticker=ticker,
+                        qty=trim_qty,
+                        urgency=Urgency.NEAR_TERM,
+                        confidence=0.75,
+                        reason="FII/DII bearish contradicts long portfolio bias",
+                        risk_delta_bps=-75,
+                        tax_cost=_estimate_tax(lot, trim_qty),
+                        impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                        net_benefit_bps=0,
+                    )
+                )
     elif portfolio_bias < 0 and is_bullish:
         for ticker, lot in ctx.holdings.items():
             trim_qty = int(lot.qty * 0.5)
             if trim_qty > 0:
-                verdicts.append(RuleVerdict(
-                    rule_name="fii_dii_confluence",
-                    action=ActionType.TRIM,
-                    ticker=ticker,
-                    qty=trim_qty,
-                    urgency=Urgency.NEAR_TERM,
-                    confidence=0.75,
-                    reason="FII/DII bullish contradicts short portfolio bias",
-                    risk_delta_bps=-75,
-                    tax_cost=_estimate_tax(lot, trim_qty),
-                    impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                    net_benefit_bps=0
-                ))
+                verdicts.append(
+                    RuleVerdict(
+                        rule_name="fii_dii_confluence",
+                        action=ActionType.TRIM,
+                        ticker=ticker,
+                        qty=trim_qty,
+                        urgency=Urgency.NEAR_TERM,
+                        confidence=0.75,
+                        reason="FII/DII bullish contradicts short portfolio bias",
+                        risk_delta_bps=-75,
+                        tax_cost=_estimate_tax(lot, trim_qty),
+                        impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                        net_benefit_bps=0,
+                    )
+                )
     return verdicts
 
 
@@ -300,19 +321,21 @@ def rule_expiry_week(ctx: RecommendationContext) -> list[RuleVerdict]:
     for ticker, lot in ctx.holdings.items():
         trim_qty = int(lot.qty * 0.2)
         if trim_qty > 0:
-            verdicts.append(RuleVerdict(
-                rule_name="expiry_week",
-                action=ActionType.TRIM,
-                ticker=ticker,
-                qty=trim_qty,
-                urgency=Urgency.IMMEDIATE,
-                confidence=0.6,
-                reason="Expiry week — reduce all position sizes 20%",
-                risk_delta_bps=-30,
-                tax_cost=_estimate_tax(lot, trim_qty),
-                impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
-                net_benefit_bps=0
-            ))
+            verdicts.append(
+                RuleVerdict(
+                    rule_name="expiry_week",
+                    action=ActionType.TRIM,
+                    ticker=ticker,
+                    qty=trim_qty,
+                    urgency=Urgency.IMMEDIATE,
+                    confidence=0.6,
+                    reason="Expiry week — reduce all position sizes 20%",
+                    risk_delta_bps=-30,
+                    tax_cost=_estimate_tax(lot, trim_qty),
+                    impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
+                    net_benefit_bps=0,
+                )
+            )
     return verdicts
 
 
@@ -323,21 +346,22 @@ def rule_tax_loss_harvest(ctx: RecommendationContext) -> list[RuleVerdict]:
 
     verdicts = []
     for ticker, lot in ctx.holdings.items():
-        if (lot.unrealized_pnl < -5000 and lot.is_ltcg is False
-            and ctx.max_stcg_budget > 0):
-            verdicts.append(RuleVerdict(
-                rule_name="tax_loss_harvest",
-                action=ActionType.SELL,
-                ticker=ticker,
-                qty=lot.qty,
-                urgency=Urgency.NEAR_TERM,
-                confidence=0.85,
-                reason=f"Tax loss harvest: ₹{abs(lot.unrealized_pnl):,.0f} STCL available",
-                risk_delta_bps=0,
-                tax_cost=0,  # saves tax
-                impact_cost=_estimate_impact(ticker, lot.qty, lot.current_price, ctx),
-                net_benefit_bps=0
-            ))
+        if lot.unrealized_pnl < -5000 and lot.is_ltcg is False and ctx.max_stcg_budget > 0:
+            verdicts.append(
+                RuleVerdict(
+                    rule_name="tax_loss_harvest",
+                    action=ActionType.SELL,
+                    ticker=ticker,
+                    qty=lot.qty,
+                    urgency=Urgency.NEAR_TERM,
+                    confidence=0.85,
+                    reason=f"Tax loss harvest: ₹{abs(lot.unrealized_pnl):,.0f} STCL available",
+                    risk_delta_bps=0,
+                    tax_cost=0,  # saves tax
+                    impact_cost=_estimate_impact(ticker, lot.qty, lot.current_price, ctx),
+                    net_benefit_bps=0,
+                )
+            )
     return verdicts
 
 
@@ -348,8 +372,9 @@ def rule_cash_floor(ctx: RecommendationContext) -> list[RuleVerdict]:
 
     deficit = ctx.min_cash_floor - ctx.cash_available
     # Sort by worst risk-adjusted return (placeholder: lowest unrealized P&L %)
-    sorted_holdings = sorted(ctx.holdings.items(),
-                           key=lambda x: x[1].unrealized_pnl / (x[1].qty * x[1].avg_price))
+    sorted_holdings = sorted(
+        ctx.holdings.items(), key=lambda x: x[1].unrealized_pnl / (x[1].qty * x[1].avg_price)
+    )
 
     verdicts = []
     raised = 0.0
@@ -358,19 +383,21 @@ def rule_cash_floor(ctx: RecommendationContext) -> list[RuleVerdict]:
             break
         sell_qty = min(lot.qty, int((deficit - raised) / lot.current_price))
         if sell_qty > 0:
-            verdicts.append(RuleVerdict(
-                rule_name="cash_floor",
-                action=ActionType.SELL,
-                ticker=ticker,
-                qty=sell_qty,
-                urgency=Urgency.IMMEDIATE,
-                confidence=0.9,
-                reason=f"Cash ₹{ctx.cash_available:,.0f} < floor ₹{ctx.min_cash_floor:,.0f} — raise ₹{deficit:,.0f}",
-                risk_delta_bps=0,
-                tax_cost=_estimate_tax(lot, sell_qty),
-                impact_cost=_estimate_impact(ticker, sell_qty, lot.current_price, ctx),
-                net_benefit_bps=0
-            ))
+            verdicts.append(
+                RuleVerdict(
+                    rule_name="cash_floor",
+                    action=ActionType.SELL,
+                    ticker=ticker,
+                    qty=sell_qty,
+                    urgency=Urgency.IMMEDIATE,
+                    confidence=0.9,
+                    reason=f"Cash ₹{ctx.cash_available:,.0f} < floor ₹{ctx.min_cash_floor:,.0f} — raise ₹{deficit:,.0f}",
+                    risk_delta_bps=0,
+                    tax_cost=_estimate_tax(lot, sell_qty),
+                    impact_cost=_estimate_impact(ticker, sell_qty, lot.current_price, ctx),
+                    net_benefit_bps=0,
+                )
+            )
             raised += sell_qty * lot.current_price
     return verdicts
 
@@ -379,29 +406,30 @@ def rule_etf_overlap(ctx: RecommendationContext) -> list[RuleVerdict]:
     """Multiple ETFs tracking same index → consolidate"""
     verdicts = []
     # Detect Nifty 50 overlap: NIFTYBEES, MONIFTY500, NEXT50IETF, etc.
-    nifty50_etfs = [t for t in ctx.holdings
-                   if any(x in t for x in ["NIFTYBEES", "MONIFTY500", "NEXT50IETF"])]
+    nifty50_etfs = [t for t in ctx.holdings if any(x in t for x in ["NIFTYBEES", "MONIFTY500", "NEXT50IETF"])]
     if len(nifty50_etfs) > 1:
         # Keep largest, trim others
-        sorted_etfs = sorted(nifty50_etfs,
-                           key=lambda t: ctx.holdings[t].qty * ctx.holdings[t].current_price,
-                           reverse=True)
+        sorted_etfs = sorted(
+            nifty50_etfs, key=lambda t: ctx.holdings[t].qty * ctx.holdings[t].current_price, reverse=True
+        )
         keep = sorted_etfs[0]
         for ticker in sorted_etfs[1:]:
             lot = ctx.holdings[ticker]
-            verdicts.append(RuleVerdict(
-                rule_name="etf_overlap",
-                action=ActionType.TRIM,
-                ticker=ticker,
-                qty=lot.qty,
-                urgency=Urgency.NEAR_TERM,
-                confidence=0.8,
-                reason=f"ETF overlap: {ticker} duplicates {keep} (Nifty 50 exposure)",
-                risk_delta_bps=-20,
-                tax_cost=_estimate_tax(lot, lot.qty),
-                impact_cost=_estimate_impact(ticker, lot.qty, lot.current_price, ctx),
-                net_benefit_bps=0
-            ))
+            verdicts.append(
+                RuleVerdict(
+                    rule_name="etf_overlap",
+                    action=ActionType.TRIM,
+                    ticker=ticker,
+                    qty=lot.qty,
+                    urgency=Urgency.NEAR_TERM,
+                    confidence=0.8,
+                    reason=f"ETF overlap: {ticker} duplicates {keep} (Nifty 50 exposure)",
+                    risk_delta_bps=-20,
+                    tax_cost=_estimate_tax(lot, lot.qty),
+                    impact_cost=_estimate_impact(ticker, lot.qty, lot.current_price, ctx),
+                    net_benefit_bps=0,
+                )
+            )
     return verdicts
 
 
@@ -434,6 +462,7 @@ def apply_recommendation_rules(ctx: RecommendationContext) -> list[RuleVerdict]:
         except Exception as e:
             # Log and continue — one bad rule doesn't crash pipeline
             import logging
+
             logging.getLogger(__name__).warning(f"Rule '{rule_name}' failed: {e}")
             continue
 
@@ -449,23 +478,37 @@ def apply_recommendation_rules(ctx: RecommendationContext) -> list[RuleVerdict]:
 
 # ─── Helpers ────────────────────────────────────────────────────────
 
+
 def _get_sector(ticker: str) -> str:
     """Map ticker to sector — in production, load from sector mapping file"""
     sector_map = {
-        "HDFCBANK": "Banking", "ICICIBANK": "Banking", "SBIN": "Banking",
-        "NIFTYBEES": "Broad Market", "MONIFTY500": "Broad Market",
-        "MIDCAPETF": "Broad Market", "NEXT50IETF": "Broad Market",
-        "POWERGRID": "Power", "ENERGY": "Energy",
-        "GOLDBEES": "Gold", "SILVERBEES": "Gold",
-        "VEDL": "Metals", "NMDC": "Metals", "METAL": "Metals",
+        "HDFCBANK": "Banking",
+        "ICICIBANK": "Banking",
+        "SBIN": "Banking",
+        "NIFTYBEES": "Broad Market",
+        "MONIFTY500": "Broad Market",
+        "MIDCAPETF": "Broad Market",
+        "NEXT50IETF": "Broad Market",
+        "POWERGRID": "Power",
+        "ENERGY": "Energy",
+        "GOLDBEES": "Gold",
+        "SILVERBEES": "Gold",
+        "VEDL": "Metals",
+        "NMDC": "Metals",
+        "METAL": "Metals",
         "COALINDIA": "Mining",
         "CASTROLIND": "Lubricants",
         "LIQUIDCASE": "Cash",
-        "MAFANG": "International", "MASPTOP50": "International",
-        "MAKEINDIA": "Manufacturing", "SRF": "Chemicals",
-        "EXIDEIND": "Auto", "TMCV": "Auto",
-        "GROWW": "Fintech", "HDFCSML250": "Small Cap",
-        "IEX": "Power", "MODEFENCE": "Defence",
+        "MAFANG": "International",
+        "MASPTOP50": "International",
+        "MAKEINDIA": "Manufacturing",
+        "SRF": "Chemicals",
+        "EXIDEIND": "Auto",
+        "TMCV": "Auto",
+        "GROWW": "Fintech",
+        "HDFCSML250": "Small Cap",
+        "IEX": "Power",
+        "MODEFENCE": "Defence",
     }
     base = ticker.replace(".NS", "").replace(".BO", "")
     return sector_map.get(base, "Other")
@@ -473,10 +516,8 @@ def _get_sector(ticker: str) -> str:
 
 def _portfolio_net_bias(holdings: dict[str, TaxLot]) -> float:
     """Net portfolio directional bias: +1 long, -1 short, 0 neutral"""
-    long_val = sum(lot.qty * lot.current_price
-                   for lot in holdings.values() if lot.unrealized_pnl >= 0)
-    short_val = sum(lot.qty * lot.current_price
-                    for lot in holdings.values() if lot.unrealized_pnl < 0)
+    long_val = sum(lot.qty * lot.current_price for lot in holdings.values() if lot.unrealized_pnl >= 0)
+    short_val = sum(lot.qty * lot.current_price for lot in holdings.values() if lot.unrealized_pnl < 0)
     total = long_val + short_val
     if total == 0:
         return 0.0
@@ -523,10 +564,14 @@ def _get_adv_20d(ticker: str) -> float:
     """Get 20-day average daily volume (₹) — placeholder"""
     # In production, fetch from data engine
     adv_map = {
-        "HDFCBANK": 500_000_000, "SBIN": 300_000_000,
-        "NIFTYBEES": 200_000_000, "MONIFTY500": 100_000_000,
-        "POWERGRID": 100_000_000, "VEDL": 50_000_000,
-        "NMDC": 30_000_000, "COALINDIA": 100_000_000,
+        "HDFCBANK": 500_000_000,
+        "SBIN": 300_000_000,
+        "NIFTYBEES": 200_000_000,
+        "MONIFTY500": 100_000_000,
+        "POWERGRID": 100_000_000,
+        "VEDL": 50_000_000,
+        "NMDC": 30_000_000,
+        "COALINDIA": 100_000_000,
     }
     base = ticker.replace(".NS", "").replace(".BO", "")
     return adv_map.get(base, 10_000_000)

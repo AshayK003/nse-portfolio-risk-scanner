@@ -37,28 +37,32 @@ def generate_recommendations(
         # Build snapshot from portfolio
         holdings = []
         for h in portfolio.holdings:
-            holdings.append({
-                "ticker": h.ticker,
-                "name": h.name,
-                "quantity": h.quantity,
-                "avg_price": h.avg_price,
-                "current_price": getattr(h, 'current_price', h.avg_price),
-            })
+            holdings.append(
+                {
+                    "ticker": h.ticker,
+                    "name": h.name,
+                    "quantity": h.quantity,
+                    "avg_price": h.avg_price,
+                    "current_price": getattr(h, "current_price", h.avg_price),
+                }
+            )
 
         # Get sector weights from sector object
         _ = sector.sector_allocation if sector else {}
 
         snapshot = PortfolioSnapshot(
-            holdings=[{
-                "ticker": h.ticker,
-                "name": h.name,
-                "quantity": h.quantity,
-                "avg_price": h.avg_price,
-                "current_price": getattr(h, 'current_price', h.avg_price),
-            } for h in portfolio.holdings],
-            total_value=sum(
-                h.quantity * getattr(h, 'current_price', h.avg_price)
+            holdings=[
+                {
+                    "ticker": h.ticker,
+                    "name": h.name,
+                    "quantity": h.quantity,
+                    "avg_price": h.avg_price,
+                    "current_price": getattr(h, "current_price", h.avg_price),
+                }
                 for h in portfolio.holdings
+            ],
+            total_value=sum(
+                h.quantity * getattr(h, "current_price", h.avg_price) for h in portfolio.holdings
             ),
             cash_available=0.0,  # Would need to be passed in
             sector_weights=sector.sector_allocation if sector else {},
@@ -69,9 +73,9 @@ def generate_recommendations(
         # Extract VIX/ADX from regime_result if available
         vix = 13.5
         adx = 25.0
-        if regime_result and hasattr(regime_result, 'vix') and regime_result.vix:
+        if regime_result and hasattr(regime_result, "vix") and regime_result.vix:
             vix = regime_result.vix
-        if regime_result and hasattr(regime_result, 'adx') and regime_result.adx:
+        if regime_result and hasattr(regime_result, "adx") and regime_result.adx:
             adx = regime_result.adx
 
         market_data = MarketData(
@@ -107,5 +111,6 @@ def generate_recommendations(
 
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Recommendation generation failed: {e}")
         return None

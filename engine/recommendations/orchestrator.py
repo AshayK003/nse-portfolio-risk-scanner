@@ -21,7 +21,8 @@ from engine.recommendations.types import (
 @dataclass
 class PortfolioSnapshot:
     """Raw portfolio data from the engine"""
-    holdings: list[dict]          # [{ticker, name, qty, avg_price, current_price, ...}]
+
+    holdings: list[dict]  # [{ticker, name, qty, avg_price, current_price, ...}]
     total_value: float
     cash_available: float
     sector_weights: dict[str, float]
@@ -31,6 +32,7 @@ class PortfolioSnapshot:
 @dataclass
 class MarketData:
     """Market regime data from data engine"""
+
     vix: float
     adx: float
     nifty_ma200_dist_pct: float
@@ -43,6 +45,7 @@ class MarketData:
 @dataclass
 class UserProfile:
     """User constraints from profile/settings"""
+
     max_stcg_budget: float = 100000
     max_ltcg_budget: float = 500000
     max_single_trade_pct: float = 10.0
@@ -157,7 +160,9 @@ def generate_recommendation_cards(
 
         # Weighted confidence
         total_weight = sum(v.confidence for v in group_verdicts)
-        weighted_conf = sum(v.confidence * v.confidence for v in group_verdicts) / total_weight if total_weight > 0 else 0
+        weighted_conf = (
+            sum(v.confidence * v.confidence for v in group_verdicts) / total_weight if total_weight > 0 else 0
+        )
 
         # Guardrails
         guardrails = _build_guardrails(action, ticker, group_verdicts, ctx)
@@ -218,12 +223,15 @@ def generate_recommendation_cards(
                 cards.append(card)
 
     # Sort by priority (urgency + confidence + net benefit)
-    cards.sort(key=lambda c: (
-        c.urgency == Urgency.IMMEDIATE,
-        c.urgency == Urgency.NEAR_TERM,
-        c.confidence,
-        c.net_risk_reduction_bps,
-    ), reverse=True)
+    cards.sort(
+        key=lambda c: (
+            c.urgency == Urgency.IMMEDIATE,
+            c.urgency == Urgency.NEAR_TERM,
+            c.confidence,
+            c.net_risk_reduction_bps,
+        ),
+        reverse=True,
+    )
 
     return cards
 
@@ -239,15 +247,22 @@ def run_recommendation_engine(
     cards = generate_recommendation_cards(verdicts, ctx)
 
     # Build priority_actions for backward compatibility with PDF generator
-    priority_cards = [c for c in cards if c.priority > 0 and c.urgency in (Urgency.IMMEDIATE, Urgency.NEAR_TERM)]
+    priority_cards = [
+        c for c in cards if c.priority > 0 and c.urgency in (Urgency.IMMEDIATE, Urgency.NEAR_TERM)
+    ]
 
     report = RecommendationReport(
         cards=cards,
         generated_at=datetime.now().isoformat(),
         regime_context=ctx.regime,
         total_risk_reduction_bps=sum(c.net_risk_reduction_bps for c in cards),
-        total_tax_cost=sum(c.tax_breakdown.get(list(c.tax_breakdown.keys())[0], 0) if c.tax_breakdown else 0 for c in cards),
-        total_impact_cost=sum(c.impact_breakdown.get(list(c.impact_breakdown.keys())[0], 0) if c.impact_breakdown else 0 for c in cards),
+        total_tax_cost=sum(
+            c.tax_breakdown.get(list(c.tax_breakdown.keys())[0], 0) if c.tax_breakdown else 0 for c in cards
+        ),
+        total_impact_cost=sum(
+            c.impact_breakdown.get(list(c.impact_breakdown.keys())[0], 0) if c.impact_breakdown else 0
+            for c in cards
+        ),
         confidence=sum(c.confidence for c in cards) / len(cards) if cards else 0,
         summary=f"{len(cards)} recommendations generated for {ctx.regime.value} regime",
         priority_actions=priority_cards[:5],
@@ -256,6 +271,7 @@ def run_recommendation_engine(
 
 
 # ─── Helpers ──────────────────────────────────────────────────────
+
 
 def _parse_purchase_date(holding: dict) -> date:
     """Extract purchase date from holding data"""
@@ -268,6 +284,7 @@ def _parse_purchase_date(holding: dict) -> date:
                 pass
     # Fallback: assume 1 year ago for LTCG
     from datetime import timedelta
+
     return date.today() - timedelta(days=400)
 
 
@@ -281,7 +298,9 @@ def _card_title(action: ActionType, ticker: str) -> str:
     return titles.get(action, f"{action.value.title()} {ticker}")
 
 
-def _build_guardrails(action: ActionType, ticker: str, verdicts: list[RuleVerdict], ctx: RecommendationContext) -> list[str]:
+def _build_guardrails(
+    action: ActionType, ticker: str, verdicts: list[RuleVerdict], ctx: RecommendationContext
+) -> list[str]:
     """Build 'don't if...' conditions for the card"""
     guardrails = []
 

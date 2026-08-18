@@ -131,6 +131,7 @@ def _get_plt():
 
 # ── Chart figure tests (all return Figure objects) ──
 
+
 def test_gauge():
     risk = _sample_risk_metrics()
     plt = _get_plt()
@@ -221,6 +222,7 @@ def test_risk_assessment_none():
 
 
 # ── Full PDF generation tests ──
+
 
 def test_generate_pdf_report_full():
     """Generate a full PDF with all sections; verify ledger theme applied."""
