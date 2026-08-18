@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 
 from engine import Holding, Portfolio, RiskMetrics
-from engine.risk import MonteCarloResult
 from engine.recommendations.types import (
     ActionType,
     RecommendationCard,
@@ -22,6 +21,7 @@ from engine.recommendations.types import (
     RegimeContext,
     Urgency,
 )
+from engine.risk import MonteCarloResult
 from ui import pdf_reportlab as gen
 
 
@@ -362,7 +362,6 @@ def test_generate_pdf_report_with_regime_recommendations_warnings():
     warnings: warning_report.warnings / w.message). They crashed at runtime unless
     real instances were passed — which the other tests never did.
     """
-    from engine.recommendations import ActionType, RecommendationCard, RecommendationReport
     from engine.regime import RegimeResult
     from engine.warnings import SignalSeverity, WarningReport, WarningSignal
 
