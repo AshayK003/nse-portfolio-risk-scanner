@@ -529,7 +529,12 @@ def generate_pdf_report(
         b = BytesIO()
         fig.savefig(b, format="png", dpi=150, bbox_inches="tight", facecolor="white")
         b.seek(0)
-        img = Image(b, width=width, height=width * fig.get_size_inches()[1] / fig.get_size_inches()[0])
+        from PIL import Image as PILImage
+
+        with PILImage.open(b) as pil:
+            png_w, png_h = pil.size
+        b.seek(0)
+        img = Image(b, width=width, height=width * png_h / png_w)
         plt.close(fig)
         return img
 
@@ -539,24 +544,47 @@ def generate_pdf_report(
         )
 
     def styled_metric_table(rows, col_widths, right_align=None, caption=None):
-        """Two-column-pair metric table styled like pdf-studio."""
-        data = [list(r) for r in rows]
-        t = Table(data, colWidths=col_widths, repeatRows=1)
+        """Two-column-pair metric table styled like pdf-studio.
+
+        Every cell is wrapped in a Paragraph so long text wraps inside its
+        column instead of overflowing into (and overlapping) neighbouring cells.
+        """
+        cell_label = ParagraphStyle(
+            "cell_label", fontName="Inter", fontSize=9, leading=11, textColor=colors.HexColor(MUTED_TEXT)
+        )
+        cell_value = ParagraphStyle(
+            "cell_value", fontName="Inter-Bold", fontSize=9, leading=11, textColor=colors.HexColor(FOUNDATION)
+        )
+        cell_head = ParagraphStyle(
+            "cell_head", fontName="Inter-Bold", fontSize=9, leading=11, textColor=colors.HexColor(BODY_TEXT)
+        )
+
+        wrapped = []
+        for ri, row in enumerate(rows):
+            cells = []
+            for ci, val in enumerate(row):
+                text = "" if val is None else str(val)
+                if ri == 0:
+                    style = cell_head
+                elif ci % 2 == 0:
+                    style = cell_label
+                else:
+                    style = cell_value
+                cells.append(Paragraph(text, style))
+            wrapped.append(cells)
+
+        t = Table(wrapped, colWidths=col_widths, repeatRows=1)
         cmds = [
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("FONTNAME", (0, 0), (0, -1), "Inter"),
-            ("FONTNAME", (2, 0), (2, -1), "Inter"),
-            ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor(MUTED_TEXT)),
-            ("TEXTCOLOR", (2, 0), (2, -1), colors.HexColor(MUTED_TEXT)),
-            ("FONTNAME", (1, 0), (1, -1), "Inter-Bold"),
-            ("FONTNAME", (3, 0), (3, -1), "Inter-Bold"),
-            ("TEXTCOLOR", (1, 0), (1, -1), colors.HexColor(FOUNDATION)),
-            ("TEXTCOLOR", (3, 0), (3, -1), colors.HexColor(FOUNDATION)),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
             ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor(GRID)),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ]
+        if right_align:
+            for ci in right_align:
+                cmds.append(("ALIGN", (ci, 0), (ci, -1), "RIGHT"))
         t.setStyle(TableStyle(cmds))
         if caption:
             cap = Paragraph(caption, muted)
