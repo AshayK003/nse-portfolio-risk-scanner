@@ -349,6 +349,120 @@ def test_generate_pdf_report_with_institutional_scores():
     assert len(pdf_bytes) > 5000
 
 
+def test_generate_pdf_report_with_regime_recommendations_warnings():
+    """Exercise the regime / recommendations / warnings PDF blocks with real objects.
+
+    Regression guard: these three blocks read attributes that never existed on
+    the engine dataclasses (regime: current_regime/regime_probabilities/regime_returns;
+    warnings: warning_report.warnings / w.message). They crashed at runtime unless
+    real instances were passed — which the other tests never did.
+    """
+    from engine.recommendations import ActionType, Recommendation, RecommendationReport
+    from engine.regime import RegimeResult
+    from engine.warnings import SignalSeverity, WarningReport, WarningSignal
+
+    portfolio = _sample_portfolio()
+    risk = _sample_risk_metrics()
+    sector_data = _sample_sector_data()
+    df = _sample_export_df(portfolio)
+    mc_result = _sample_mc_result()
+    portfolio_cum = _sample_portfolio_cum()
+
+    regime_result = RegimeResult(
+        n_states=3,
+        labels=["Bull", "Neutral", "Bear"],
+        state_sequence=["Bull", "Neutral", "Bear", "Bear", "Neutral"],
+        transition_matrix=[[0.7, 0.2, 0.1], [0.1, 0.8, 0.1], [0.15, 0.15, 0.7]],
+        stats=[
+            {
+                "label": "Bull",
+                "count": 2,
+                "pct": 40.0,
+                "mean_return": 0.12,
+                "annual_vol": 12.0,
+                "cum_return": 8.5,
+            },
+            {
+                "label": "Neutral",
+                "count": 2,
+                "pct": 40.0,
+                "mean_return": 0.02,
+                "annual_vol": 8.0,
+                "cum_return": 1.2,
+            },
+            {
+                "label": "Bear",
+                "count": 1,
+                "pct": 20.0,
+                "mean_return": -0.08,
+                "annual_vol": 18.0,
+                "cum_return": -5.1,
+            },
+        ],
+    )
+
+    recommendations = RecommendationReport(
+        recommendations=[
+            Recommendation(
+                action=ActionType.HEDGE,
+                target="PORTFOLIO",
+                urgency="near-term",
+                confidence=0.75,
+                expected_risk_reduction=3.0,
+                reasoning="Portfolio beta is elevated; a partial hedge reduces crash exposure.",
+                trade_off="Hedging caps upside in a rally.",
+                details="Add index put spread covering 30% notional.",
+            )
+        ],
+        summary="Moderate risk profile; one near-term hedge recommended.",
+        priority_actions=[
+            Recommendation(
+                action=ActionType.HEDGE,
+                target="PORTFOLIO",
+                urgency="immediate",
+                confidence=0.8,
+                expected_risk_reduction=4.0,
+                reasoning="Concentration in banking raises sector drawdown risk.",
+                trade_off="Reduces participation in a banking-led rally.",
+                details="Trim top banking holding by 10%.",
+            )
+        ],
+        risk_reduction_potential=4.0,
+    )
+
+    warning_report = WarningReport(
+        signals=[
+            WarningSignal(
+                name="Death Cross: RELIANCE",
+                severity=SignalSeverity.WARNING,
+                signal_type="technical",
+                description="20-day MA crossed below 50-day MA for RELIANCE.",
+                reasoning="Short-term trend weakened versus medium-term.",
+                affected_holdings=["RELIANCE"],
+                suggested_action="Monitor closely; tighten stops.",
+            )
+        ],
+        overall_warning_level="amber",
+        signal_count_by_severity={"warning": 1},
+        summary="One technical warning active.",
+    )
+
+    pdf_bytes = gen.generate_pdf_report(
+        portfolio=portfolio,
+        risk=risk,
+        sector_data=sector_data,
+        df=df,
+        mc_result=mc_result,
+        portfolio_cum=portfolio_cum,
+        regime_result=regime_result,
+        recommendations=recommendations,
+        warning_report=warning_report,
+    )
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes[:4] == b"%PDF"
+    assert len(pdf_bytes) > 5000
+
+
 def test_generate_pdf_report_minimal():
     """Generate PDF with no optional data."""
     portfolio = _sample_portfolio()

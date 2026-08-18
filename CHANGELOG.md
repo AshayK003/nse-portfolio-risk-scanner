@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.18.4 (2026-08-18)
+
+### Fixed — PDF Export Phantom-Schema Crashes (Production Reliability)
+
+The PDF generator (`ui/pdf_reportlab.py`) builds 8 optional intelligence blocks, but
+the regression tests only ever passed `None` to most of them. Four blocks read
+attributes that **never existed** on the engine dataclasses — each crashed at runtime
+only when real data hit production. Two were caught and fixed in prior PRs (#47, #50,
+#51); this release closes the remaining two plus hardens all four behind regression tests.
+
+- **Institutional Scores block** (`PR #51`) — read `quality`/`momentum`/`value`/`volatility`/`liquidity`/`esg`/`composite`; rewrote to the real `InstitutionalRiskScores` fields (`overall_risk_score`, `conviction_score`, `portfolio_stress_score`, `hidden_correlation_score`, `tail_risk_score`, `score_interpretation`).
+- **Regime block** — read `current_regime`/`regime_probabilities`/`regime_returns`; rewrote to the real `RegimeResult` fields (`state_sequence` → current regime, `stats` → per-regime table, `transition_matrix`/`labels` → transition matrix).
+- **Early Warnings block** — read `warning_report.warnings` and `w.message`; `WarningReport` has `signals` and `WarningSignal` has `name`/`description` (no `message`). Rewrote to iterate `signals` and render `name` + `description`; severity label derived from the `SignalSeverity` enum.
+
+### Tests
+
+- `tests/test_pdf_export.py` — `test_generate_pdf_report_with_institutional_scores` feeds a real `compute_institutional_scores()` result through the generator.
+- `tests/test_pdf_export.py` — `test_generate_pdf_report_with_regime_recommendations_warnings` feeds real `RegimeResult` / `RecommendationReport` / `WarningReport` instances; exercises all three previously-untested blocks.
+- Full suite: **397 passed**, 1 skipped (GARCH optional-dep skip). Ruff clean.
+
 ## v0.18.3 (2026-08-17)
 
 ### Fixed — Silent Data Failures (Deploy Reliability)
@@ -13,7 +33,7 @@
 
 - Added `tests/test_benchmark_tz.py` — pins tz-aware benchmark alignment with tz-naive portfolio, and that missing data returns `None` (not fake zeros).
 - Updated `tests/test_benchmark.py` empty-series case to expect `None`.
-- Full suite: **419 passed**, 1 skipped. Zero regressions. Ruff clean.
+- Full suite: **396 passed**, 1 skipped. Zero regressions. Ruff clean.
 
 ## v0.18.2 (2026-08-17)
 

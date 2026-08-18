@@ -960,16 +960,17 @@ def generate_pdf_report(
         flow.append(Spacer(1, 8))
 
     # Early Warnings
-    if warning_report and warning_report.warnings:
+    if warning_report and warning_report.signals:
         flow.append(Paragraph("Early Warnings", h2))
         flow.append(heading_rule())
         flow.append(Paragraph("Automated risk flags from portfolio monitoring.", body))
 
-        for w in warning_report.warnings[:8]:
+        for w in warning_report.signals[:8]:
             sev_color = BAD if w.severity == "high" else ACCENT if w.severity == "medium" else GOOD
+            sev_label = w.severity.value.upper() if hasattr(w.severity, "value") else str(w.severity).upper()
             flow.append(
                 Paragraph(
-                    f'<font color="{sev_color}">• {w.severity.upper()}</font> {w.message}',
+                    f'<font color="{sev_color}">• {sev_label}</font> {w.name}: {w.description}',
                     body,
                 )
             )
@@ -988,31 +989,47 @@ def generate_pdf_report(
             Paragraph("Hidden Markov Model regime identification and transition probabilities.", body)
         )
 
-        if regime_result.current_regime is not None:
-            flow.append(Paragraph(f"Current Regime: {regime_result.current_regime}", body))
+        if regime_result.state_sequence:
+            current_regime = regime_result.state_sequence[-1]
+            flow.append(Paragraph(f"Current Regime: {current_regime}", body))
             flow.append(Spacer(1, 4))
 
-        if regime_result.regime_probabilities:
-            regime_rows = [["Regime", "Probability"]]
-            for r, p in regime_result.regime_probabilities.items():
-                regime_rows.append([str(r), f"{p:.1%}"])
-            flow.extend(styled_metric_table(regime_rows, [5 * cm, 5 * cm], caption="Regime Probabilities"))
-            flow.append(Spacer(1, 8))
-
-        if regime_result.regime_returns:
-            reg_ret_rows = [["Regime", "Ann. Return", "Ann. Volatility", "Sharpe"]]
-            for r, ret in regime_result.regime_returns.items():
-                reg_ret_rows.append(
+        if regime_result.stats:
+            regime_rows = [["Regime", "% of Time", "Ann. Return", "Ann. Volatility"]]
+            for st in regime_result.stats:
+                regime_rows.append(
                     [
-                        str(r),
-                        f"{ret.get('return', 0):.2f}%",
-                        f"{ret.get('vol', 0):.2f}%",
-                        f"{ret.get('sharpe', 0):.2f}",
+                        str(st.get("label", "")),
+                        f"{st.get('pct', 0):.1f}%",
+                        f"{st.get('mean_return', 0):.2f}%",
+                        f"{st.get('annual_vol', 0):.2f}%",
                     ]
                 )
             flow.extend(
                 styled_metric_table(
-                    reg_ret_rows, [4 * cm, 4 * cm, 4 * cm, 4 * cm], caption="Regime Performance"
+                    regime_rows, [4 * cm, 3 * cm, 4 * cm, 4 * cm], caption="Regime Statistics"
+                )
+            )
+            flow.append(Spacer(1, 8))
+
+        if regime_result.transition_matrix and regime_result.labels:
+            trans_rows = [["From \\ To"] + regime_result.labels]
+            for i, src in enumerate(regime_result.labels):
+                row = [src]
+                for j in range(len(regime_result.labels)):
+                    p = (
+                        regime_result.transition_matrix[i][j]
+                        if i < len(regime_result.transition_matrix)
+                        and j < len(regime_result.transition_matrix[i])
+                        else 0.0
+                    )
+                    row.append(f"{p * 100:.0f}%")
+                trans_rows.append(row)
+            flow.extend(
+                styled_metric_table(
+                    trans_rows,
+                    [4 * cm] + [2.5 * cm] * len(regime_result.labels),
+                    caption="Transition Probabilities",
                 )
             )
             flow.append(Spacer(1, 8))
