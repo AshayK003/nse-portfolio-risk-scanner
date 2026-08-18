@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 
 class Urgency(Enum):
@@ -144,4 +144,4 @@ class RecommendationReport:
     total_impact_cost: float
     confidence: float
     summary: str
-    priority_actions: Optional[list[RecommendationCard]] = None  # For backward compatibility with PDF generator
+    priority_actions: list[RecommendationCard] | None = None  # For backward compatibility with PDF generator

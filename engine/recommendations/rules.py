@@ -1,13 +1,16 @@
 # engine/recommendations/rules.py
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Callable, Literal
 from enum import Enum
-from datetime import date
 
 from engine.recommendations.types import (
-    RuleVerdict, ActionType, Urgency, RegimeContext, TaxLot, ImpactEstimate
+    ActionType,
+    RegimeContext,
+    RuleVerdict,
+    TaxLot,
+    Urgency,
 )
 
 
@@ -262,7 +265,7 @@ def rule_fii_dii_confluence(ctx: RecommendationContext) -> list[RuleVerdict]:
                     qty=trim_qty,
                     urgency=Urgency.NEAR_TERM,
                     confidence=0.75,
-                    reason=f"FII/DII bearish contradicts long portfolio bias",
+                    reason="FII/DII bearish contradicts long portfolio bias",
                     risk_delta_bps=-75,
                     tax_cost=_estimate_tax(lot, trim_qty),
                     impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
@@ -279,7 +282,7 @@ def rule_fii_dii_confluence(ctx: RecommendationContext) -> list[RuleVerdict]:
                     qty=trim_qty,
                     urgency=Urgency.NEAR_TERM,
                     confidence=0.75,
-                    reason=f"FII/DII bullish contradicts short portfolio bias",
+                    reason="FII/DII bullish contradicts short portfolio bias",
                     risk_delta_bps=-75,
                     tax_cost=_estimate_tax(lot, trim_qty),
                     impact_cost=_estimate_impact(ticker, trim_qty, lot.current_price, ctx),
@@ -376,7 +379,7 @@ def rule_etf_overlap(ctx: RecommendationContext) -> list[RuleVerdict]:
     """Multiple ETFs tracking same index → consolidate"""
     verdicts = []
     # Detect Nifty 50 overlap: NIFTYBEES, MONIFTY500, NEXT50IETF, etc.
-    nifty50_etfs = [t for t in ctx.holdings.keys()
+    nifty50_etfs = [t for t in ctx.holdings
                    if any(x in t for x in ["NIFTYBEES", "MONIFTY500", "NEXT50IETF"])]
     if len(nifty50_etfs) > 1:
         # Keep largest, trim others
