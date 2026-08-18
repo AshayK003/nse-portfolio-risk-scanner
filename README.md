@@ -49,7 +49,7 @@ Analyze your NSE portfolio using professional-grade risk metrics — Value at Ri
 
 ### Exported PDF Report
 
-The Export tab produces a 4-page PDF styled to the **pdf-studio ledger theme** — deep-green foundation, gold accents, Lora headings, Inter body. Generated with reportlab + matplotlib (self-contained, no external service).
+The Export tab produces a 9-page PDF styled to the **pdf-studio ledger theme** — deep-green foundation, gold accents, Lora headings, Inter body. Generated with reportlab + matplotlib (self-contained, no external service).
 
 <p align="center">
   <a href="docs/showcase/portfolio-risk-report.pdf">
@@ -61,6 +61,23 @@ The Export tab produces a 4-page PDF styled to the **pdf-studio ledger theme** �
   <a href="docs/showcase/portfolio-risk-report.pdf">
     <img src="docs/showcase/report-page-3.png" width="48%" alt="Page 3 — Risk Analysis"/>
     <img src="docs/showcase/report-page-4.png" width="48%" alt="Page 4 — Holdings"/>
+  </a>
+</p>
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-5.png" width="48%" alt="Page 5 — Factor Risk Decomposition"/>
+    <img src="docs/showcase/report-page-6.png" width="48%" alt="Page 6 — Macro Drivers & Scenarios"/>
+  </a>
+</p>
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-7.png" width="48%" alt="Page 7 — Institutional Scores & Early Warnings"/>
+    <img src="docs/showcase/report-page-8.png" width="48%" alt="Page 8 — Regime Detection"/>
+  </a>
+</p>
+<p align="center">
+  <a href="docs/showcase/portfolio-risk-report.pdf">
+    <img src="docs/showcase/report-page-9.png" width="48%" alt="Page 9 — Advanced Metrics"/>
   </a>
 </p>
 
