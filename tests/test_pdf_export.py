@@ -124,7 +124,6 @@ def _get_plt():
 
 # ── Chart figure tests (all return Figure objects) ──
 
-
 def test_gauge():
     risk = _sample_risk_metrics()
     plt = _get_plt()
@@ -215,7 +214,6 @@ def test_risk_assessment_none():
 
 
 # ── Full PDF generation tests ──
-
 
 def test_generate_pdf_report_full():
     """Generate a full PDF with all sections; verify ledger theme applied."""
@@ -357,7 +355,7 @@ def test_generate_pdf_report_with_regime_recommendations_warnings():
     warnings: warning_report.warnings / w.message). They crashed at runtime unless
     real instances were passed — which the other tests never did.
     """
-    from engine.recommendations import ActionType, Recommendation, RecommendationReport
+    from engine.recommendations import ActionType, RecommendationCard, RecommendationReport
     from engine.regime import RegimeResult
     from engine.warnings import SignalSeverity, WarningReport, WarningSignal
 
@@ -401,33 +399,56 @@ def test_generate_pdf_report_with_regime_recommendations_warnings():
         ],
     )
 
+    from engine.recommendations.types import Urgency, RegimeContext
+
     recommendations = RecommendationReport(
-        recommendations=[
-            Recommendation(
-                action=ActionType.HEDGE,
-                target="PORTFOLIO",
-                urgency="near-term",
+        cards=[
+            RecommendationCard(
+                id="hedge_portfolio_1",
+                title="Hedge Portfolio",
+                priority=1,
+                urgency=Urgency.NEAR_TERM,
+                action=ActionType.BUY,  # Hedge is a BUY action (buying protection)
+                tickers=["PORTFOLIO"],
+                qtys={"PORTFOLIO": 1},
+                prices={"PORTFOLIO": 1.0},
+                reason="Portfolio beta is elevated; a partial hedge reduces crash exposure.",
+                regime_context=RegimeContext.NEUTRAL,
+                rule_verdicts=[],
+                tax_breakdown={},
+                impact_breakdown={},
+                net_risk_reduction_bps=300,
                 confidence=0.75,
-                expected_risk_reduction=3.0,
-                reasoning="Portfolio beta is elevated; a partial hedge reduces crash exposure.",
-                trade_off="Hedging caps upside in a rally.",
-                details="Add index put spread covering 30% notional.",
-            )
-        ],
-        summary="Moderate risk profile; one near-term hedge recommended.",
-        priority_actions=[
-            Recommendation(
-                action=ActionType.HEDGE,
-                target="PORTFOLIO",
-                urgency="immediate",
+                guardrails=["Hedging caps upside in a rally"],
+                alternatives=["Reduce equity exposure instead"],
+            ),
+            RecommendationCard(
+                id="trim_banking_1",
+                title="Trim Banking",
+                priority=2,
+                urgency=Urgency.IMMEDIATE,
+                action=ActionType.TRIM,
+                tickers=["BANKING"],
+                qtys={"BANKING": 1},
+                prices={"BANKING": 1.0},
+                reason="Concentration in banking raises sector drawdown risk.",
+                regime_context=RegimeContext.NEUTRAL,
+                rule_verdicts=[],
+                tax_breakdown={},
+                impact_breakdown={},
+                net_risk_reduction_bps=400,
                 confidence=0.8,
-                expected_risk_reduction=4.0,
-                reasoning="Concentration in banking raises sector drawdown risk.",
-                trade_off="Reduces participation in a banking-led rally.",
-                details="Trim top banking holding by 10%.",
-            )
+                guardrails=["Reduces participation in a banking-led rally"],
+                alternatives=["Buy index puts instead"],
+            ),
         ],
-        risk_reduction_potential=4.0,
+        generated_at="2024-01-01T00:00:00",
+        regime_context=RegimeContext.NEUTRAL,
+        total_risk_reduction_bps=700,
+        total_tax_cost=0.0,
+        total_impact_cost=0.0,
+        confidence=0.77,
+        summary="Moderate risk profile; one near-term hedge recommended.",
     )
 
     warning_report = WarningReport(
