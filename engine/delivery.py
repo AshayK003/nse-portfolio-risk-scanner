@@ -47,7 +47,8 @@ def _fetch_bhavcopy_single(ticker: str, period: str = "1M") -> pd.DataFrame | No
         ticker_data["DATE"] = pd.to_datetime(ticker_data["DATE"])
         ticker_data = ticker_data.sort_values("DATE")
         return ticker_data
-    except Exception:
+    except (AttributeError, KeyError, ValueError, TypeError, OSError):
+        # nselib: missing method, column, bad period, network error
         return None
 
 
@@ -113,6 +114,7 @@ def fetch_delivery_for_holdings(tickers: list[str], period: str = "1M") -> dict[
                 info = _compute_delivery(data)
                 if info is not None:
                     results[ticker] = info
-        except Exception:
+        except (AttributeError, KeyError, ValueError, TypeError, OSError):
+            # Skip this ticker on nselib/parsing errors
             continue
     return results

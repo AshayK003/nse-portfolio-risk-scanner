@@ -60,7 +60,7 @@ def compute_zscore(ticker: str) -> ZScoreResult | None:
 
         # Most recent annual data
         bs = bs.loc[:, bs.columns[0]]
-    except Exception:
+    except (AttributeError, KeyError, ValueError, TypeError, OSError):
         return None
 
     total_assets = _get(bs, "Total Assets")

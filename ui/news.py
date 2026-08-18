@@ -47,7 +47,7 @@ def fetch_news(ticker: str, limit: int = 6) -> list[dict]:
                 }
             )
         return items
-    except Exception:
+    except (AttributeError, KeyError, ValueError, TypeError):
         return []
 
 

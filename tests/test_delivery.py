@@ -200,7 +200,7 @@ class TestFetchDeliveryForHoldings:
             patch("engine.delivery._NSELIB_AVAILABLE", True),
             patch("engine.delivery._fetch_bhavcopy_single") as mock_fetch,
         ):
-            mock_fetch.side_effect = Exception("Network error")
+            mock_fetch.side_effect = OSError("Network error")
 
             result = fetch_delivery_for_holdings(["RELIANCE"], period="1M")
 
