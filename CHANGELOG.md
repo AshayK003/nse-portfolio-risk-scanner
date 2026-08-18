@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.18.7 (2026-08-18)
+
+### Fixed — Risk Reporting Display Defects (Decision Reliability)
+
+Two display defects made the engine's risk output misleading in the report/CLI path. Neither affected the underlying score math or the web UI's internal calculations; both affected what a reader actually sees.
+
+- **Risk-score prose showed percentages 100× too small** (`engine/scoring.py`)
+  The scoring functions receive VaR/drawdown/CVaR as decimals (e.g. `0.0152` for −1.52%), and three reasoning strings printed them with `:.2f%` / `:.1f%` format specifiers that do **not** auto-scale — so a user read `Daily VaR(95%) is -0.02%` when the true value was **−1.52%**. Fixed `_score_var_risk`, `_score_drawdown_risk`, and `_score_tail_risk` to use `:.2%` / `:.1%` (auto ×100). Score contributions, composites, and the web UI were always correct; only the explanatory text was wrong.
+
+- **Stock Risk Attribution betas defaulted to 1.0 outside the web UI** (`scripts/analyze_portfolios.py`)
+  `compute_stock_risk_attribution` falls back to `beta=1.0` for every holding when `stock_betas` is not supplied. The web UI passes real betas, but the analysis script called it without that argument, so every row showed a placeholder 1.0. The script now fetches the Nifty benchmark, computes real per-holding betas via the engine's existing `_compute_stock_betas`, and passes them in. A graceful fallback to 1.0 is preserved if the benchmark fetch fails.
+
+### Tests
+
+- Full suite: **397 passed**, 1 skipped. No regressions in scoring or attribution.
+- Verification run confirmed corrected output: VaR prose now reports −1.52% (was −0.02%), drawdown −9.9%, CVaR −2.20%; attribution betas populated per holding (e.g. high-beta names correctly above 1.0, defensive names below).
+
 ## v0.18.6 (2026-08-18)
 
 ### Added — Charts in Empty Report Spaces

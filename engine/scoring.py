@@ -85,7 +85,7 @@ def _score_var_risk(var_95: float, var_99: float) -> RiskScore:
         impact=round(impact, 3),
         confidence=round(confidence, 3),
         composite=round(composite, 1),
-        reasoning=f"Daily VaR(95%) is {var_95:.2f}%, meaning there's a 5% chance of losing more than {abs_var:.2f}% in a single day. "
+        reasoning=f"Daily VaR(95%) is {var_95:.2%}, meaning there's a 5% chance of losing more than {abs_var:.2%} in a single day. "
         f"CVaR (expected shortfall beyond VaR) captures tail losses. "
         f"{'VaR is elevated — tail hedging should be considered.' if abs_var > 0.03 else 'VaR is within acceptable bounds for an equity portfolio.'}",
         category="tail",
@@ -105,7 +105,7 @@ def _score_drawdown_risk(max_dd: float) -> RiskScore:
         impact=round(impact, 3),
         confidence=round(confidence, 3),
         composite=round(composite, 1),
-        reasoning=f"Maximum observed drawdown is {max_dd:.1f}%. "
+        reasoning=f"Maximum observed drawdown is {max_dd:.1%}. "
         f"{'This is a severe drawdown indicating significant capital at risk.' if abs_dd > 0.20 else 'Within the typical range for Indian equity portfolios.' if abs_dd > 0.10 else 'Modest drawdown suggests good risk management.'}",
         category="systematic",
     )
@@ -259,7 +259,7 @@ def _score_tail_risk(cvar_95: float, var_95: float, var_99: float) -> RiskScore:
         impact=round(impact, 3),
         confidence=round(confidence, 3),
         composite=round(composite, 1),
-        reasoning=f"CVaR(95%) is {cvar_95:.2f}%, meaning average loss in the worst 5% of days. "
+        reasoning=f"CVaR(95%) is {cvar_95:.2%}, meaning average loss in the worst 5% of days. "
         f"Tail ratio (CVaR/VaR) is {tail_ratio:.2f} — {'fat tails indicate risk of extreme losses beyond what VaR suggests.' if tail_ratio > 1.5 else 'tails are relatively well-behaved.'} "
         f"{'VaR99/VaR95 ratio of ' + f'{extreme_ratio:.2f} confirms elevated extreme-tail risk.' if extreme_ratio > 1.8 else ''}",
         category="tail",
