@@ -58,11 +58,11 @@ def render_sidebar() -> None:
                 key="delete_portfolio",
             )
             if delete_name != "— Select —" and st.sidebar.button("Delete", width="stretch"):
-                            p_id = options.get(delete_name)
-                            if p_id is not None:
-                                delete_portfolio(p_id)
-                                st.sidebar.success("Portfolio deleted.")
-                                st.rerun()
+                p_id = options.get(delete_name)
+                if p_id is not None:
+                    delete_portfolio(p_id)
+                    st.sidebar.success("Portfolio deleted.")
+                    st.rerun()
         else:
             st.sidebar.info("No saved portfolios yet.")
     except ImportError:
