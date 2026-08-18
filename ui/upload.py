@@ -1,5 +1,4 @@
-"""
-CSV upload, manual stock entry, portfolio data editor, and saved-portfolio management.
+"""CSV upload, manual stock entry, portfolio data editor, and saved-portfolio management.
 Thin Streamlit presentation — no business logic.
 Uses Lucide SVG icons instead of emojis (markdown-only, not in button/expander labels).
 """
@@ -59,10 +58,11 @@ def render_sidebar() -> None:
                 key="delete_portfolio",
             )
             if delete_name != "— Select —" and st.sidebar.button("Delete", width="stretch"):
-                p_id = options[delete_name]
-                delete_portfolio(p_id)
-                st.sidebar.success("Portfolio deleted.")
-                st.rerun()
+                p_id = options.get(delete_name)
+                if p_id is not None:
+                    delete_portfolio(p_id)
+                    st.sidebar.success("Portfolio deleted.")
+                    st.rerun()
         else:
             st.sidebar.info("No saved portfolios yet.")
     except ImportError:
@@ -174,7 +174,7 @@ def render_manual_entry() -> list[Holding]:
     return manual
 
 
-def render_upload_tab() -> Portfolio | None:
+def render_upload_tab() -> Portfolio:
     """Render the CSV upload + manual entry section. Returns a Portfolio if loaded."""
     # ── Load from shared link (query params) ──
     query_params = st.query_params
@@ -278,7 +278,8 @@ def render_upload_tab() -> Portfolio | None:
             st.session_state.portfolio = portfolio
             st.rerun()
 
-        return None
+        # Return empty portfolio instead of None to prevent downstream crashes
+        return Portfolio(holdings=[], name="Empty Portfolio")
 
     # Build portfolio from available data
     if csv_portfolio and manual_holdings:
@@ -294,7 +295,8 @@ def render_upload_tab() -> Portfolio | None:
     elif manual_holdings:
         return Portfolio(holdings=manual_holdings, name="Manual Portfolio")
     else:
-        return None
+        # Return empty portfolio instead of None to prevent downstream crashes
+        return Portfolio(holdings=[], name="Empty Portfolio")
 
 
 def render_data_editor(portfolio: Portfolio) -> Portfolio:
