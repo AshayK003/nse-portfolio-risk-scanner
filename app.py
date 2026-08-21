@@ -125,7 +125,6 @@ def main() -> None:
                 st.session_state._ctx = ctx
                 st.session_state._last_input_hash = current_hash
                 st.session_state.force_refresh = False
-                st.session_state.force_refresh_cb = False
             except ValueError as e:
                 st.error(f"Could not analyze portfolio: {e}")
                 st.stop()

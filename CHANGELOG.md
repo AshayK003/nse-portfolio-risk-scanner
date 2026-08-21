@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.19.3 (2026-08-21)
+
+### Fixed — Deployed Crash Regressions (black-box verification)
+
+Two crashes surfaced by a headless `streamlit.testing.v1.AppTest` run against a sample portfolio (injected via the share link, exercising L2 decode + H1 import path).
+
+- **M1 regression — widget-key mutation crash:** The v0.19.2 M1 fix wrote `st.session_state.force_refresh_cb = False` after the checkbox widget was instantiated. Streamlit 1.61 hard-forbids mutating a widget's session_state key post-instantiation, so the app crashed on the next rerun with `st.session_state.force_refresh_cb cannot be modified after the widget ... is instantiated`. Removed the write; the separate non-widget `force_refresh` key already resets correctly.
+- **Export crash — `RecommendationReport` field mismatch:** `ui/export.py` accessed `recommendations.recommendations`, `rec.target`, `rec.expected_risk_reduction`, `rec.reasoning`, and `recommendations.risk_reduction_potential` — none of which exist on the post-refactor `RecommendationReport` dataclass (fields are `cards`, `tickers`, `net_risk_reduction_bps`, `reason`, `total_risk_reduction_bps`). The export tab crashed on every analysis. Aligned the CSV serializer to the real dataclass shape (mirroring the defensive `hasattr` handling already present in `ui/render.py`).
+
+**Tests**
+- Added `tests/test_app_blackbox.py` (3 AppTest black-box tests: load+render, force-refresh rerun, benchmark-change rerun).
+- Full suite: 412 passed, 1 skipped. Ruff + format clean.
+
+---
+
 ## v0.19.2 (2026-08-21)
 
 ### Fixed — Audit Remediation (OpenCode review, 2026-08-21)
