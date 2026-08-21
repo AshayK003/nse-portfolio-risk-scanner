@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nse-risk-scanner"
-version = "0.18.6"
+version = "0.19.2"
 description = "Analyze your NSE portfolio for risk metrics"
 requires-python = ">=3.10"
 dependencies = [
@@ -34,7 +34,6 @@ dev = [
     "vcrpy>=8.0.0",
 ]
 pdf = [
-    "pdf-studio-py @ git+https://github.com/AshayK003/pdf-studio.git@0ffdaff",
     "fpdf2>=2.7",
     "matplotlib>=3.8",
 ]

@@ -185,14 +185,17 @@ def load_portfolio(portfolio_id: int) -> SavedPortfolio | None:
     row = conn.execute("SELECT * FROM saved_portfolios WHERE id = ?", (portfolio_id,)).fetchone()
     if row is None:
         return None
-    return SavedPortfolio(**dict(row))
+    return SavedPortfolio(**{k: v for k, v in dict(row).items() if k in SavedPortfolio.__dataclass_fields__})
 
 
 def list_saved_portfolios() -> list[SavedPortfolio]:
     """List all saved portfolios, newest first."""
     conn = get_connection()
     rows = conn.execute("SELECT * FROM saved_portfolios ORDER BY updated_at DESC, id DESC").fetchall()
-    return [SavedPortfolio(**dict(r)) for r in rows]
+    return [
+        SavedPortfolio(**{k: v for k, v in dict(r).items() if k in SavedPortfolio.__dataclass_fields__})
+        for r in rows
+    ]
 
 
 def delete_portfolio(portfolio_id: int) -> bool:

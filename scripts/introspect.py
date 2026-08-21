@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-import sys, warnings
+import sys
+import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent))
-from engine import Holding, Portfolio
-from engine.compute import compute_all
-from engine.risk import compute_stock_risk_attribution
+from engine import Holding, Portfolio  # noqa: E402
+from engine.compute import compute_all  # noqa: E402
+from engine.risk import compute_stock_risk_attribution  # noqa: E402
 
 # Independent live prices I pulled earlier today via yfinance (18 Aug 2026) — cross-check source
 INDEPENDENT = {
@@ -33,7 +34,6 @@ INDEPENDENT = {
     "SBIN": 1060.00,
     "TMCV": 472.20,
     "EXIDEIND": 469.10,
-    "NMDC": 83.73,
     "HDFCSML250": 184.89,
     "SRF": 2631.00,
     "IEX": 125.25,

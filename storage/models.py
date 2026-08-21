@@ -100,7 +100,9 @@ def saved_to_portfolio(sp: SavedPortfolio) -> Portfolio:
     return Portfolio(holdings=holdings, name=sp.name)
 
 
-def analysis_from_report(report: AnalysisReport, portfolio_name: str = "") -> AnalysisRun:
+def analysis_from_report(
+    report: AnalysisReport, portfolio_name: str = "", benchmark_name: str = "NIFTY 50"
+) -> AnalysisRun:
     """Create an AnalysisRun record from an AnalysisReport."""
     return AnalysisRun(
         portfolio_name=portfolio_name or report.portfolio.name,
@@ -112,5 +114,6 @@ def analysis_from_report(report: AnalysisReport, portfolio_name: str = "") -> An
         cagr=report.risk.cagr,
         beta=report.risk.beta,
         diversification_score=report.sector.diversification_score,
+        benchmark_name=benchmark_name,
         created_at=datetime.now().isoformat(),
     )

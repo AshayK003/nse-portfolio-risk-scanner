@@ -1,6 +1,7 @@
 # engine/recommendations/__init__.py
 from __future__ import annotations
 
+from engine.recommendations.engine import generate_recommendations
 from engine.recommendations.orchestrator import (
     MarketData,
     PortfolioSnapshot,
@@ -38,6 +39,8 @@ from engine.recommendations.types import (
 )
 
 __all__ = [
+    # Re-exports (live implementation lives in engine.recommendations.engine)
+    "generate_recommendations",
     # Types
     "Urgency",
     "ActionType",

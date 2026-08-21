@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.19.2 (2026-08-21)
+
+### Fixed — Audit Remediation (OpenCode review, 2026-08-21)
+
+Remediated 15 findings from an independent code audit. Each fix is backed by a regression test in `tests/test_audit_fixes.py`.
+
+**High**
+- **H1 — Module shadowing (ImportError trap):** Removed dead module-level `engine/recommendations.py` that shadowed the `engine/recommendations/` package. Re-exported `generate_recommendations` from the package `__init__` so `scripts/analyze_portfolios.py` and `engine/intelligence_registry.py` both resolve it. (The audit suggested deleting `engine/recommendations/engine.py` — that file is the live implementation the registry imports; deleting it would have silently disabled the recommendation engine.)
+
+**Medium**
+- **M1 — Sticky force-refresh loop:** Reset `st.session_state.force_refresh_cb` after compute so reruns don't re-trigger a full yfinance refetch + duplicate `analysis_runs` row on every slider move.
+- **M2 — HTML injection from RSS (XSS):** `ui/news.py` now `html.escape`s title/link/source/published and restricts links to `http(s)` schemes before rendering with `unsafe_allow_html`.
+- **M3 — Input-hash drift:** `_input_hash` now hashes only user inputs (ticker, quantity, avg_price); it no longer includes `current_price`, which `fetch_prices` mutates — eliminating a guaranteed second recompute.
+- **M4 — CSV formula injection (CWE-1236):** `_esc` in `ui/export.py` now prefixes a leading `= + - @` with an apostrophe so a hostile holding name can't execute as a spreadsheet formula.
+
+**Low**
+- **L1:** `analysis_from_report` accepts `benchmark_name`; the app now records the actually-selected benchmark instead of hardcoding "NIFTY 50".
+- **L2:** Share links use URL-safe base64; decode enforces the holdings cap and validates `q`/`p` as non-negative numerics.
+- **L3:** `portfolio.name` is escaped in the exported CSV summary.
+- **L5:** `_log` no longer crashes on literal `{`/`}` in log messages (guarded with `contextlib.suppress`).
+- **L7:** `load_portfolio` / `list_saved_portfolios` ignore unknown columns, surviving schema drift.
+- **L8:** Fixed `from engine.__init__ import ...` (now `from engine import ...`); removed a dead `st.session_state._cache`.
+- **L9 (CI):** Cache keyed on `uv.lock`; lint step now covers `scripts/`.
+- **L10:** Removed duplicate `pdf-studio-py` pin from the `[pdf]` extra (kept in main deps).
+- **L11:** Timeout handling catches `concurrent.futures.TimeoutError` as well as builtin `TimeoutError`.
+- **Lint:** Fixed F601 duplicate `NMDC` key in `scripts/introspect.py`.
+
+**Tests**
+- Added `tests/test_audit_fixes.py` (8 regression tests). Full suite: 409 passed, 1 skipped. Ruff clean.
+
+---
+
 ## v0.19.1 (2026-08-19)
 
 ### Fixed — Upload Tab Empty Portfolio Crash

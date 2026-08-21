@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Run current Ashay & Rishu books through NSE Portfolio Risk Scanner (live 18 Aug 2026)."""
 
-import sys, warnings, json
+import sys
+import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent))
-from engine import Holding, RISK_PROFILES
-from engine.compute import compute_all
+from engine import Holding  # noqa: E402
+from engine.compute import compute_all  # noqa: E402
 
 # Current holdings as of 18 Aug 2026 (from vault revaluation). qty, avg_price, sector
 ASHAY = [
@@ -73,7 +74,7 @@ def dump(report, name, prices):
     print(f"\n{'=' * 72}\n  {name.upper()} — RISK SCANNER (moderate profile, rf=6.5%, ^NSEI)\n{'=' * 72}")
     tot = report.portfolio.total_current
     print(f"Holdings: {report.portfolio.holding_count}  | Current value: ₹{tot:,.0f}")
-    print(f"\n-- RISK METRICS --")
+    print("\n-- RISK METRICS --")
     print(f"  Annual Volatility:      {r.volatility_annual:.2f}%")
     print(f"  VaR 95% (1d):           {r.var_95:.2f}%  (₹{tot * r.var_95 / 100:,.0f})")
     print(f"  CVaR 95% (1d):          {r.cvar_95:.2f}%  (₹{tot * r.cvar_95 / 100:,.0f})")
@@ -86,7 +87,7 @@ def dump(report, name, prices):
     print(f"  Beta (vs Nifty):        {r.beta:.2f}")
     print(f"  Corr to Nifty:          {r.correlation_to_benchmark:.2f}")
     if mc:
-        print(f"\n-- MONTE CARLO (10k paths, 1y) --")
+        print("\n-- MONTE CARLO (10k paths, 1y) --")
         print(f"  Median return:          {mc.median_return:.2f}%")
         print(f"  Expected return:        {mc.expected_return:.2f}%")
         print(f"  1y VaR 95%:             {mc.var_95:.2f}%  (₹{tot * mc.var_95 / 100:,.0f})")
@@ -94,7 +95,7 @@ def dump(report, name, prices):
         print(f"  Prob of Profit:         {mc.prob_profit:.1f}%")
         print(f"  95% CI:                 [{mc.ci_lower:.1f}%, {mc.ci_upper:.1f}%]")
     if ins:
-        print(f"\n-- INSTITUTIONAL SCORES (P×I×C) --")
+        print("\n-- INSTITUTIONAL SCORES (P×I×C) --")
         for attr in [
             "overall_risk_score",
             "probability_rating",
@@ -110,7 +111,7 @@ def dump(report, name, prices):
             if v is not None:
                 print(f"  {attr:24s}: {v}")
     if rec:
-        print(f"\n-- RECOMMENDATIONS --")
+        print("\n-- RECOMMENDATIONS --")
         for a in getattr(rec, "actions", []) or []:
             print(
                 f"  [{a.severity if hasattr(a, 'severity') else ''}] {a.ticker if hasattr(a, 'ticker') else ''}: {a.rationale if hasattr(a, 'rationale') else a}"

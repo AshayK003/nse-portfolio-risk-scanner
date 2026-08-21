@@ -105,9 +105,7 @@ def _input_hash(
     return hashlib.sha256(
         json.dumps(
             {
-                "holdings": [
-                    (h.ticker, h.quantity, h.avg_price, h.current_price) for h in portfolio.holdings
-                ],
+                "holdings": [(h.ticker, h.quantity, h.avg_price) for h in portfolio.holdings],
                 "benchmark": benchmark,
                 "risk_profile": risk_profile,
                 "risk_free_rate": round(risk_free_rate, 4),
