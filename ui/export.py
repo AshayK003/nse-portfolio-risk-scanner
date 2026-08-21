@@ -115,18 +115,19 @@ def _to_rich_csv(
         lines.append("")
 
     # ── Section 4: Recommendations ──
-    if recommendations and recommendations.recommendations:
+    if recommendations and recommendations.cards:
         lines.append("RECOMMENDATIONS")
         lines.append("Action,Target,Urgency,Confidence,Risk Reduction %,Reasoning")
-        for rec in recommendations.recommendations:
+        for rec in recommendations.cards:
+            target = ", ".join(rec.tickers) if rec.tickers else "-"
             lines.append(
-                f"{rec.action.value},{_esc(rec.target)},{rec.urgency},"
-                f"{rec.confidence:.0%},{rec.expected_risk_reduction:.1f},"
-                f"{_esc(rec.reasoning)}"
+                f"{rec.action.value},{_esc(target)},{rec.urgency.value},"
+                f"{rec.confidence:.0%},{rec.net_risk_reduction_bps / 100:.1f},"
+                f"{_esc(rec.reason)}"
             )
-        if recommendations.risk_reduction_potential > 0:
+        if recommendations.total_risk_reduction_bps:
             lines.append(
-                f"Total Risk Reduction Potential,,,,{recommendations.risk_reduction_potential:.1f}%,"
+                f"Total Risk Reduction Potential,,,,{recommendations.total_risk_reduction_bps / 100:.1f}%,"
             )
         lines.append("")
 
