@@ -10,6 +10,7 @@ No API key required — uses the public Yahoo Finance RSS endpoint.
 
 from __future__ import annotations
 
+import html
 import urllib.parse
 
 import streamlit as st
@@ -89,11 +90,18 @@ def render_news_section(portfolio: Portfolio):
         src = item.get("source", "")
         published = item.get("published", "")
         ticker_tag = item.get("ticker", "")
+        ticker_disp = f"{ticker_tag} · " if ticker_tag else ""
 
-        meta = " · ".join(p for p in [ticker_tag, src, published] if p)
+        title_safe = html.escape(title, quote=True)
+        link_safe = html.escape(link, quote=True)
+        src_safe = html.escape(src, quote=True)
+        published_safe = html.escape(published, quote=True)
+        # Only allow http(s) links — block javascript:, data:, etc.
+        if not link_safe.lower().startswith(("http://", "https://")):
+            link_safe = "#"
         st.markdown(
-            f"**<a href='{link}' target='_blank' rel='noopener'>{title}</a>**  "
-            f"<span style='color: var(--text-muted); font-size: 0.8rem;'>{meta}</span>",
+            f"**<a href='{link_safe}' target='_blank' rel='noopener'>{title_safe}</a>**  "
+            f"<span style='color: var(--text-muted); font-size: 0.8rem;'>{ticker_disp}{src_safe} · {published_safe}</span>",
             unsafe_allow_html=True,
         )
         st.divider()

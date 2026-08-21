@@ -40,7 +40,7 @@ def _to_rich_csv(
 
     # ── Section 1: Portfolio Summary ──
     lines.append("PORTFOLIO SUMMARY")
-    lines.append(f"Name,{portfolio.name}")
+    lines.append(f"Name,{_esc(portfolio.name)}")
     lines.append(f"Holdings,{portfolio.holding_count}")
     lines.append(f"Total Invested,{portfolio.total_invested:,.0f}")
     lines.append(f"Current Value,{portfolio.total_current:,.0f}")
@@ -147,11 +147,19 @@ def _to_rich_csv(
 
 
 def _esc(val: str) -> str:
-    """Escape a value for CSV — wrap in quotes if it contains comma or newline."""
-    if "," in val or "\n" in val or '"' in val:
-        escaped = val.replace('"', '""')
-        return f'"{escaped}"'
-    return val
+    """Escape a value for CSV.
+
+    - Wrap in quotes if it contains comma, newline, or quote.
+    - Prefix a leading = + - @ with an apostrophe so Excel/LibreOffice
+      never treats the cell as a formula (CWE-1236 CSV injection).
+    """
+    s = str(val)
+    if s[:1] in {"=", "+", "-", "@"}:
+        s = f"'{s}"
+    if "," in s or "\n" in s or '"' in s:
+        s = s.replace('"', '""')
+        return f'"{s}"'
+    return s
 
 
 def render_export_section(

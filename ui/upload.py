@@ -278,7 +278,8 @@ def render_upload_tab() -> Portfolio:
             st.session_state.portfolio = portfolio
             st.rerun()
 
-        return None
+        # Return empty portfolio instead of None to prevent downstream crashes
+        return Portfolio(holdings=[], name="Empty Portfolio")
 
     # Build portfolio from available data
     if csv_portfolio and manual_holdings:

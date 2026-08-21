@@ -12,6 +12,7 @@ Uses loguru when available, falls back to stdlib logging with kwargs-to-format c
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 
@@ -37,8 +38,12 @@ except ImportError:
                 self._logger.addHandler(handler)
 
         def _log(self, level: int, msg: str, *args, **kwargs) -> None:
-            if kwargs:
-                msg = msg.format(**kwargs)
+            # Only format with kwargs when the message actually contains
+            # format fields. A literal { or } in the message (e.g. a JSON
+            # snippet) would otherwise raise ValueError from str.format.
+            if kwargs and "{" in msg and "}" in msg:
+                with contextlib.suppress(ValueError, KeyError, IndexError):
+                    msg = msg.format(**kwargs)
             self._logger.log(level, msg, *args)
 
         def info(self, msg: str, *args, **kwargs) -> None:

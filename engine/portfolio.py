@@ -609,13 +609,13 @@ def encode_portfolio_link(portfolio: Portfolio) -> str:
         }
         for h in portfolio.holdings
     ]
-    return base64.b64encode(json.dumps({"holdings": holdings_data}).encode()).decode()
+    return base64.urlsafe_b64encode(json.dumps({"holdings": holdings_data}).encode()).decode()
 
 
 def decode_portfolio_link(token: str) -> Portfolio:
     """Reverse of encode_portfolio_link. Raises ValueError on malformed input."""
     try:
-        decoded = base64.b64decode(token).decode()
+        decoded = base64.urlsafe_b64decode(token).decode()
         data = json.loads(decoded)
     except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as e:
         raise ValueError("Invalid portfolio link") from e
@@ -624,17 +624,26 @@ def decode_portfolio_link(token: str) -> Portfolio:
         raise ValueError("Invalid portfolio data: missing 'holdings'")
     if not isinstance(data["holdings"], list):
         raise ValueError("Invalid portfolio data: 'holdings' must be a list")
+    if len(data["holdings"]) > _MAX_HOLDINGS:
+        raise ValueError(f"Invalid portfolio link: exceeds {_MAX_HOLDINGS} holdings")
 
     holdings = []
     for item in data["holdings"]:
         if not isinstance(item, dict) or not all(k in item for k in _LINK_KEYS[:3]):
             raise ValueError("Invalid holding: missing required fields (t, q, p)")
+        try:
+            quantity = int(item["q"])
+            avg_price = float(item["p"])
+        except (TypeError, ValueError) as e:
+            raise ValueError("Invalid holding: q and p must be numeric") from e
+        if quantity < 0 or avg_price < 0:
+            raise ValueError("Invalid holding: q and p must be non-negative")
         holdings.append(
             Holding(
                 ticker=normalize_ticker(item["t"]),
                 name=item.get("n", item["t"]),
-                quantity=int(item["q"]),
-                avg_price=float(item["p"]),
+                quantity=quantity,
+                avg_price=avg_price,
             )
         )
     return Portfolio(holdings=holdings, name="Shared Portfolio")

@@ -17,6 +17,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 
 import pandas as pd
 
@@ -103,7 +104,7 @@ def _fetch_via_nselib(ticker: str, period: str = "1Y") -> pd.DataFrame | None:
             future = executor.submit(capital_market.price_volume_data, symbol=clean, period=period)
             try:
                 raw = future.result(timeout=10)  # 10s timeout per ticker
-            except TimeoutError:
+            except (TimeoutError, FuturesTimeoutError):
                 logger.warning("nselib fetch timeout for {t}", t=ticker)
                 return None
         if raw is None or raw.empty:
@@ -262,7 +263,7 @@ def fetch_prices(
                     all_prices[t] = series
                 else:
                     errors.append(t)
-            except TimeoutError:
+            except (TimeoutError, FuturesTimeoutError):
                 errors.append(f"{ticker}: timeout (>120s)")
             except Exception as e:
                 errors.append(f"{ticker}: {e}")

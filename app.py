@@ -10,8 +10,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from engine import Portfolio
-from engine.__init__ import RISK_PROFILES
+from engine import RISK_PROFILES, Portfolio
 from engine.benchmark import BENCHMARK_TICKERS
 from engine.compute import compute_all, compute_input_hash
 from ui.icons import BAR_CHART_3, icon_html
@@ -70,8 +69,6 @@ def main() -> None:
         st.session_state.force_refresh_cb = False
     if "force_refresh" not in st.session_state:
         st.session_state.force_refresh = False
-    if "_cache" not in st.session_state:
-        st.session_state._cache = None
 
     # ── Step 1: Upload or use existing portfolio ──
     portfolio = render_upload_tab()
@@ -128,6 +125,7 @@ def main() -> None:
                 st.session_state._ctx = ctx
                 st.session_state._last_input_hash = current_hash
                 st.session_state.force_refresh = False
+                st.session_state.force_refresh_cb = False
             except ValueError as e:
                 st.error(f"Could not analyze portfolio: {e}")
                 st.stop()
@@ -140,7 +138,9 @@ def main() -> None:
             from storage.db import save_analysis_run
             from storage.models import analysis_from_report
 
-            save_analysis_run(analysis_from_report(report))
+            save_analysis_run(
+                analysis_from_report(report, benchmark_name=benchmark_options[benchmark_choice])
+            )
         except Exception as e:  # noqa: BLE001
             from engine._log import logger
 
