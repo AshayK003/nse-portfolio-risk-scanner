@@ -361,21 +361,3 @@ def render_data_editor(portfolio: Portfolio) -> Portfolio:
                 st.rerun()
 
     return portfolio
-
-
-def render_save_button(portfolio: Portfolio) -> None:
-    """Show save portfolio button."""
-    with st.expander("Save Portfolio", expanded=False):
-        save_name = st.text_input("Portfolio name", value=portfolio.name or "My Portfolio")
-        if st.button("Save to Database", width="stretch"):
-            try:
-                from storage.db import save_portfolio
-                from storage.models import portfolio_to_saved
-
-                saved = portfolio_to_saved(portfolio, name=save_name)
-                p_id = save_portfolio(saved)
-                st.success(f"Saved as **{save_name}** (ID: {p_id}).")
-            except ImportError:
-                st.error("Storage module is not available.")
-            except Exception as e:
-                st.error(f"Could not save portfolio: {e}")

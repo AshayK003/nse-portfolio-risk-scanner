@@ -112,53 +112,6 @@ def _search_ticker_online(query: str) -> tuple[str | None, str | None]:
     return result
 
 
-def resolve_ticker(raw_input: str) -> tuple[str | None, str | None]:
-    """Resolve user input to a valid NSE ticker symbol + company name.
-
-    Handles tickers, company names, aliases, and partial matches.
-    Returns (ticker, company_name) or (None, None) if unresolved.
-
-    Resolution order (fast → slow):
-      1. Exact ticker match
-      2. Exact alias match (e.g. "HDFC BANK" → "HDFCBANK")
-      3. Company name reverse lookup (exact + partial contains)
-      4. Ticker prefix match
-      5. Yahoo Finance search fallback (network, ~200ms, cached)
-    """
-    NSE_TICKERS = _get_tickers()  # noqa: N806
-    _ALIAS_LOOKUP = _get_alias_lookup()  # noqa: N806
-
-    if not raw_input or not raw_input.strip():
-        return None, None
-    q = raw_input.strip().upper().replace(".NS", "").replace(".BO", "")
-    # 1. Exact ticker symbol match
-    if q in NSE_TICKERS:
-        return q, NSE_TICKERS[q]
-    # 2. Exact alias match
-    if q in _ALIAS_LOOKUP:
-        ticker = _ALIAS_LOOKUP[q]
-        return ticker, NSE_TICKERS.get(ticker, ticker)
-    # 3. Company name reverse lookup — exact then partial
-    for sym, name in NSE_TICKERS.items():
-        if name.upper() == q:
-            return sym, name
-    for sym, name in NSE_TICKERS.items():
-        if q in name.upper():
-            return sym, name
-    # 4. Ticker prefix match
-    for sym, name in NSE_TICKERS.items():
-        if sym.startswith(q):
-            return sym, name
-    # 5. Online fallback — Yahoo Finance search
-    online_result = _search_ticker_online(raw_input.strip())
-    if online_result and online_result[0]:
-        ticker, name = online_result
-        if ticker in NSE_TICKERS:
-            return ticker, NSE_TICKERS[ticker]
-        return ticker, name
-    return None, None
-
-
 def get_company_name(ticker: str) -> str:
     """Return the canonical company name for a ticker.
 

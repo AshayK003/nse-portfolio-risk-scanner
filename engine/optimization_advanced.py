@@ -15,11 +15,6 @@ except ImportError:
     RISKFOLIO_AVAILABLE = False
 
 
-def riskfolio_available() -> bool:
-    """Check if riskfolio-lib is installed."""
-    return RISKFOLIO_AVAILABLE
-
-
 def optimize_advanced(returns, method: str = "CVaR", obj: str = "Sharpe") -> dict | None:
     """Run Riskfolio-Lib optimization if available.
 
@@ -44,34 +39,6 @@ def optimize_advanced(returns, method: str = "CVaR", obj: str = "Sharpe") -> dic
         port = rf.Portfolio(returns=returns)
         port.assets_stats(method="hist")
         weights = port.optimization(model="Classic", rm=method, obj=obj, hist=True)
-        return weights.to_dict().get("weights", {})
-    except (ValueError, KeyError, RuntimeError, TypeError, AttributeError):
-        return None
-
-
-def optimize_black_litterman(returns, views: dict | None = None) -> dict | None:
-    """Black-Litterman model via Riskfolio-Lib.
-
-    Parameters
-    ----------
-    returns : pd.DataFrame
-        Asset returns (columns = tickers).
-    views : dict, optional
-        {ticker: expected_return} views.
-
-    Returns
-    -------
-    dict | None
-        {ticker: weight} dict, or None if riskfolio-lib not installed.
-    """
-    if not RISKFOLIO_AVAILABLE:
-        return None
-    try:
-        port = rf.Portfolio(returns=returns)
-        port.assets_stats(method="hist")
-        if views:
-            port.views = views
-        weights = port.optimization(model="BL", rm="MV", obj="Sharpe", hist=True)
         return weights.to_dict().get("weights", {})
     except (ValueError, KeyError, RuntimeError, TypeError, AttributeError):
         return None

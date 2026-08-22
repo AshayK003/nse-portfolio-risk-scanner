@@ -114,8 +114,3 @@ def run_intelligence_modules(context: dict) -> dict:
             results[name] = None
 
     return results
-
-
-def get_module_names() -> list[str]:
-    """Return list of all registered module names."""
-    return [name for name, _, _ in INTELLIGENCE_MODULES]

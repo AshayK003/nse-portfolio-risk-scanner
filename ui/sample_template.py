@@ -31,9 +31,3 @@ def build_sample_excel() -> bytes:
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Holdings")
     return buf.getvalue()
-
-
-def build_sample_csv() -> bytes:
-    """Return a CSV template with header + sample rows (UTF-8 BOM for Excel)."""
-    df = pd.DataFrame(_SAMPLE_ROWS)
-    return df.to_csv(index=False).encode("utf-8-sig")
