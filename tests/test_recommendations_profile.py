@@ -35,10 +35,13 @@ class _FakeRisk:
     cvar_95 = -1.85
 
 
-@pytest.mark.parametrize("key,expected_cap", [
-    ("conservative", "25.0%"),
-    ("moderate", "35.0%"),
-])
+@pytest.mark.parametrize(
+    "key,expected_cap",
+    [
+        ("conservative", "25.0%"),
+        ("moderate", "35.0%"),
+    ],
+)
 def test_recommendations_respect_risk_profile(key, expected_cap):
     """Concentration cap in recommendation reasons must come from the selected profile."""
     report = generate_recommendations(
@@ -63,7 +66,5 @@ def test_aggressive_profile_relaxes_concentration():
         profile=RISK_PROFILES["aggressive"],
     )
     assert report is not None
-    concentration_cards = [
-        c for c in report.cards if "cap" in c.reason and "ICICIBANK" in c.reason
-    ]
+    concentration_cards = [c for c in report.cards if "cap" in c.reason and "ICICIBANK" in c.reason]
     assert not concentration_cards, "aggressive profile should tolerate 30% single-name"

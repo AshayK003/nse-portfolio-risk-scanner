@@ -22,7 +22,7 @@ def _fake_prices(tickers: list[str], days: int = 260) -> pd.DataFrame:
     data = {}
     for i, t in enumerate(tickers):
         drift = 1.0 + 0.0002 * ((i % 3) - 1)
-        data[t] = [100.0 * (drift ** k) + i for k in range(days)]
+        data[t] = [100.0 * (drift**k) + i for k in range(days)]
     return pd.DataFrame(data, index=idx)
 
 
@@ -74,9 +74,7 @@ class TestSamplePortfolioButton:
 
         portfolio = at.session_state["portfolio"]
         assert portfolio is not None
-        assert len(portfolio.holdings) >= 5, (
-            f"sample should have ~7 holdings, got {len(portfolio.holdings)}"
-        )
+        assert len(portfolio.holdings) >= 5, f"sample should have ~7 holdings, got {len(portfolio.holdings)}"
 
     def test_empty_state_not_stored_as_portfolio(self, patched_fetch):
         """First run with no input must not persist the empty sentinel into state."""

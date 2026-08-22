@@ -62,8 +62,7 @@ def generate_recommendations(
                 for h in portfolio.holdings
             ],
             total_value=sum(
-                h.quantity * (h.current_price if h.current_price else h.avg_price)
-                for h in portfolio.holdings
+                h.quantity * (h.current_price if h.current_price else h.avg_price) for h in portfolio.holdings
             ),
             cash_available=0.0,  # Would need to be passed in
             sector_weights=sector.sector_allocation if sector else {},
