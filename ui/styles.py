@@ -220,6 +220,44 @@ div[data-baseweb="tab-border"] {
     background: #ef4444 !important;
     height: 2px !important;
 }
+/* Inactive tabs — lift above minimum contrast */
+button[data-baseweb="tab"] {
+    color: #aab4c8 !important;
+}
+
+/* ── Input visibility & placeholder contrast ── */
+div[data-baseweb="input"],
+div[data-baseweb="select"] > div {
+    border: 1px solid #3a4260 !important;
+    background: #10142a !important;
+}
+div[data-baseweb="input"] input::placeholder,
+div[data-baseweb="select"] input::placeholder,
+input::placeholder {
+    color: #8b96ad !important;
+    opacity: 1 !important;
+}
+/* Helper captions & widget labels — readable grey */
+div[data-testid="stWidgetLabel"] p,
+.stMarkdown small {
+    color: #9aa5bb !important;
+}
+/* Download button — clearly interactive */
+div[data-testid="stDownloadButton"] button,
+button[kind="secondaryDownload"] {
+    border: 1px solid #ef4444 !important;
+    color: #f1f5f9 !important;
+    background: rgba(220, 38, 38, 0.12) !important;
+    font-weight: 600 !important;
+}
+div[data-testid="stDownloadButton"] button:hover {
+    background: rgba(220, 38, 38, 0.22) !important;
+}
+/* Checkbox label contrast */
+div[data-testid="stCheckbox"] label,
+label[data-baseweb="checkbox"] {
+    color: #aab4c8 !important;
+}
 
 /* ── Sidebar ── */
 section[data-testid="stSidebar"] {

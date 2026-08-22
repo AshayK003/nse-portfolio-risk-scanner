@@ -176,9 +176,17 @@ def render_benchmark_section(benchmark: BenchmarkComparison) -> None:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Portfolio Return", f"{benchmark.portfolio_return:.1f}%")
+        st.metric(
+            "Portfolio Return",
+            f"{benchmark.portfolio_return:+.1f}%",
+            delta=f"{benchmark.portfolio_return:+.1f}%" if benchmark.portfolio_return < 0 else None,
+        )
     with col2:
-        st.metric("Benchmark Return", f"{benchmark.benchmark_return:.1f}%")
+        st.metric(
+            "Benchmark Return",
+            f"{benchmark.benchmark_return:+.1f}%",
+            delta=f"{benchmark.benchmark_return:+.1f}%" if benchmark.benchmark_return < 0 else None,
+        )
     with col3:
         delta_color = "normal" if benchmark.alpha >= 0 else "inverse"
         st.metric("Alpha", f"{benchmark.alpha:+.1f}%", delta_color=delta_color)

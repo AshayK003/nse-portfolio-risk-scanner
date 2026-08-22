@@ -43,7 +43,7 @@ def generate_recommendations(
                     "name": h.name,
                     "quantity": h.quantity,
                     "avg_price": h.avg_price,
-                    "current_price": getattr(h, "current_price", h.avg_price),
+                    "current_price": h.current_price if h.current_price else h.avg_price,
                 }
             )
 
@@ -57,12 +57,12 @@ def generate_recommendations(
                     "name": h.name,
                     "quantity": h.quantity,
                     "avg_price": h.avg_price,
-                    "current_price": getattr(h, "current_price", h.avg_price),
+                    "current_price": h.current_price if h.current_price else h.avg_price,
                 }
                 for h in portfolio.holdings
             ],
             total_value=sum(
-                h.quantity * getattr(h, "current_price", h.avg_price) for h in portfolio.holdings
+                h.quantity * (h.current_price if h.current_price else h.avg_price) for h in portfolio.holdings
             ),
             cash_available=0.0,  # Would need to be passed in
             sector_weights=sector.sector_allocation if sector else {},
@@ -88,17 +88,22 @@ def generate_recommendations(
             regime=RegimeContext.BULL,
         )
 
-        # Default user profile
-        user_profile = UserProfile(
-            max_stcg_budget=100000,
-            max_ltcg_budget=500000,
-            max_single_trade_pct=10.0,
-            max_sector_weight=20.0,
-            max_single_name_weight=15.0,
-            min_cash_floor=50000,
-            tax_loss_harvest_enabled=True,
-            horizon_years=5,
-        )
+        # User profile derived from the sidebar risk profile so recommendations
+        # respond to Conservative / Moderate / Aggressive selection.
+        if profile is not None:
+            horizon_by_name = {"Conservative": 3, "Moderate": 5, "Aggressive": 7}
+            user_profile = UserProfile(
+                max_stcg_budget=100000,
+                max_ltcg_budget=500000,
+                max_single_trade_pct=profile.max_single_weight * 100.0,
+                max_sector_weight=profile.concentration_threshold,
+                max_single_name_weight=profile.max_single_weight * 100.0,
+                min_cash_floor=50000,
+                tax_loss_harvest_enabled=True,
+                horizon_years=horizon_by_name.get(profile.name, 5),
+            )
+        else:
+            user_profile = UserProfile()
 
         # Run the recommendation engine
         _, report = run_rec_engine(
