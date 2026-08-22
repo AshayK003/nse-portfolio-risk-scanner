@@ -29,7 +29,14 @@ def sector_treemap(sector_allocation: dict[str, float]) -> go.Figure:
         title="Sector Allocation",
     )
     fig.update_traces(textinfo="label+percent root", hovertemplate="%{label}<br>%{value:.1f}%")
-    fig.update_layout(margin=dict(t=30, b=0, l=0, r=0), height=400)
+    # Treemaps don't auto-resize on container relayout the way cartesian plots do —
+    # without autosize + explicit responsive config the chart can collapse to a blank
+    # area after a widget rerun (e.g. risk-profile change) re-renders the tab.
+    fig.update_layout(
+        margin=dict(t=30, b=0, l=0, r=0),
+        height=400,
+        autosize=True,
+    )
     return fig
 
 

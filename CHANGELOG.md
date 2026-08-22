@@ -1,6 +1,17 @@
 # Changelog
 
-# Changelog
+## v0.20.4 (2026-08-22)
+
+### Fixed — Sector treemap blank after risk-profile change
+
+The sector allocation treemap could render as a blank area after switching the
+risk profile while the Sector tab was open. Treemap traces don't auto-resize on
+container relayout the way cartesian plotly charts do; `autosize=True` is now
+set explicitly on the figure so it recovers after the tab re-renders. Verified
+by reproducing the exact user flow (tab open during profile switch + window
+resize) in a headless browser.
+
+---
 
 ## v0.20.3 (2026-08-22)
 
