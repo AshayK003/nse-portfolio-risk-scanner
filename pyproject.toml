@@ -67,3 +67,16 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["engine", "data", "ui", "storage"]
+
+[tool.coverage.report]
+# Gate: fail the run when total coverage drops below 70%.
+fail_under = 70
+show_missing = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

@@ -1,5 +1,28 @@
 # Changelog
 
+# Changelog
+
+## v0.20.3 (2026-08-22)
+
+### Added — Issue Backlog Triage & Test Expansion
+
+Worked through the open issue backlog: implemented, closed as already-fixed, or closed with reasoning.
+
+**Added**
+- **Ratio metric unit tests (#2):** 10 tests covering Calmar ratio, Treynor ratio, skewness, and excess kurtosis through the public `compute_risk_metrics` API — drawdown sensitivity, risk-free-rate scaling, crash-driven negative skew and fat tails.
+- **Cache/prices unit tests (#30):** 10 tests for `_LRUCache` (eviction order, recency refresh, overwrite, clear) and `_isnan` (float/np.nan/inf/non-numeric paths).
+- **Coverage gate (#17):** `[tool.coverage]` config with a 70% `fail_under` gate measuring engine/data/ui/storage. Current coverage: 83.7%.
+- **Explicit public API (#15):** `__all__` added to `engine/__init__.py` (19 dataclass exports).
+
+**Fixed**
+- **Duplicated action color maps (#11):** the buy/sell/trim/hold/block color dict was defined inline in two renderers — extracted to a single module-level `ACTION_COLORS` constant.
+
+**Closed as already-done** (verified): #13 tab extraction, #6 orchestration extraction (app.py is now a 165-line thin orchestrator). **Closed as won't-fix:** #20 health endpoint (Streamlit can't host custom HTTP routes; external uptime monitor is the standard). #31 closed as obsolete (delivery module removed in v0.20.2).
+
+**Tests**: 411 passed, 0 failed, 1 skipped (+20 new).
+
+---
+
 ## v0.20.2 (2026-08-22)
 
 ### Removed — Dead Code Sweep
