@@ -888,7 +888,7 @@ def generate_pdf_report(
         for rec in recommendations.priority_actions[:5]:
             flow.append(
                 Paragraph(
-                    f"• {rec.action.value.upper()} {rec.target}: {rec.reasoning} "
+                    f"• {rec.action.value.upper()} {', '.join(rec.tickers)}: {rec.reason} "
                     f"({rec.urgency}, {rec.confidence:.0%} confidence)",
                     body,
                 )

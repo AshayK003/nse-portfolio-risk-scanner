@@ -474,7 +474,7 @@ def _generate_pdf_report(
         doc.add_heading("Top Priority Actions", level=2)
         for rec in recommendations.priority_actions[:5]:
             doc.add_bullet(
-                f"{rec.action.value.upper()} {rec.target}: {rec.reasoning} "
+                f"{rec.action.value.upper()} {', '.join(rec.tickers)}: {rec.reason} "
                 f"({rec.urgency}, {rec.confidence:.0%} confidence)",
                 style=_body_style(),
             )
