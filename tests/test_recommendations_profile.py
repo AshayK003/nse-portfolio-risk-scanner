@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import pandas as pd
 import pytest
 
-from engine import Holding, Portfolio, RISK_PROFILES
+from engine import RISK_PROFILES, Holding, Portfolio
 from engine.recommendations.engine import generate_recommendations
 
 
