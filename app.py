@@ -8,6 +8,8 @@ All computation lives in engine/compute.py; all rendering in ui/render.py.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 from engine import RISK_PROFILES, Portfolio
@@ -37,7 +39,7 @@ def main() -> None:
     # Page config
     st.set_page_config(
         page_title="NSE Portfolio Risk Scanner",
-        page_icon=None,
+        page_icon=str(Path(__file__).resolve().parent / "assets" / "favicon.png"),
         layout="wide",
         initial_sidebar_state="collapsed",
     )

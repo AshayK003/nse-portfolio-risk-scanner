@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.20.1 (2026-08-22)
+
+### Fixed — Audit Remediation Round 2
+
+Findings from the post-release codebase audit (M10/M15/M16/M23), plus community issue triage.
+
+**High**
+- **XSS via engine-generated strings in HTML:** three `unsafe_allow_html` sites (health card, top-5 insights, recommendation cards) interpolated `score_interpretation`, `insight.name/reasoning`, and card `tickers`/`reason`/`alternatives` unescaped. All now pass through `html.escape()`.
+- **Recommendations always assumed a bull market:** market regime was hardcoded to `BULL`; VIX/ADX/breadth/MA200-distance used fixed fallbacks with no derivation. The regime is now derived from the HMM state sequence (latest label → Bull/Neutral/Bear/Crisis), so bear-market guardrails can actually fire. Remaining feed values (VIX, breadth) keep documented neutral fallbacks until live sources are wired.
+- **VaR backtest FAIL rendered green:** the PASS/FAIL delta lacked a direction hint, so Streamlit's default made FAIL green. FAIL is now red.
+
+**Low**
+- **Custom app icon (#61):** the browser tab showed the default Streamlit icon. Added a branded favicon (`assets/favicon.png`) matching the app palette.
+
+### Closed as already-fixed (verified against v0.20.0)
+- #62 holdings editor sync and #63 recommendations refresh: the input-hash gate recomputes whenever any holding changes — verified hash changes on quantity edit and recommendations follow the new portfolio.
+- #64 deterministic recommendations: profile-driven rules shipped in v0.20.0 (25%/35%/50% caps per profile).
+- #19 color contrast fixes: WCAG contrast sweep shipped in v0.20.0.
+
+**Tests**: 421 passed, 0 failed, 1 skipped.
+
+---
+
 ## v0.20.0 (2026-08-22)
 
 ### Fixed — Visual UI Audit Remediation

@@ -281,7 +281,10 @@ def render_advanced_section(
                 pv = row.p_value
                 passed = pv > 0.05
                 st.metric(
-                    "VaR Backtest (95%)", f"{exc}/{total} exceptions", f"{'PASS' if passed else 'FAIL'}"
+                    "VaR Backtest (95%)",
+                    f"{exc}/{total} exceptions",
+                    f"{'PASS' if passed else 'FAIL'}",
+                    delta_color="normal" if passed else "inverse",
                 )
             else:
                 st.info("VaR backtest: no data available.")
