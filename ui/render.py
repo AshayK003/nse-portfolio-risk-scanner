@@ -51,6 +51,14 @@ from ui.fundamentals import render_fundamentals_section
 from ui.icons import ALERT_TRIANGLE, GITHUB, HEART, icon_html
 from ui.news import render_news_section
 
+ACTION_COLORS: dict[str, str] = {
+    "buy": "#22c55e",
+    "sell": "#ef4444",
+    "trim": "#f59e0b",
+    "hold": "#6b7280",
+    "block": "#a855f7",
+}
+
 
 def render_health_gauge(report: AnalysisReport) -> None:
     """Portfolio Health gauge block."""
@@ -217,14 +225,7 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
         if priority_cards:
             st.markdown("**Priority Actions:**")
             for i, card in enumerate(priority_cards, 1):
-                action_colors = {
-                    "buy": "#22c55e",
-                    "sell": "#ef4444",
-                    "trim": "#f59e0b",
-                    "hold": "#6b7280",
-                    "block": "#a855f7",
-                }
-                color = action_colors.get(card.action.value, "#6b7280")
+                color = ACTION_COLORS.get(card.action.value, "#6b7280")
                 st.markdown(
                     f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {color};"
                     f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
@@ -251,14 +252,7 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
         st.subheader("All Recommendations")
 
         for card in cards:
-            action_colors = {
-                "buy": "#22c55e",
-                "sell": "#ef4444",
-                "trim": "#f59e0b",
-                "hold": "#6b7280",
-                "block": "#a855f7",
-            }
-            color = action_colors.get(card.action.value, "#6b7280")
+            color = ACTION_COLORS.get(card.action.value, "#6b7280")
 
             with st.expander(
                 f"**{card.action.value.upper()}** {', '.join(card.tickers) if card.tickers else 'PORTFOLIO'} — Urgency: {card.urgency.value}",
