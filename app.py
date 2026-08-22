@@ -88,19 +88,19 @@ def main() -> None:
     # ── Step 2: Benchmark selection ──
     benchmark_options = {v: k for k, v in BENCHMARK_TICKERS.items()}
     default_benchmark = "^NSEI"
-    benchmark_choice = st.selectbox(
-        "Benchmark Index",
-        options=list(benchmark_options.keys()),
-        format_func=lambda x: benchmark_options[x],
-        index=list(benchmark_options.keys()).index(default_benchmark)
-        if default_benchmark in benchmark_options
-        else 0,
-        key="benchmark_selector",
-    )
-
-    # Force refresh toggle
-    refresh_col1, refresh_col2 = st.columns([4, 1])
-    with refresh_col2:
+    # Force refresh toggle — inline with the benchmark selector
+    bench_col, refresh_col = st.columns([3, 1])
+    with bench_col:
+        benchmark_choice = st.selectbox(
+            "Benchmark Index",
+            options=list(benchmark_options.keys()),
+            format_func=lambda x: benchmark_options[x],
+            index=list(benchmark_options.keys()).index(default_benchmark)
+            if default_benchmark in benchmark_options
+            else 0,
+            key="benchmark_selector",
+        )
+    with refresh_col:
         force = st.checkbox("Force refresh prices", value=False, key="force_refresh_cb")
     st.session_state.force_refresh = bool(force)
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.20.0 (2026-08-22)
+
+### Fixed — Visual UI Audit Remediation
+
+Findings from a full visual audit (headless browser walkthrough of every tab, DOM + computed-style verification).
+
+**High**
+- **Health card contradiction:** `_interpret_scores` risk bands (>70/>45) disagreed with the health gauge labels (`health = 100 − overall`, bands at 70/40). A 65/100 "Moderate" gauge could show "LOW RISK" text. Bands aligned to 30/60 so interpretation always matches the gauge.
+- **Empty-portfolio sentinel poisoning session state:** the empty state returned `Portfolio(holdings=[])` which was persisted and later used as a real portfolio. Only non-empty portfolios are now stored.
+- **Recommendations ignored the Risk Profile:** `generate_recommendations` accepted `profile` but used a hardcoded default. Concentration caps, single-name limits, and horizon now derive from the selected Conservative/Moderate/Aggressive profile — verified that each profile produces different recommendation rules (25%/35%/50% caps).
+- **Latent crash on recommendations with unpriced holdings:** `getattr(h, "current_price", h.avg_price)` returned `None` for declared-but-unset dataclass fields (`int * None` TypeError). Falls back to `avg_price` explicitly.
+
+**Medium**
+- **Negative returns rendered in neutral white:** Portfolio/Benchmark Return on the "vs Nifty 50" tab now carry red deltas for negative values; positive P&L stays green.
+- **Contrast sweep:** input borders visible against dark background, placeholder/label/caption text lifted above WCAG minimums, checkbox labels brightened, inactive tabs brightened, download button given a clear interactive style.
+
+**Low**
+- **Checkbox placement:** "Force refresh prices" moved inline next to the Benchmark Index selector instead of floating above the metrics row.
+
+**Tests**
+- Added `tests/test_recommendations_profile.py` (3 tests: per-profile concentration caps, aggressive relaxation) and `tests/test_ui_audit_regressions.py` (6 AppTest black-box tests: sample button, empty-state persistence, band alignment).
+- Full suite: 421 passed, 1 skipped.
+
+---
+
 ## v0.19.3 (2026-08-21)
 
 ### Fixed — Deployed Crash Regressions (black-box verification)
