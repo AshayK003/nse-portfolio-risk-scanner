@@ -297,77 +297,6 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
         st.info("Recommendations require full analysis.")
 
 
-def render_export_tab(report, mc_result, portfolio_cum, recommendations, risk_data) -> None:
-    """Tab 9: Export."""
-    render_export_section(
-        report.portfolio,
-        risk=report.risk,
-        sector_data=report.sector.sector_allocation,
-        mc_result=mc_result,
-        portfolio_cum=portfolio_cum,
-        recommendations=recommendations,
-        risk_data=risk_data,
-        benchmark=report.benchmark,
-        factor_risk=report.factor_report,
-        macro_drivers=report.macro_drivers,
-        regime_result=report.regime,
-        institutional_scores=report.institutional_scores,
-        scenario_results=report.macro_scenarios,
-        warning_report=report.warnings,
-    )
-
-
-def render_disclaimer_footer() -> None:
-    """Permanent disclaimer + footer."""
-    st.markdown(
-        "<div style='padding:0.75rem 1rem;margin:1rem 0;background:rgba(245,158,11,0.08);"
-        "border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;font-size:0.85rem;' role='alert'>"
-        "<strong>⚠️ Not financial advice.</strong> This tool provides portfolio risk analysis "
-        "for educational and informational purposes only. Nothing on this platform constitutes "
-        "investment advice or a solicitation to buy or sell securities. "
-        "<strong>The creator is not a SEBI-registered investment advisor.</strong> "
-        "All trading and investment decisions are solely your responsibility."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f"<details style='font-size:0.85rem;color:#6b7280;'>"
-        f"<summary style='cursor:pointer;font-weight:600;color:#f59e0b;display:flex;align-items:center;gap:0.4rem;'>"
-        f"{icon_html(ALERT_TRIANGLE, size=14)} Detailed limitations"
-        f"</summary>"
-        f"<p><strong>Data accuracy.</strong> Data is sourced from third-party public APIs (yfinance, "
-        "nselib) and may be delayed, incomplete, or inaccurate.</p>"
-        f"<p><strong>Limitations you should know:</strong></p>"
-        f"<ul>"
-        f"<li><strong>Price data</strong> — yfinance free tier has 15-20 min delay.</li>"
-        f"<li><strong>NSE data</strong> — nselib is an optional dependency.</li>"
-        f"<li><strong>Risk metrics</strong> — VaR, CVaR, Monte Carlo assume normality.</li>"
-        f"<li><strong>Beta</strong> — computed against a single benchmark index.</li>"
-        f"<li><strong>Monte Carlo simulation</strong> — uses Geometric Brownian Motion.</li>"
-        f"<li><strong>HMM regime detection</strong> — optional dependency (hmmlearn).</li>"
-        f"<li><strong>Scenario analysis</strong> — estimated using stock beta × weight × market change.</li>"
-        f"<li><strong>Delivery analysis</strong> — relies on nselib bhavcopy data (1-day lag).</li>"
-        f"</ul>"
-        f"<p><strong>No liability.</strong> Under no circumstances shall the creator be liable for any "
-        "damages arising from your use of this tool.</p>"
-        f"<p><strong>Past performance.</strong> Historical data does not guarantee future results.</p>"
-        f"<p><strong>Use at your own risk.</strong> By using this tool, you accept these terms.</p>"
-        f"<p style='font-size:0.75rem;color:#9ca3af;'>Last updated: June 2026</p>"
-        f"</details>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f'<div class="app-footer">'
-        f'{icon_html(GITHUB)} Built by <a href="https://github.com/AshayK003">AshayK003</a> · '
-        f"{icon_html(HEART)} "
-        f'<a href="https://chai4.me/ashaykushwaha003">Support on Chai4Me</a>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-
 def render_all_tabs(ctx: ComputeContext, report: AnalysisReport) -> None:
     """
     Render all 10 tabs using pre-computed context.
@@ -591,3 +520,74 @@ def render_all_tabs(ctx: ComputeContext, report: AnalysisReport) -> None:
         )
 
     render_disclaimer_footer()
+
+
+def render_export_tab(report, mc_result, portfolio_cum, recommendations, risk_data) -> None:
+    """Tab 9: Export."""
+    render_export_section(
+        report.portfolio,
+        risk=report.risk,
+        sector_data=report.sector.sector_allocation,
+        mc_result=mc_result,
+        portfolio_cum=portfolio_cum,
+        recommendations=recommendations,
+        risk_data=risk_data,
+        benchmark=report.benchmark,
+        factor_risk=report.factor_report,
+        macro_drivers=report.macro_drivers,
+        regime_result=report.regime,
+        institutional_scores=report.institutional_scores,
+        scenario_results=report.macro_scenarios,
+        warning_report=report.warnings,
+    )
+
+
+def render_disclaimer_footer() -> None:
+    """Permanent disclaimer + footer."""
+    st.markdown(
+        "<div style='padding:0.75rem 1rem;margin:1rem 0;background:rgba(245,158,11,0.08);"
+        "border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;font-size:0.85rem;' role='alert'>"
+        "<strong>⚠️ Not financial advice.</strong> This tool provides portfolio risk analysis "
+        "for educational and informational purposes only. Nothing on this platform constitutes "
+        "investment advice or a solicitation to buy or sell securities. "
+        "<strong>The creator is not a SEBI-registered investment advisor.</strong> "
+        "All trading and investment decisions are solely your responsibility."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"<details style='font-size:0.85rem;color:#6b7280;'>"
+        f"<summary style='cursor:pointer;font-weight:600;color:#f59e0b;display:flex;align-items:center;gap:0.4rem;'>"
+        f"{icon_html(ALERT_TRIANGLE, size=14)} Detailed limitations"
+        f"</summary>"
+        f"<p><strong>Data accuracy.</strong> Data is sourced from third-party public APIs (yfinance, "
+        "nselib) and may be delayed, incomplete, or inaccurate.</p>"
+        f"<p><strong>Limitations you should know:</strong></p>"
+        f"<ul>"
+        f"<li><strong>Price data</strong> — yfinance free tier has 15-20 min delay.</li>"
+        f"<li><strong>NSE data</strong> — nselib is an optional dependency.</li>"
+        f"<li><strong>Risk metrics</strong> — VaR, CVaR, Monte Carlo assume normality.</li>"
+        f"<li><strong>Beta</strong> — computed against a single benchmark index.</li>"
+        f"<li><strong>Monte Carlo simulation</strong> — uses Geometric Brownian Motion.</li>"
+        f"<li><strong>HMM regime detection</strong> — optional dependency (hmmlearn).</li>"
+        f"<li><strong>Scenario analysis</strong> — estimated using stock beta × weight × market change.</li>"
+        f"<li><strong>Delivery analysis</strong> — relies on nselib bhavcopy data (1-day lag).</li>"
+        f"</ul>"
+        f"<p><strong>No liability.</strong> Under no circumstances shall the creator be liable for any "
+        "damages arising from your use of this tool.</p>"
+        f"<p><strong>Past performance.</strong> Historical data does not guarantee future results.</p>"
+        f"<p><strong>Use at your own risk.</strong> By using this tool, you accept these terms.</p>"
+        f"<p style='font-size:0.75rem;color:#9ca3af;'>Last updated: June 2026</p>"
+        f"</details>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f'<div class="app-footer">'
+        f'{icon_html(GITHUB)} Built by <a href="https://github.com/AshayK003">AshayK003</a> · '
+        f"{icon_html(HEART)} "
+        f'<a href="https://chai4.me/ashaykushwaha003">Support on Chai4Me</a>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )

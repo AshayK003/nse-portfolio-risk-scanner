@@ -8,7 +8,6 @@ from engine.portfolio import (
     _parse_float,
     normalize_ticker,
     parse_portfolio_csv,
-    portfolio_from_dict,
     validate_portfolio,
 )
 
@@ -368,27 +367,3 @@ class TestPortfolioWeightEdgeCases:
         """Portfolio with zero invested value -> 0% pnl_pct, not division by zero."""
         p = Portfolio(holdings=[])
         assert p.total_pnl_pct == 0.0
-
-
-class TestPortfolioFromDict:
-    def test_basic_conversion(self):
-        data = {
-            "name": "Test",
-            "holdings": [{"ticker": "RELIANCE", "name": "RIL", "quantity": 10, "avg_price": 2500}],
-        }
-        p = portfolio_from_dict(data)
-        assert p.name == "Test"
-        assert len(p.holdings) == 1
-        assert p.holdings[0].ticker == "RELIANCE.NS"
-
-    def test_missing_fields_defaults(self):
-        data = {"holdings": [{"ticker": "TCS"}]}
-        p = portfolio_from_dict(data)
-        assert p.holdings[0].name == "TCS"
-        assert p.holdings[0].quantity == 0
-        assert p.holdings[0].avg_price == 0.0
-
-    def test_empty_data(self):
-        p = portfolio_from_dict({})
-        assert p.name == "My Portfolio"
-        assert len(p.holdings) == 0

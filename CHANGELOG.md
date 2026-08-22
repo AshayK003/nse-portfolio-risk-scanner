@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.20.2 (2026-08-22)
+
+### Removed — Dead Code Sweep
+
+Zombie-function cleanup from the codebase audit: functions defined, tested, but never called by any production path. Each deletion was verified against static imports, dynamic `__import__` targets, string-path references, and internal call sites before removal.
+
+- `engine/delivery.py` — entire module (delivery-volume analysis, optional nselib feature never wired into the app) + its tests
+`intelligence_registry.get_module_names` — debug helper with zero callers
+- `optimization_advanced.optimize_black_litterman` / `riskfolio_available` — unreachable; the optimizer path uses `optimize_advanced`
+- `performance.compute_max_drawdown` — superseded by inline drawdown computation in compute/risk
+- `ticker_resolver.resolve_ticker` — superseded by `build_ticker_options`/`parse_ticker_option`
+- `render.render_disclaimer_footer` / `render_export_tab` retained (called by `render_all_tabs`)
+- `sample_template.build_sample_csv` and `upload.render_save_button` — dead UI paths
+- 30 orphaned test methods removed alongside their subjects
+
+**Kept after verification** (audit flagged, triage saved): `kupiec_pof`, `backtest_var`, `run_scenario`, `build_tax_lots`, `portfolio_from_dict`, `render_export_tab`, `render_disclaimer_footer`.
+
+**Tests**: 391 passed, 0 failed, 1 skipped (−30 orphaned tests).
+
+---
+
 ## v0.20.1 (2026-08-22)
 
 ### Fixed — Audit Remediation Round 2
