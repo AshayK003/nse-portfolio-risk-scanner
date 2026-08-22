@@ -9,11 +9,13 @@ Covers:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-APP_PATH = r"D:\Personal projects\NSE Portfolio Risk Scanner\app.py"
+APP_PATH = str(Path(__file__).resolve().parent.parent / "app.py")
 
 
 def _fake_prices(tickers: list[str], days: int = 260) -> pd.DataFrame:
