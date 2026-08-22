@@ -436,47 +436,48 @@ def render_optimization_section(
                 "noise by shrinking extreme correlations toward the average."
             )
 
-        # Current vs Optimized comparison
-        if portfolio and portfolio.total_current > 0:
-            col1, col2 = st.columns(2)
-            total_value = portfolio.total_current
-            current_weights = {
-                h.ticker: h.current_value / total_value for h in portfolio.holdings if h.ticker in opt.weights
-            }
+    # Current vs Optimized comparison — shown for every optimization method so the
+    # allocation pies don't disappear when the user switches risk profiles.
+    if portfolio and portfolio.total_current > 0:
+        col1, col2 = st.columns(2)
+        total_value = portfolio.total_current
+        current_weights = {
+            h.ticker: h.current_value / total_value for h in portfolio.holdings if h.ticker in opt.weights
+        }
 
-            with col1:
-                from ui.charts import allocation_pie
+        with col1:
+            from ui.charts import allocation_pie
 
-                st.plotly_chart(
-                    allocation_pie(current_weights, "Current Allocation"),
-                    width="stretch",
-                    key="current_alloc",
-                )
+            st.plotly_chart(
+                allocation_pie(current_weights, "Current Allocation"),
+                width="stretch",
+                key="current_alloc",
+            )
 
-            with col2:
-                st.plotly_chart(
-                    allocation_pie(opt.weights, "Optimized Allocation"),
-                    width="stretch",
-                    key="opt_alloc",
-                )
+        with col2:
+            st.plotly_chart(
+                allocation_pie(opt.weights, "Optimized Allocation"),
+                width="stretch",
+                key="opt_alloc",
+            )
 
-            comparison = []
-            for ticker, opt_w in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
-                cur_w = current_weights.get(ticker, 0.0)
-                cur_val = cur_w * total_value
-                opt_val = opt_w * total_value
-                diff = opt_val - cur_val
-                reason = _opt_reason(ticker, cur_w * 100, opt_w * 100, risk_data)
-                comparison.append(
-                    {
-                        "Ticker": ticker.replace(".NS", ""),
-                        "Current": f"{cur_w * 100:.0f}%",
-                        "Optimized": f"{opt_w * 100:.0f}%",
-                        "Change (Rs)": f"{diff:+,.0f}",
-                        "Why": reason,
-                    }
-                )
-            st.dataframe(comparison, width="stretch", hide_index=True)
+        comparison = []
+        for ticker, opt_w in sorted(opt.weights.items(), key=lambda x: x[1], reverse=True):
+            cur_w = current_weights.get(ticker, 0.0)
+            cur_val = cur_w * total_value
+            opt_val = opt_w * total_value
+            diff = opt_val - cur_val
+            reason = _opt_reason(ticker, cur_w * 100, opt_w * 100, risk_data)
+            comparison.append(
+                {
+                    "Ticker": ticker.replace(".NS", ""),
+                    "Current": f"{cur_w * 100:.0f}%",
+                    "Optimized": f"{opt_w * 100:.0f}%",
+                    "Change (Rs)": f"{diff:+,.0f}",
+                    "Why": reason,
+                }
+            )
+        st.dataframe(comparison, width="stretch", hide_index=True)
 
         # Warn if optimization concentrates above profile's single-holding limit
         max_opt_w = max(opt.weights.values())
