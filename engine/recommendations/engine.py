@@ -78,6 +78,21 @@ def generate_recommendations(
         if regime_result and hasattr(regime_result, "adx") and regime_result.adx:
             adx = regime_result.adx
 
+        # Derive the market regime from HMM state labels instead of hardcoding BULL.
+        # The latest state label ("Bull"/"Neutral"/"Bear") maps to RegimeContext.
+        regime = RegimeContext.NEUTRAL
+        if regime_result is not None:
+            seq = getattr(regime_result, "state_sequence", None)
+            labels = getattr(regime_result, "labels", None)
+            if seq and labels:
+                current = str(seq[-1]).upper()
+                if "BULL" in current:
+                    regime = RegimeContext.BULL
+                elif "BEAR" in current:
+                    regime = RegimeContext.BEAR
+                elif "CRISIS" in current:
+                    regime = RegimeContext.CRISIS
+
         market_data = MarketData(
             vix=vix,
             adx=adx,
@@ -85,7 +100,7 @@ def generate_recommendations(
             breadth_ad_ratio=1.2,
             fii_dii_bias=FiiDiiBias.NEUTRAL,
             is_expiry_week=False,
-            regime=RegimeContext.BULL,
+            regime=regime,
         )
 
         # User profile derived from the sidebar risk profile so recommendations

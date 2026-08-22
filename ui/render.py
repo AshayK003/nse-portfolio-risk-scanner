@@ -7,6 +7,8 @@ Consumes ComputeContext + AnalysisReport produced by engine.compute.
 
 from __future__ import annotations
 
+import html
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -74,7 +76,7 @@ def render_health_gauge(report: AnalysisReport) -> None:
                 <div style="font-size:0.8rem;color:{color};">{label}</div>
             </div>
             <div style="flex:2;font-size:0.8rem;color:#aaa;line-height:1.4;">
-                {institutional.score_interpretation[:200]}
+                {html.escape(institutional.score_interpretation[:200])}
             </div>
         </div>""",
         unsafe_allow_html=True,
@@ -134,8 +136,8 @@ def render_institutional_intelligence(institutional_scores, factor_report, early
                     st.markdown(
                         f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {severity_color};"
                         f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
-                        f"<strong>{i}. {insight.name}</strong> (Score: {insight.composite:.1f})<br/>"
-                        f"<span style='color:#9ca3af;font-size:0.85rem;'>{insight.reasoning}</span></div>",
+                        f"<strong>{i}. {html.escape(insight.name)}</strong> (Score: {insight.composite:.1f})<br/>"
+                        f"<span style='color:#9ca3af;font-size:0.85rem;'>{html.escape(insight.reasoning)}</span></div>",
                         unsafe_allow_html=True,
                     )
 
@@ -226,10 +228,10 @@ def render_recommendations_tab(opt_result, rebalance, recommendations, risk_data
                 st.markdown(
                     f"<div style='padding:0.75rem;margin:0.5rem 0;border-left:4px solid {color};"
                     f"background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;'>"
-                    f"<strong>{i}. {card.action.value.upper()} {', '.join(card.tickers) if card.tickers else 'PORTFOLIO'}</strong> "
+                    f"<strong>{i}. {card.action.value.upper()} {html.escape(', '.join(card.tickers)) if card.tickers else 'PORTFOLIO'}</strong> "
                     f"<span style='color:#9ca3af;'>{card.urgency.value}, confidence: {card.confidence:.0%}</span><br/>"
-                    f"<span style='font-size:0.85rem;'>{card.reason}</span><br/>"
-                    f"<span style='font-size:0.8rem;color:#f59e0b;'>Trade-off: {'; '.join(card.alternatives[:2]) if card.alternatives else 'See alternatives'}</span></div>",
+                    f"<span style='font-size:0.85rem;'>{html.escape(card.reason)}</span><br/>"
+                    f"<span style='font-size:0.8rem;color:#f59e0b;'>Trade-off: {html.escape('; '.join(card.alternatives[:2])) if card.alternatives else 'See alternatives'}</span></div>",
                     unsafe_allow_html=True,
                 )
 
