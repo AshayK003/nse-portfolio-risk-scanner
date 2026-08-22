@@ -183,29 +183,39 @@ None required. Runs with zero configuration.
 ├── app.py                    # Entry point
 ├── engine/
 │   ├── __init__.py           # Data models (dataclasses only)
+│   ├── _log.py               # Loguru wrapper (safe-brace formatting)
 │   ├── portfolio.py          # CSV parsing, validation, ticker normalization
+│   ├── compute.py            # Analysis pipeline orchestration (compute_all)
 │   ├── risk.py               # VaR, CVaR, volatility, beta, drawdown, Monte Carlo, denoising
 │   ├── performance.py        # Returns, CAGR, win rate, holding P&L
 │   ├── benchmark.py          # Benchmark comparison (alpha, tracking error, IR)
 │   ├── sector.py             # Sector classification + concentration (HHI)
 │   ├── optimization.py       # HRP, min-vol, max-Sharpe, rebalancing
+│   ├── optimization_advanced.py # Riskfolio-Lib wrapper
 │   ├── regime.py             # HMM regime detection (optional hmmlearn)
 │   ├── scenario.py           # Basic + macro stress tests
-│   ├── backtesting.py         # VaR backtesting (Kupiec POF)
-│   ├── fundamentals.py        # Altman Z-Score
-│   ├── garch_var.py           # GARCH(1,1)-t VaR
-│   ├── optimization_advanced.py # Riskfolio-Lib wrapper
-│   ├── pelve.py               # PELVE ratio
+│   ├── backtesting.py        # VaR backtesting (Kupiec POF)
+│   ├── fundamentals.py       # Altman Z-Score
+│   ├── garch_var.py          # GARCH(1,1)-t VaR
+│   ├── pelve.py              # PELVE ratio
 │   ├── factors.py            # Factor decomposition + macro sensitivities
 │   ├── scoring.py            # Institutional risk scoring (P×I×C)
 │   ├── narrative.py          # Rule-based narrative generation (zero LLM)
-│   ├── recommendations.py    # Portfolio recommendations engine
+│   ├── recommendations/      # Rule-engine recommendation cards (profile-aware)
+│   ├── intelligence_registry.py # Guarded intelligence module registry
+│   ├── ticker_resolver.py    # Ticker autocomplete + company-name lookup
 │   └── warnings.py           # Early warning signal detection
 ├── ui/
 │   ├── dashboard.py          # Metric cards, tabs, layout
+│   ├── render.py             # Tab composition (render_all_tabs)
 │   ├── charts.py             # Plotly chart builders
+│   ├── charts_pdf.py         # Matplotlib chart builders for the PDF report
 │   ├── upload.py             # CSV upload + manual entry
-│   ├── export.py             # CSV/PDF export
+│   ├── export.py             # CSV/PDF export wiring
+│   ├── pdf_reportlab.py      # PDF report assembly (pdf-studio ledger theme)
+│   ├── sample_template.py    # Downloadable portfolio template
+│   ├── fundamentals.py       # Fundamentals tab rendering
+│   ├── news.py               # News tab rendering (RSS)
 │   ├── styles.py             # Dark theme CSS
 │   └── icons.py              # SVG icon helpers
 ├── data/
@@ -214,7 +224,8 @@ None required. Runs with zero configuration.
 ├── storage/
 │   ├── db.py                 # SQLite CRUD
 │   └── models.py             # Serialization
-├── tests/                    # 387 tests
+├── assets/favicon.png        # Browser-tab icon
+├── tests/                    # 391 tests across 34 files
 └── .pre-commit-config.yaml   # Ruff + pre-commit hooks
 ```
 
@@ -270,7 +281,7 @@ Types: fix, feat, docs, refactor, test, chore
   <img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&height=2&section=header" width="100%"/>
 </p>
 
-361 tests across 26 test files. Every module in `engine/` has dedicated unit tests.
+391 tests across 34 test files. Every module in `engine/` has dedicated unit tests.
 
 ```bash
 pytest tests/                           # Full suite
