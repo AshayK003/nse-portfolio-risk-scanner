@@ -437,11 +437,13 @@ def _interpret_scores(
     """Generate a human-readable interpretation of the composite scores."""
     parts = []
 
-    if overall > 70:
+    # Bands mirror render_health_gauge: health = 100 - overall.
+    # Good (health>=70 -> overall<30) -> LOW; Moderate (40-69) -> MODERATE; else HIGH.
+    if overall > 60:
         parts.append(
             "HIGH RISK: Portfolio carries significant institutional-level risk across multiple dimensions."
         )
-    elif overall > 45:
+    elif overall > 30:
         parts.append(
             "MODERATE RISK: Portfolio risk is within manageable bounds but has areas requiring attention."
         )

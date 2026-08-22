@@ -75,7 +75,10 @@ def main() -> None:
     if portfolio is None:
         st.stop()
 
-    st.session_state.portfolio = portfolio
+    # Don't persist an empty placeholder — it poisons later runs that
+    # trust session_state.portfolio (e.g. after clicking Try Sample).
+    if portfolio.holdings:
+        st.session_state.portfolio = portfolio
 
     # Allow editing
     portfolio = render_data_editor(portfolio)
