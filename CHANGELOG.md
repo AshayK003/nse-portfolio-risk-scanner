@@ -86,7 +86,7 @@ Two crashes surfaced by a headless `streamlit.testing.v1.AppTest` run against a 
 
 ## v0.19.2 (2026-08-21)
 
-### Fixed — Audit Remediation (OpenCode review, 2026-08-21)
+### Fixed — Audit Remediation (independent code review, 2026-08-21)
 
 Remediated 15 findings from an independent code audit. Each fix is backed by a regression test in `tests/test_audit_fixes.py`.
 

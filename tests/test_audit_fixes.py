@@ -1,4 +1,4 @@
-"""Regression tests for the OpenCode audit fixes (2026-08-21).
+"""Regression tests for the audit fixes (2026-08-21).
 
 Covers H1, M3, M4, L1, L2, L5, L7. These pin corrected behaviour so the
 fixes can't silently regress.
