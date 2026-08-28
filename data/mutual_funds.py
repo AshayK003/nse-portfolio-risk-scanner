@@ -39,7 +39,7 @@ _PERIOD_DAYS = {
     "6mo": 180,
     "1y": 365,
     "2y": 730,
-    "max": 10 ** 8,
+    "max": 10**8,
 }
 
 # Bounded in-memory cache: scheme_code -> pd.Series
@@ -65,8 +65,13 @@ def _http_get_json(path: str) -> dict | list:
                 return json.loads(resp.read().decode())
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as exc:
             last_exc = exc
-            logger.debug("mfapi.in fetch attempt {a}/{m} failed for {p}: {e}",
-                         a=attempt + 1, m=_MAX_RETRIES, p=path, e=exc)
+            logger.debug(
+                "mfapi.in fetch attempt {a}/{m} failed for {p}: {e}",
+                a=attempt + 1,
+                m=_MAX_RETRIES,
+                p=path,
+                e=exc,
+            )
             if attempt < _MAX_RETRIES - 1:
                 time.sleep(_RETRY_BACKOFF[attempt])
     raise MutualFundError(f"mfapi.in request failed after {_MAX_RETRIES} attempts: {url} ({last_exc})")
@@ -148,7 +153,7 @@ def fetch_nav_history(scheme_code: int, period: str = "1y", force_refresh: bool 
 def _slice_period(series: pd.Series, period: str) -> pd.Series:
     """Return the trailing window of a NAV series for the requested period."""
     days = _PERIOD_DAYS.get(period.lower(), _PERIOD_DAYS["1y"])
-    if days >= 10 ** 8:
+    if days >= 10**8:
         return series
     cutoff = series.index.max() - timedelta(days=days)
     return series[series.index >= cutoff]
